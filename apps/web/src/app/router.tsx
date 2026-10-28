@@ -9,6 +9,8 @@ import { AvailabilityPage } from '../features/menu/availability-page';
 import { CaptainLayout } from '../portals/captain/captain-layout';
 import { CaptainPage } from '../portals/captain/captain-page';
 import { OrderPadPage } from '../portals/captain/order-pad/order-pad-page';
+import { ReservationsPage } from '../portals/captain/reservations-page';
+import { AdminOverviewPage } from '../features/admin/overview/overview-page';
 import {
   AVAILABILITY_PERMISSIONS,
   KitchenHome,
@@ -220,7 +222,7 @@ function adminRoutes(): RouteObject {
       </PortalGuard>
     ),
     children: [
-      { index: true, element: <PortalPlaceholder portal={admin} /> },
+      { index: true, element: <AdminOverviewPage /> },
       {
         path: 'users',
         element: (
@@ -351,6 +353,7 @@ function captainRoutes(): RouteObject {
     children: [
       { index: true, element: <CaptainPage portal={captain} /> },
       { path: 'orders/:orderId', element: <OrderPadPage /> },
+      { path: 'reservations', element: <ReservationsPage /> },
     ],
   };
 }

@@ -53,6 +53,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   envelope('billing.invoice.updated', z.object({ invoice: InvoiceSummarySchema })),
   /** Menu or availability changed: refetch GET /menu (it answers 304 if nothing did). */
   envelope('menu.changed', z.object({})),
+  /** A reservation was booked, changed, seated or cancelled: refetch GET /reservations and GET /floor. */
+  envelope('floor.reservations.changed', z.object({})),
 ]);
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;
 export type ServerMessageType = ServerMessage['type'];
@@ -86,7 +88,8 @@ export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 
 /**
  * Which messages a connection receives depends on its permissions:
- * - `floor` (tables.view, billing.create): table, order, invoice and KOT status messages, menu.changed
+ * - `floor` (tables.view, billing.create): table, order, invoice and KOT status messages, menu.changed,
+ *   reservations
  * - `kitchen` (kds.view): every KOT message, delays, menu.changed
  * - `tokens` (anyone, including a paired TOKEN_DISPLAY device without a user): token.ready
  */

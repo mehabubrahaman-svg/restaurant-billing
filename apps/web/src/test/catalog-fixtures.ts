@@ -131,6 +131,7 @@ export function makeTable(overrides: Partial<DiningTable> = {}): DiningTable {
     status: 'AVAILABLE',
     currentOrderId: null,
     openOrder: null,
+    nextReservation: null,
     hasQr: false,
     isActive: true,
     version: 1,

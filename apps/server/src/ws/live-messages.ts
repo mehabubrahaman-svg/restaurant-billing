@@ -49,6 +49,13 @@ export function messagesFor(
   };
 
   switch (event.aggregateType) {
+    case 'Reservation':
+      out.push({
+        key: 'reservations',
+        topics: ['floor'],
+        message: { ...base, type: 'floor.reservations.changed', data: {} },
+      });
+      break;
     case 'DiningTable': {
       let table;
       try {

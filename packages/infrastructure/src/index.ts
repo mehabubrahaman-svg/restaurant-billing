@@ -44,6 +44,7 @@ export {
 export { SqliteCatalogRepository } from './catalog/sqlite-catalog-repository';
 export { SqliteDeviceRepository } from './devices/sqlite-device-repository';
 export { SqliteFloorRepository } from './floor/sqlite-floor-repository';
+export { SqliteReservationRepository } from './floor/sqlite-reservation-repository';
 export { lanAddresses } from './network/lan-addresses';
 export { ensureTlsMaterial, type TlsMaterial, type TlsSecretStore } from './network/local-ca';
 export { advertiseHub, type MdnsAdvertisement } from './network/mdns-advertiser';

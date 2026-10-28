@@ -26,6 +26,7 @@ import { catalogRoutes } from './routes/catalog';
 import { customerRoutes } from './routes/customers';
 import { deviceRoutes } from './routes/devices';
 import { floorRoutes } from './routes/floor';
+import { reservationRoutes } from './routes/reservations';
 import { inventoryRoutes } from './routes/inventory';
 import { kitchenRoutes } from './routes/kitchen';
 import { orderRoutes } from './routes/orders';
@@ -118,6 +119,7 @@ export async function buildApp(
       await api.register(auditRoutes, { cradle });
       await api.register(catalogRoutes, { cradle });
       await api.register(floorRoutes, { cradle });
+      await api.register(reservationRoutes, { cradle });
       await api.register(deviceRoutes, { cradle });
       await api.register(orderRoutes, { cradle });
       await api.register(kitchenRoutes, { cradle });

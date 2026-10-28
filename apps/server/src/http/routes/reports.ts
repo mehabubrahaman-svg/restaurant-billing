@@ -71,7 +71,8 @@ export async function reportRoutes(app: FastifyInstance, { cradle }: { cradle: C
 
   app.get(
     '/reports/dashboard',
-    { config: { permission: 'reports.sales' } },
+    // Also the owner's home (Admin → Overview).
+    { config: { permission: ['reports.sales', 'dashboard.view'] } },
     async (request): Promise<Dashboard> => {
       const now = clock.now();
       return reports.dashboard(

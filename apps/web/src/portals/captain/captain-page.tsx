@@ -4,6 +4,7 @@ import {
   BellRing,
   Bike,
   Button,
+  CalendarDays,
   CHIP_LOOKS,
   cn,
   EllipsisVertical,
@@ -17,7 +18,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { newIdempotencyKey } from '../../api/client';
 import { api } from '../../api/endpoints';
 import type { Portal } from '../../app/portals';
@@ -28,6 +29,7 @@ import { useNow } from '../../features/devices/use-now';
 import { AreaTabs } from '../../features/floor/area-tabs';
 import { FloorCanvas, SHAPE_CLASSES, tileStyle } from '../../features/floor/floor-canvas';
 import { useFloor } from '../../features/floor/floor-queries';
+import { localDay, useReservations } from '../../features/floor/reservation-queries';
 import { TableSheet } from '../../features/floor/table-sheet';
 import { STATUS_CHIP, STATUS_ORDER } from '../../features/floor/table-status';
 import { useElapsed } from '../../features/orders/elapsed';
@@ -143,6 +145,7 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
               </Button>
             </>
           )}
+          <ReservationsButton />
           <SoundToggle />
         </div>
       </header>
@@ -331,9 +334,15 @@ function TableTile({
   const Icon = look.icon;
   const order = table.openOrder;
   const status = t(`state.table.${state}`);
+  const booking = table.nextReservation;
+  const bookedAt =
+    booking === null ? '' : format.dateTime(booking.reservedFor, { timeStyle: 'short' });
   const summary =
     order === null
-      ? t('captain.tileLabel', { label: table.label, seats: table.seats, status })
+      ? t('captain.tileLabel', { label: table.label, seats: table.seats, status }) +
+        (booking === null
+          ? ''
+          : t('reservations.tileLabel', { time: bookedAt, name: booking.guestName }))
       : t('captain.tileOrderLabel', {
           label: table.label,
           status,
@@ -366,6 +375,18 @@ function TableTile({
             <span className="text-sm text-muted-foreground">
               {t('floor.tables.seatsShort', { seats: table.seats })}
             </span>
+            {booking !== null && (
+              <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-state-reserved bg-state-reserved-soft px-1.5 text-xs font-semibold text-state-reserved-fg">
+                <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
+                <span className="truncate">
+                  {t('reservations.tile', {
+                    time: bookedAt,
+                    name: booking.guestName,
+                    count: booking.partySize,
+                  })}
+                </span>
+              </span>
+            )}
           </>
         ) : (
           <>
@@ -424,11 +445,21 @@ function PlanTile({
   const look = CHIP_LOOKS[state];
   const Icon = look.icon;
   const status = t(`state.table.${state}`);
+  const format = useFormat();
+  const booking = table.openOrder === null ? table.nextReservation : null;
   return (
     <button
       type="button"
       data-status={table.status}
-      aria-label={t('captain.tileLabel', { label: table.label, seats: table.seats, status })}
+      aria-label={
+        t('captain.tileLabel', { label: table.label, seats: table.seats, status }) +
+        (booking === null
+          ? ''
+          : t('reservations.tileLabel', {
+              time: format.dateTime(booking.reservedFor, { timeStyle: 'short' }),
+              name: booking.guestName,
+            }))
+      }
       {...gestures}
       style={tileStyle(table, table.shape)}
       className={cn(
@@ -449,6 +480,33 @@ function PlanTile({
         {table.openOrder === null ? status : elapsed(table.openOrder.openedAt, now)}
       </span>
     </button>
+  );
+}
+
+/** To the bookings, with how many are still to come today. */
+function ReservationsButton() {
+  const { t } = useTranslation();
+  const format = useFormat();
+  const reservations = useReservations();
+  const today = localDay(new Date().toISOString());
+  const count = (reservations.data?.data ?? []).filter(
+    (r) => r.status === 'BOOKED' && localDay(r.reservedFor) === today,
+  ).length;
+  return (
+    <Button asChild variant="outline">
+      <Link
+        to="/captain/reservations"
+        aria-label={`${t('reservations.title')}: ${t('reservations.countToday', { count })}`}
+      >
+        <CalendarDays aria-hidden="true" />
+        {t('reservations.title')}
+        {count > 0 && (
+          <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
+            {format.number(count)}
+          </span>
+        )}
+      </Link>
+    </Button>
   );
 }
 

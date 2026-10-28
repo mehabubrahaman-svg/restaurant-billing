@@ -6,6 +6,7 @@ import {
   CatalogService,
   CouponService,
   CustomerService,
+  ReservationService,
   InventoryProjector,
   InventoryService,
   PurchasingService,
@@ -58,6 +59,7 @@ import {
   SqliteBackupRepository,
   SqliteCouponRepository,
   SqliteCustomerRepository,
+  SqliteReservationRepository,
   SqliteInventoryQueries,
   SqliteInventoryRepository,
   SqliteMenuLookup,
@@ -123,6 +125,7 @@ export interface Cradle {
   catalogService: CatalogService;
   menuImporter: MenuImporter;
   floorService: FloorService;
+  reservationService: ReservationService;
   deviceService: DeviceService;
   hubNetwork: HubNetwork;
   calendar: BusinessCalendar;
@@ -274,6 +277,17 @@ export function buildContainer(
         new FloorService({
           floor: new SqliteFloorRepository(c.db),
           tokens: nodeTokenCodec,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    reservationService: single(
+      (c) =>
+        new ReservationService({
+          reservations: new SqliteReservationRepository(c.db),
+          floor: new SqliteFloorRepository(c.db),
+          customerService: c.customerService,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,

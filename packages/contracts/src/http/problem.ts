@@ -38,6 +38,8 @@ export const ERROR_STATUS = {
   INSUFFICIENT_STOCK: 409,
   /** The table already has guests, a bill, or is blocked. */
   TABLE_NOT_FREE: 409,
+  /** Another booking holds the table within 2 hours of that time. */
+  TABLE_ALREADY_RESERVED: 409,
   /** The order is billed, paid or cancelled; it can't change. */
   ORDER_NOT_OPEN: 409,
   /** Only items still on the order pad can be edited. */

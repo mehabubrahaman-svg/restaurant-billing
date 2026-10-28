@@ -2,6 +2,7 @@ import type { FloorResponse, ServerMessage } from '@restroos/contracts';
 import type { QueryClient } from '@tanstack/react-query';
 import { applyInvoiceSummary, BILLING_KEYS } from '../billing/billing-queries';
 import { FLOOR_KEY } from '../floor/floor-queries';
+import { refreshReservations, RESERVATIONS_KEY } from '../floor/reservation-queries';
 import { useKdsFlags } from '../kitchen/kds-flags';
 import { applyKot, KITCHEN_KEYS } from '../kitchen/kds-queries';
 import { MENU_KEYS } from '../menu/menu-queries';
@@ -72,6 +73,9 @@ export function applyLiveMessage(client: QueryClient, message: ServerMessage): v
     case 'menu.changed':
       void client.invalidateQueries({ queryKey: MENU_KEYS.snapshot }, NO_CANCEL);
       return;
+    case 'floor.reservations.changed':
+      refreshReservations(client);
+      return;
   }
 }
 
@@ -80,6 +84,7 @@ export function resyncAll(client: QueryClient): Promise<void> {
   return Promise.all(
     [
       FLOOR_KEY,
+      RESERVATIONS_KEY,
       ORDER_KEYS.all,
       KITCHEN_KEYS.all,
       TOKENS_KEY,

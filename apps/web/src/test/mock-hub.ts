@@ -37,4 +37,6 @@ export const BASE_ROUTES: Record<string, Handler> = {
   'GET /setup/status': () => json({ needsSetup: false, states: [] }),
   'POST /auth/refresh': () => problem(401, 'UNAUTHENTICATED'),
   'GET /auth/pin-users': () => json({ data: [] }),
+  // The captain's floor counts today's bookings.
+  'GET /reservations': () => json({ data: [] }),
 };

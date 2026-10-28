@@ -1,4 +1,4 @@
-import type { TableRecord } from '@restroos/application';
+import type { ReservationRecord, TableRecord } from '@restroos/application';
 import {
   SaveFloorAreaRequestSchema,
   SaveLayoutRequestSchema,
@@ -27,13 +27,22 @@ const SET_STATUS = { permission: ['tables.update_status', 'floor.manage'] } as c
 export function toTable(
   { qrToken, ...table }: TableRecord,
   openOrder: TableOrder | null = null,
+  next: ReservationRecord | undefined = undefined,
 ): DiningTable {
-  return { ...table, openOrder, hasQr: qrToken !== null };
+  const nextReservation = next
+    ? {
+        id: next.id,
+        guestName: next.guestName,
+        partySize: next.partySize,
+        reservedFor: next.reservedFor,
+      }
+    : null;
+  return { ...table, openOrder, nextReservation, hasQr: qrToken !== null };
 }
 
 /** WP 3.3: floor areas, tables, layout and table status (docs/05 §2 Floor). */
 export async function floorRoutes(app: FastifyInstance, { cradle }: { cradle: Cradle }) {
-  const { floorService: floor, hubNetwork, orderQueries } = cradle;
+  const { floorService: floor, hubNetwork, orderQueries, reservationService } = cradle;
   const branchOf = (r: { principal?: { branchId: string } }) => r.principal!.branchId;
 
   const qrOf = (table: TableRecord): TableQrResponse => {
@@ -45,10 +54,11 @@ export async function floorRoutes(app: FastifyInstance, { cradle }: { cradle: Cr
 
   app.get('/floor', { config: VIEW }, async (request): Promise<FloorResponse> => {
     const open = orderQueries.openOrdersByTable(branchOf(request));
+    const booked = reservationService.nextByTable(branchOf(request));
     return {
       areas: floor.floor(branchOf(request)).map((area) => ({
         ...area,
-        tables: area.tables.map((t) => toTable(t, open.get(t.id) ?? null)),
+        tables: area.tables.map((t) => toTable(t, open.get(t.id) ?? null, booked.get(t.id))),
       })),
     };
   });

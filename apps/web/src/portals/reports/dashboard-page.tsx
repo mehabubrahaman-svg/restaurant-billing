@@ -61,7 +61,7 @@ export function DashboardPage() {
   );
 }
 
-function DashboardBody({ data }: { data: Dashboard }) {
+export function DashboardBody({ data }: { data: Dashboard }) {
   const { t } = useTranslation();
   const format = useFormat();
   const day = useDayFormat();

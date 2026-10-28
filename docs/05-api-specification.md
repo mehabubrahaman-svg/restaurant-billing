@@ -78,12 +78,22 @@ Implemented in Sprint 3 (live order summaries arrive with orders in Sprint 4). C
 
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| GET | `/floor` | `tables.view` or `floor.manage` | Areas + tables + status. The QR token is never returned, only `hasQr` |
+| GET | `/floor` | `tables.view` or `floor.manage` | Areas + tables + status. The QR token is never returned, only `hasQr`. `nextReservation` is the table's next booking from 30 minutes ago to 12 hours ahead |
 | POST/PATCH | `/floor-areas`, `/tables` | `floor.manage` | Layout editor. Positions are cells on a 48 × 32 grid |
 | PUT | `/floor/layout` | `floor.manage` | `{tables:[{id, posX, posY, version}]}`: drag-and-drop save, all moves or none |
 | POST | `/tables/{id}/status` | `tables.update_status` | `{status: CLEANING\|AVAILABLE\|RESERVED\|BLOCKED, version}`. Allowed manual moves: AVAILABLE→RESERVED/CLEANING/BLOCKED, RESERVED→AVAILABLE/BLOCKED, CLEANING→AVAILABLE, BLOCKED→AVAILABLE. OCCUPIED/BILLING come from orders |
 | GET/POST | `/tables/{id}/qr` | `floor.manage` | `{url, label}`. POST creates or replaces the QR (the old printout stops working) |
 | POST | `/tables/{id}/transfer` | `orders.transfer_table` | `{targetTableId, mode: MOVE\|MERGE}` |
+
+### Reservations
+Contracts: `packages/contracts/src/http/reservations.ts`.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/reservations?from=&to=` | `reservations.manage` or `tables.view` | Every status, in time order. ISO instants; without them, 3 hours ago to 30 days ahead; at most 62 days |
+| POST | `/reservations` | `reservations.manage` | `{guestName, guestPhone?, partySize, reservedFor, tableId?, notes?}`. A phone number finds or adds the customer. `422 VALIDATION_FAILED` more than 30 minutes in the past; `409 TABLE_ALREADY_RESERVED` when another booking holds the table within 2 hours |
+| PATCH | `/reservations/{id}` | `reservations.manage` | Same fields + `version`; BOOKED only |
+| POST | `/reservations/{id}/seat`, `/cancel`, `/no-show` | `reservations.manage` | `{version}`: SEATED, CANCELLED or NO_SHOW. Only a BOOKED reservation can move (`409 INVALID_STATE_TRANSITION`). Seating doesn't open the order; the captain does (`POST /orders`) |
 
 ### Menu
 | Method | Path | Perm |
@@ -174,7 +184,7 @@ Implemented in Sprint 5B (WP 5.7). Contracts: `packages/contracts/src/http/repor
 | POST | `/reports/day-end/print?date=` | `reports.sales` | The day-end slip on the REPORT (else BILL) printer |
 | GET | `/reports/day-end.csv?date=` | `reports.export` | The same as one CSV of labelled sections |
 | GET | `/reports/sales-register.csv?from=&to=` | `reports.export` | Every invoice and credit note in the range (up to 366 days) with CGST, SGST, IGST, VAT per row; credit notes negative. For the accountant's GSTR-1 and VAT returns |
-| GET | `/reports/dashboard` | `reports.sales` | Net sales, bills, covers and average bill for today, the month and the financial year (from 1 April); the last 14 days; today's payment mix; the month's top items; kitchen pending/late/average; open orders and tables |
+| GET | `/reports/dashboard` | `reports.sales` or `dashboard.view` (Admin → Overview) | Net sales, bills, covers and average bill for today, the month and the financial year (from 1 April); the last 14 days; today's payment mix; the month's top items; kitchen pending/late/average; open orders and tables |
 
 CSV files start with a byte-order mark and use CRLF so Excel shows Hindi and Bengali text; amounts are rupees with two decimals; text that a spreadsheet would run as a formula is prefixed with `'`. PDF and XLSX exports wait until an owner asks for them (each would add a dependency).
 
@@ -345,6 +355,7 @@ Every message carries the **current state** of one entity (never a diff), so cli
 | `kitchen.kot.delayed` | kitchen | kotId, overdueSeconds; once per KOT, from a 15 s scan; not replayed |
 | `token.ready` | tokens | tokenNo, orderId |
 | `menu.changed` | floor, kitchen | none: refetch `GET /menu` (304 if unchanged) |
+| `floor.reservations.changed` | floor | none: refetch `GET /reservations` and `GET /floor` |
 
 **Topics follow permissions**, re-checked every 60 s: `floor` with `tables.view`, `billing.create` or `floor.manage`; `kitchen` with `kds.view`; `tokens` for everyone. When the token expires or the session is revoked the server sends `unauthenticated` and only `tokens` messages flow until a fresh `auth`. `billing.invoice.paid` and `notification.created` arrive with Sprint 5.
 

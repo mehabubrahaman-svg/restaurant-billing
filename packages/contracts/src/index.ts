@@ -16,6 +16,7 @@ export * from './http/reports';
 export * from './http/ordering';
 export * from './http/problem';
 export * from './http/purchasing';
+export * from './http/reservations';
 export * from './http/settings';
 export * from './http/setup';
 export * from './http/users';

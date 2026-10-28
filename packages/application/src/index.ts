@@ -25,6 +25,7 @@ export type * from './catalog/ports';
 export * from './devices/device-service';
 export type * from './devices/ports';
 export * from './floor/floor-service';
+export * from './floor/reservation-service';
 export type * from './floor/ports';
 export * from './ordering/kitchen-service';
 export * from './ordering/order-service';

@@ -13,6 +13,10 @@ import {
   BackupsResponseSchema,
   CustomerDetailSchema,
   CustomersResponseSchema,
+  ReservationSchema,
+  ReservationsResponseSchema,
+  type SaveReservationRequest,
+  type UpdateReservationRequest,
   DashboardSchema,
   DayEndReportSchema,
   KotPrintResponseSchema,
@@ -548,6 +552,21 @@ export const api = {
         ...extras(o),
       }),
     rotateQr: (id: string) => c.json(`/tables/${id}/qr`, TableQrResponseSchema, { method: POST }),
+  },
+  reservations: {
+    /** Bookings whose time falls in [from, to] (ISO instants); the Hub defaults to the next 30 days. */
+    list: (from?: string, to?: string) =>
+      c.json('/reservations', ReservationsResponseSchema, { query: { from, to } }),
+    create: (body: SaveReservationRequest) =>
+      c.json('/reservations', ReservationSchema, { method: POST, body }),
+    update: (id: string, body: UpdateReservationRequest) =>
+      c.json(`/reservations/${id}`, ReservationSchema, { method: PATCH, body }),
+    /** SEATED, CANCELLED or NO_SHOW. */
+    close: (id: string, action: 'seat' | 'cancel' | 'no-show', version: number) =>
+      c.json(`/reservations/${id}/${action}`, ReservationSchema, {
+        method: POST,
+        body: { version },
+      }),
   },
   orders: {
     open: (body: OpenOrderRequest, o?: CommandOptions) =>

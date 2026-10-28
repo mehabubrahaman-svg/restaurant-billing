@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IdSchema, patchSchema } from './common';
+import { TableReservationSchema } from './reservations';
 
 const Version = z.number().int();
 
@@ -58,6 +59,8 @@ export const DiningTableSchema = z.object({
   currentOrderId: IdSchema.nullable(),
   /** Filled on GET /floor while the table has an open order. */
   openOrder: TableOrderSchema.nullable().default(null),
+  /** Filled on GET /floor: the table's next booking, from 30 minutes ago to 12 hours ahead. */
+  nextReservation: TableReservationSchema.nullable().default(null),
   hasQr: z.boolean(),
   isActive: z.boolean(),
   version: Version,
