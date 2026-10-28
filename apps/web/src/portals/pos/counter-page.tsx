@@ -173,6 +173,11 @@ function OrderWorkspace({ order, onDone }: { order: Order; onDone: () => void })
             <PaymentPad
               ref={pad}
               invoices={unpaid}
+              channel={
+                order.salesChannelName === null
+                  ? null
+                  : { name: order.salesChannelName, orderId: order.externalOrderId }
+              }
               onRecorded={({ change: due }) => setChange(due)}
             />
             <Button variant="outline" onClick={() => setDialog('cancel')}>
@@ -537,7 +542,9 @@ function BillOptionsPanel({
               >
                 <span className="flex w-full items-center gap-1.5">
                   <Icon aria-hidden="true" />
-                  <span className="min-w-0 flex-1 break-words">{row.label}</span>
+                  <span className="min-w-0 flex-1 text-sm leading-tight break-words">
+                    {row.label}
+                  </span>
                   {row.shortcut !== undefined && <Kbd>{row.shortcut}</Kbd>}
                 </span>
                 {row.value !== null && (

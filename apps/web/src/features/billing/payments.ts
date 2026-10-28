@@ -2,8 +2,8 @@ import type { PaymentMethod } from '@restroos/contracts';
 import type { NewPaymentBody } from '../../api/endpoints';
 import { paiseToRupees, rupeesToPaise } from '../../lib/units';
 
-/** Tenders the counter takes (AGGREGATOR payments come with the aggregator's order). */
-export const TENDERS = ['CASH', 'CARD', 'UPI', 'WALLET', 'CREDIT'] as const;
+/** Tenders the counter takes. AGGREGATOR settles a delivery-app order: the platform pays later. */
+export const TENDERS = ['CASH', 'CARD', 'UPI', 'WALLET', 'CREDIT', 'AGGREGATOR'] as const;
 export type Tender = (typeof TENDERS)[number];
 
 /** One line of the payment pad, as typed. Rupee amounts stay strings until parsed. */
@@ -45,17 +45,22 @@ export interface PadCheck {
 }
 
 /** Method-specific details that need a reference from the terminal slip. */
-export const NEEDS_REFERENCE: ReadonlySet<Tender> = new Set(['CARD', 'UPI']);
+export const NEEDS_REFERENCE: ReadonlySet<Tender> = new Set(['CARD', 'UPI', 'AGGREGATOR']);
 /** Methods that carry a terminal (and the remembered last terminal). */
 export const HAS_TERMINAL: ReadonlySet<Tender> = new Set(['CARD', 'UPI', 'WALLET']);
 
-export function newEntry(method: Tender, amountPaise: number, terminalLabel = ''): PaymentEntry {
+export function newEntry(
+  method: Tender,
+  amountPaise: number,
+  terminalLabel = '',
+  reference = '',
+): PaymentEntry {
   return {
     key: `${method}-${Math.random().toString(36).slice(2, 10)}`,
     method,
     amount: amountPaise > 0 ? paiseToRupees(amountPaise) : '',
     tendered: '',
-    reference: '',
+    reference,
     cardLast4: '',
     terminalLabel: HAS_TERMINAL.has(method) ? terminalLabel : '',
   };

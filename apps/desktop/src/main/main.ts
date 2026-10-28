@@ -29,6 +29,7 @@ import { loadOrCreateDatabaseKey } from './database-key';
 import { HubSupervisor, type HubProcess } from './hub-supervisor';
 import { RasterWindow } from './raster-window';
 import { readSettings, writeSettings, type DesktopSettings } from './settings';
+import { newSetupCode } from './setup-code';
 import { startUpdates } from './updates';
 
 const HTTP_PORT = Number(process.env['RESTRO_PORT'] ?? 7400);
@@ -87,6 +88,9 @@ function main() {
   let tray: Tray | null = null;
   let hubReady = false;
   let updateReady: string | null = null;
+  const setupCode = newSetupCode();
+  /** Shown in the tray until the setup wizard has been completed. */
+  let setupPending = false;
   let quitting = false;
   const raster = new RasterWindow();
 
@@ -140,6 +144,14 @@ function main() {
         label: hubReady ? 'Hub is running' : 'Hub is starting…',
         enabled: false,
       },
+      ...(setupPending
+        ? [
+            {
+              label: `Setup code: ${setupCode} (copy)`,
+              click: () => clipboard.writeText(setupCode),
+            },
+          ]
+        : []),
       ...addresses.map((ip) => ({
         label: `Copy address https://${ip}:${HTTPS_PORT}`,
         click: () => clipboard.writeText(`https://${ip}:${HTTPS_PORT}`),
@@ -231,6 +243,7 @@ function main() {
       RESTRO_MIGRATIONS_DIR: paths.migrations,
       RESTRO_FONTS_DIR: paths.fonts,
       RESTRO_SECURE_COOKIES: 'false',
+      RESTRO_SETUP_CODE: setupCode,
     };
     if (settings.backupCopyDir) env['RESTRO_BACKUP_COPY_DIR'] = settings.backupCopyDir;
     const child: UtilityProcess = utilityProcess.fork(paths.server, [], {
@@ -247,6 +260,7 @@ function main() {
         hubReady = true;
         refreshTray();
         if (!startHidden) showWindow();
+        void showSetupCodeIfNeeded();
       } else if (message.type === 'raster' && typeof message.script === 'string') {
         raster.run(message.script).then(
           (result) => child.postMessage({ type: 'raster-result', id: message.id, result }),
@@ -266,6 +280,44 @@ function main() {
       postMessage: (message) => child.postMessage(message),
       kill: () => void child.kill(),
     };
+  };
+
+  const needsSetup = async () =>
+    ((await (await fetch(`${HUB_URL}/api/v1/setup/status`)).json()) as { needsSetup: boolean })
+      .needsSetup;
+
+  /** A new Hub opens on the setup wizard, which asks for this code. */
+  const showSetupCodeIfNeeded = async () => {
+    try {
+      setupPending = await needsSetup();
+    } catch {
+      return;
+    }
+    refreshTray();
+    if (!setupPending) return;
+    // Drop the code from the tray once the wizard is done.
+    const watch = setInterval(() => {
+      needsSetup()
+        .then((needed) => {
+          if (needed) return;
+          setupPending = false;
+          clearInterval(watch);
+          refreshTray();
+        })
+        .catch(() => undefined);
+    }, 30_000);
+    const options = {
+      type: 'info' as const,
+      buttons: ['Copy code', 'OK'],
+      defaultId: 0,
+      message: `Setup code: ${setupCode}`,
+      detail:
+        'Enter this code on the last step of the setup wizard. It is also in the tray menu until setup is finished.',
+    };
+    const { response } = window
+      ? await dialog.showMessageBox(window, options)
+      : await dialog.showMessageBox(options);
+    if (response === 0) clipboard.writeText(setupCode);
   };
 
   const supervisor = new HubSupervisor({

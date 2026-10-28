@@ -56,6 +56,18 @@ describe('payment pad', () => {
     expect(check.entries.map((e) => e.problems)).toEqual([['reference'], ['creditNeedsCustomer']]);
   });
 
+  it('settles a delivery-app order to the channel, against its order number', () => {
+    const prefilled = newEntry('AGGREGATOR', 13200, '', 'SWG-7734512');
+    expect(prefilled).toMatchObject({ amount: '132.00', reference: 'SWG-7734512' });
+    expect(checkPad([prefilled], 13200, { hasCustomerName: false }).ok).toBe(true);
+    const blank = checkPad([entry('AGGREGATOR', '132')], 13200, { hasCustomerName: false });
+    expect(blank.entries[0]!.problems).toEqual(['reference']);
+    const [body] = allocatePayments(checkPad([prefilled], 13200, { hasCustomerName: false }), [
+      { id: 'inv', balance: 13200 },
+    ]).get('inv')!;
+    expect(body).toEqual({ method: 'AGGREGATOR', amount: 13200, reference: 'SWG-7734512' });
+  });
+
   it('spreads payments over INV + LIQ, with the cash change on the last part', () => {
     const check = checkPad(
       [

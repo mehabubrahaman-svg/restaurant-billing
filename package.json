@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "db:validate": "node scripts/validate-migrations.mjs"
+    "db:validate": "node scripts/validate-migrations.mjs",
+    "hub": "node scripts/run-hub.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

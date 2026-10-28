@@ -23,11 +23,32 @@ Electron · Node.js (Fastify) · SQLite (SQLCipher, WAL) · React + TypeScript �
 | 7   | [Sequence diagrams](docs/07-sequence-diagrams.md)                                                                         |
 | 8   | [Roadmap](docs/08-roadmap.md)                                                                                             |
 | 9   | [Phase 1 implementation plan](docs/09-implementation-plan.md)                                                             |
+| 10  | [Pilot runbook](docs/10-pilot-runbook.md) — install at a restaurant, first service, recovery                              |
+| 11  | [Training guide](docs/11-training-guide.md) — one page per role                                                           |
+| 12  | [Install and run](docs/12-install-and-run.md) — desktop installer, `pnpm hub`, connecting devices                         |
 | —   | [Architecture decision records](docs/adr)                                                                                 |
 
 ## Portals
 
 Admin · Captain · Kitchen (KDS) · POS Billing · Inventory · Vendor · Accounts · Reports · Token display · QR self-ordering
+
+## Run it on a PC
+
+Install Node.js 22 and Git, then:
+
+```bash
+corepack enable
+```
+
+```bash
+pnpm install && pnpm build
+```
+
+```bash
+pnpm hub
+```
+
+Open <http://localhost:7400> and follow the setup wizard; the setup code is printed in the terminal. Tablets and other PCs on the same network open the address `pnpm hub` prints. For the desktop app (installer, tray, start at login) and details, see [Install and run](docs/12-install-and-run.md).
 
 ## Development
 

@@ -3,6 +3,7 @@ import { Money } from '@restroos/domain';
 import {
   Alert,
   Banknote,
+  Bike,
   BookUser,
   Button,
   cn,
@@ -46,6 +47,7 @@ export const TENDER_LOOK: Readonly<Record<Tender, { icon: LucideIcon; key?: stri
   UPI: { icon: Smartphone, key: 'F7' },
   WALLET: { icon: Wallet },
   CREDIT: { icon: BookUser },
+  AGGREGATOR: { icon: Bike },
 };
 
 export interface PaymentPadHandle {
@@ -63,10 +65,13 @@ export interface PaymentPadHandle {
  */
 export function PaymentPad({
   invoices,
+  channel = null,
   onRecorded,
   ref,
 }: {
   invoices: readonly Invoice[];
+  /** A delivery-app order: it is settled to the channel, with the channel's order number. */
+  channel?: { name: string; orderId: string | null } | null;
   /** After the Hub recorded the payments: change to hand back, in paise. */
   onRecorded: (result: { change: number; invoices: Invoice[] }) => void;
   ref?: Ref<PaymentPadHandle>;
@@ -91,6 +96,7 @@ export function PaymentPad({
   const hasCustomerName = targets.every((i) => (i.customerName ?? '').trim() !== '');
   const check = checkPad(entries, due, { hasCustomerName });
   const tenders: Tender[] = [
+    ...(channel === null ? [] : ['AGGREGATOR' as const]),
     'CASH',
     'CARD',
     'UPI',
@@ -151,7 +157,8 @@ export function PaymentPad({
   function addTender(method: Tender) {
     if (record.isPending) return;
     const remaining = Math.max(0, check.remaining);
-    setEntries((list) => [...list, newEntry(method, remaining, lastTerminal(method))]);
+    const reference = method === 'AGGREGATOR' ? (channel?.orderId ?? '') : '';
+    setEntries((list) => [...list, newEntry(method, remaining, lastTerminal(method), reference)]);
     // The Hub refuses cash without an open shift: ask for one now, not at the end.
     if (method === 'CASH' && shift.data === null) void requestOpenShift();
   }
@@ -229,7 +236,11 @@ export function PaymentPad({
               aria-keyshortcuts={look.key}
             >
               <Icon aria-hidden="true" />
-              <span>{t(`pos.tenders.${method}`)}</span>
+              <span>
+                {method === 'AGGREGATOR' && channel !== null
+                  ? channel.name
+                  : t(`pos.tenders.${method}`)}
+              </span>
               {look.key !== undefined && <Kbd>{look.key}</Kbd>}
             </Button>
           );
@@ -425,14 +436,19 @@ function EntryCard({
             )}
           </Field>
         )}
-        {(entry.method === 'CARD' || entry.method === 'UPI' || entry.method === 'WALLET') && (
+        {(entry.method === 'CARD' ||
+          entry.method === 'UPI' ||
+          entry.method === 'WALLET' ||
+          entry.method === 'AGGREGATOR') && (
           <Field
             label={
               entry.method === 'CARD'
                 ? t('pos.pay.approvalCode')
                 : entry.method === 'UPI'
                   ? t('pos.pay.rrn')
-                  : t('pos.pay.walletRef')
+                  : entry.method === 'AGGREGATOR'
+                    ? t('pos.delivery.externalId')
+                    : t('pos.pay.walletRef')
             }
             error={shown('reference', 'reference')}
             required={entry.method !== 'WALLET'}

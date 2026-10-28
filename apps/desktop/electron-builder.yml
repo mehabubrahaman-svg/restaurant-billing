@@ -37,6 +37,8 @@ linux:
   icon: build/icons
   executableName: restroos-hub
   synopsis: Restaurant POS server for the local network
+appImage:
+  artifactName: RestroOS-Hub-${version}.${ext}
 deb:
   # safeStorage seals the database key with the desktop keyring.
   depends: [libsecret-1-0]

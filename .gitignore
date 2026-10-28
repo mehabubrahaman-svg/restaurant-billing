@@ -14,3 +14,7 @@ data/
 apps/desktop/server-bundle/
 apps/desktop/stage/
 apps/desktop/release/
+# End-to-end runs
+e2e/.hub-data/
+e2e/test-results/
+e2e/playwright-report/
