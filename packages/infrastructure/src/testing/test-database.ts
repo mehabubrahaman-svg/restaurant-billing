@@ -20,16 +20,17 @@ export interface TestDatabase {
 
 /**
  * A fully migrated, encrypted database in a temporary directory, seeded with
- * one organisation, one West Bengal branch and one user. Real file + real
- * encryption, so tests exercise the same code paths as production.
+ * one organisation, one West Bengal branch and one user (pass `seed: false`
+ * for an empty, freshly migrated database). Real file + real encryption, so
+ * tests exercise the same code paths as production.
  */
-export function createTestDatabase(): TestDatabase {
+export function createTestDatabase(options: { seed?: boolean } = {}): TestDatabase {
   const dir = mkdtempSync(join(tmpdir(), 'restroos-test-'));
   const path = join(dir, 'restro.db');
   const key = randomBytes(16).toString('hex');
   const db = openDatabase({ path, key });
   migrate(db, { migrationsDir: findMigrationsDir() });
-  seed(db);
+  if (options.seed ?? true) seed(db);
   return {
     db,
     path,

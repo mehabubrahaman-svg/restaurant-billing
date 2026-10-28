@@ -27,14 +27,29 @@ Full OpenAPI 3.1 will be **generated from Zod contracts** (`packages/contracts`)
 Permission required in brackets.
 
 ### Auth
-| Method | Path | Description |
-|---|---|---|
-| POST | `/auth/login` | `{username, password, deviceId}` → `{accessToken, user, permissions[], branches[]}` + refresh cookie |
-| POST | `/auth/pin-login` | Fast user switch on a paired device `{userId, pin}` |
-| POST | `/auth/refresh` | Rotate refresh token |
-| POST | `/auth/logout` | Revoke refresh family |
-| POST | `/auth/approve` | Manager enters PIN → `{approverToken, expiresIn: 60}` scoped to one action |
-| GET | `/auth/me` | Current user, permissions, branch |
+Implemented in Sprint 2. Contracts: `packages/contracts/src/http/auth.ts`.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/auth/login` | public, 20/min/IP | `{username, password, branchId?}` → session (`accessToken` 15 min, user, branch, branches, roles, permissions) + httpOnly refresh cookie (12 h, path `/api/v1/auth`, SameSite=Strict) |
+| POST | `/auth/pin-login` | public, 20/min/IP | `{userId, pin, branchId?}` → session. Fast user switch |
+| GET | `/auth/pin-users` | public | PIN-pad tiles `{id, fullName, initials}`. Restricted to paired devices once pairing lands (Sprint 3) |
+| POST | `/auth/refresh` | cookie | Rotates the refresh token. Body `{branchId?}` switches branch. Replaying an old token ends the whole session (theft signal, audited) |
+| POST | `/auth/logout` | cookie | Ends the session immediately, including its access token |
+| GET | `/auth/me` | token | Current user, branch, roles, permissions |
+| POST | `/auth/change-password` | token | `{currentPassword, newPassword}`. Keeps this session, ends the others |
+| POST | `/auth/approve` | token, 20/min/IP | Manager `{userId, pin, permission}` → `approverToken` valid 60 s, **once**, for that permission and branch. Send as `X-Approver-Token` when retrying the request that returned `APPROVAL_REQUIRED` |
+
+Security behaviour:
+- **Lockout:** 5 failed passwords or PINs lock the account for 15 minutes. A wrong password and an unknown user get the same response, after the same delay.
+- **Permission checks:** permissions are re-read on every request, so role changes and deactivations apply immediately.
+- **Sign-in bookkeeping:** failure counts and last login don't change the user's edit `version`, so an admin editing a user never gets a conflict just because they signed in.
+
+### Setup
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/setup/status` | public | `{needsSetup, states[]}`. Only states in enabled rollout waves are listed |
+| POST | `/setup` | public + setup code, 10/min/IP | Creates the organisation, branch, 7 roles, admin, GST groups (5/18/0%), liquor VAT group if enabled, invoice series, backup key. The setup code is printed by the Hub; 5 wrong codes roll it |
 
 ### Users & roles [`users.manage`, `roles.manage`]
 `GET/POST /users` · `GET/PATCH /users/{id}` · `POST /users/{id}/deactivate` · `POST /users/{id}/reset-pin` · `GET/POST /roles` · `PUT /roles/{id}/permissions` · `GET /permissions`

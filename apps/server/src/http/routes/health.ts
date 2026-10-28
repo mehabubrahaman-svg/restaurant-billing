@@ -9,7 +9,7 @@ export async function healthRoutes(app: FastifyInstance, { cradle }: { cradle: C
     .pluck();
   const ping = cradle.db.prepare('SELECT 1');
 
-  app.get('/health', async (): Promise<HealthResponse> => {
+  app.get('/health', { config: { public: true } }, async (): Promise<HealthResponse> => {
     let ok = true;
     try {
       ping.get();

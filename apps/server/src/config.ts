@@ -16,6 +16,20 @@ const EnvSchema = z.object({
   RESTRO_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   /** Requests per minute per client IP. Generous: a busy POS makes many small calls. */
   RESTRO_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(1200),
+  /** Mark the session cookie Secure. Turn on once devices reach the Hub over HTTPS. */
+  RESTRO_SECURE_COOKIES: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  /** Rollout waves offered by first-time setup, e.g. "1" or "1,2" (docs/08 State rollout). */
+  RESTRO_ROLLOUT_WAVES: z
+    .string()
+    .regex(/^\d+(,\d+)*$/)
+    .default('1')
+    .transform((v) => v.split(',').map(Number)),
+  RESTRO_TIMEZONE: z.string().default('Asia/Kolkata'),
+  /** Fixed setup code, for the desktop shell to display. Random when unset. */
+  RESTRO_SETUP_CODE: z.string().min(6).max(32).optional(),
 });
 
 export interface ServerConfig {
@@ -29,6 +43,10 @@ export interface ServerConfig {
   readonly webDist: string | undefined;
   readonly logLevel: string;
   readonly rateLimitPerMinute: number;
+  readonly secureCookies: boolean;
+  readonly rolloutWaves: readonly number[];
+  readonly timeZone: string;
+  readonly setupCode: string | undefined;
   readonly version: string;
 }
 
@@ -58,6 +76,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     webDist: e.RESTRO_WEB_DIST && resolve(e.RESTRO_WEB_DIST),
     logLevel: e.RESTRO_LOG_LEVEL,
     rateLimitPerMinute: e.RESTRO_RATE_LIMIT_PER_MINUTE,
+    secureCookies: e.RESTRO_SECURE_COOKIES,
+    rolloutWaves: e.RESTRO_ROLLOUT_WAVES,
+    timeZone: e.RESTRO_TIMEZONE,
+    setupCode: e.RESTRO_SETUP_CODE,
     version: process.env['npm_package_version'] ?? '0.0.0',
   };
 }

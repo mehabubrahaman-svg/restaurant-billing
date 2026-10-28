@@ -1,3 +1,7 @@
+export * from './identity/auth-service';
+export type * from './identity/ports';
+export * from './identity/role-admin-service';
+export * from './identity/user-admin-service';
 export type { Clock } from './ports/clock';
 export type { EventBus, EventHandler, EventMetadata, PersistedEvent } from './ports/event-bus';
 export type { IdGenerator } from './ports/id-generator';
@@ -8,3 +12,9 @@ export type {
   TransactionScope,
   UnitOfWork,
 } from './ports/unit-of-work';
+export type * from './setup/ports';
+export * from './setup/setup-service';
+export type * from './audit/audit-service';
+export type * from './settings/ports';
+export * from './settings/settings-service';
+export { recordChanged } from './shared-events';

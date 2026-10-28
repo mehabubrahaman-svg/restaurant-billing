@@ -140,4 +140,4 @@ At that extreme volume, `domain_events` older than 90 days **and already synced*
 | Triggers `RAISE(ABORT)` | `RAISE EXCEPTION` triggers or REVOKE DELETE | Ported in the PG migration set |
 | `STRICT` | native | |
 
-Drizzle schema definitions (from Sprint 2, added with the first aggregate repositories) live in `packages/infrastructure/src/db/schema/*` with one file per context and are kept in lock-step with the SQL migrations by a CI check (`drizzle-kit check`).
+Repositories are hand-written SQL behind the application's ports (ADR 0010). A PostgreSQL adapter implements the same ports, and the port-level tests become its acceptance suite.

@@ -34,7 +34,7 @@ The recommended **Electron + React + Node.js + SQLite + LAN server** stack is ad
 | HTTP server | **Fastify 5** | Fast, schema-first (JSON Schema/Zod), first-class plugins and DI-friendly lifecycle. |
 | Realtime | **WebSocket** (`fastify/websocket`) with a typed event protocol | No extra broker; works on LAN without internet. |
 | Database | **SQLite 3.45+** via `better-sqlite3-multiple-ciphers` (SQLCipher-compatible) | Synchronous, fastest Node driver, true ACID, **encrypted at rest**. |
-| Query layer | **Drizzle ORM** (+ raw SQL for reports) | Typed schema that targets SQLite **and** PostgreSQL/MySQL, so migrating dialects later is a config change, not a rewrite. |
+| Query layer | **Prepared SQL behind repository ports** (ADR 0010) | The SQL migrations are the single schema definition (STRICT types, triggers, partial indexes). Portability to PostgreSQL comes from the ports, not an ORM. |
 | Validation | **Zod** | Shared request/response contracts in `packages/contracts`. |
 | Frontend | **React 19 + Vite + TailwindCSS 4 + shadcn/ui + Framer Motion** | Requested stack; shadcn gives accessible primitives we own. |
 | Client state | **TanStack Query** (server state) + **Zustand** (UI/cart state) | Clear split: cache vs. local interaction state. |
@@ -107,7 +107,7 @@ flowchart TB
     EV["Domain events"]
   end
   subgraph Infrastructure
-    REPO["Repositories (Drizzle/SQLite)"]
+    REPO["Repositories (SQL/SQLite)"]
     UOW["Unit of Work (BEGIN IMMEDIATE)"]
     OUT["Event store + Outbox writer"]
     PRN["ESC/POS printer adapters"]
@@ -286,7 +286,7 @@ Bluetooth support is built in Phase 1 (discovery + peripherals) and Phase 1.5 (W
 | Busy outlet / 99.9% | Hub + **Standby Hub** pulling a WAL-shipped replica (Litestream-style) with manual promote |
 | Multi-branch | Each branch has its own Hub (offline-first) and syncs to the cloud. HQ edits the menu centrally and it pulls down. |
 | Franchise | `organization` → franchisee; cloud tenancy isolates franchisees, and royalty reports come from synced invoices |
-| Cloud-first customers | Same server code against PostgreSQL (Drizzle dialect switch), deployed as a container |
+| Cloud-first customers | Same server code with PostgreSQL repository adapters behind the same ports, deployed as a container |
 
 ## 8. Product decisions (answered 2026-10-28)
 

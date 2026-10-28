@@ -39,19 +39,19 @@ describe('errors as problem+json', () => {
   async function serverWithFailingRoutes() {
     return createTestServer({
       registerApiRoutes: (api) => {
-        api.get('/boom/domain', async () => {
+        api.get('/boom/domain', { config: { public: true } }, async () => {
           throw new DomainError('VERSION_CONFLICT', 'order changed meanwhile');
         });
-        api.get('/boom/rule', async () => {
+        api.get('/boom/rule', { config: { public: true } }, async () => {
           throw new DomainError('TABLE_NOT_AVAILABLE', 'T4 is being cleaned');
         });
-        api.get('/boom/http', async () => {
+        api.get('/boom/http', { config: { public: true } }, async () => {
           throw new HttpProblem('FORBIDDEN', 'needs billing.refund');
         });
-        api.get('/boom/crash', async () => {
+        api.get('/boom/crash', { config: { public: true } }, async () => {
           throw new Error('secret internal detail');
         });
-        api.post('/boom/validate', async (request) => {
+        api.post('/boom/validate', { config: { public: true } }, async (request) => {
           z.object({ quantity: z.number().int().positive() }).parse(request.body);
           return {};
         });
@@ -109,7 +109,7 @@ describe('Idempotency-Key', () => {
     let created = 0;
     const s = await createTestServer({
       registerApiRoutes: (api) => {
-        api.post('/orders', async (_request, reply) => {
+        api.post('/orders', { config: { public: true } }, async (_request, reply) => {
           created += 1;
           return reply.status(201).send({ orderNo: created });
         });

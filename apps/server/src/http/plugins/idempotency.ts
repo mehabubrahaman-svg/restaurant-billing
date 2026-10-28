@@ -18,8 +18,8 @@ const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
  * queued commands with the same Idempotency-Key; we return the stored response
  * instead of creating a second order or a second payment.
  *
- * Keys are scoped to the device (or user, once auth lands) so two devices can
- * never collide. Reusing a key with a different body is rejected.
+ * Keys are scoped to the signed-in user (or the device before sign-in) so two
+ * users or devices can never collide. Reusing a key with a different body is rejected.
  */
 export const idempotencyPlugin = fp<{ store: IdempotencyStore }>(
   async (app: FastifyInstance, { store }) => {
@@ -84,6 +84,7 @@ export const idempotencyPlugin = fp<{ store: IdempotencyStore }>(
 );
 
 function scopeOf(request: FastifyRequest): string {
+  if (request.principal) return `user:${request.principal.userId}`;
   const device = request.headers['x-device-id'];
   return typeof device === 'string' && device.length > 0 ? `device:${device}` : `ip:${request.ip}`;
 }

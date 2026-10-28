@@ -9,6 +9,7 @@ export class HttpProblem extends Error {
     readonly code: ErrorCode,
     message: string,
     readonly errors?: ProblemDetails['errors'],
+    readonly permission?: string,
   ) {
     super(message);
     this.name = 'HttpProblem';
@@ -59,10 +60,14 @@ export function errorHandler(
   reply: FastifyReply,
 ) {
   if (error instanceof HttpProblem) {
-    return sendProblem(
-      reply,
-      problem(request, ERROR_STATUS[error.code], error.code, error.message, error.errors),
+    const body = problem(
+      request,
+      ERROR_STATUS[error.code],
+      error.code,
+      error.message,
+      error.errors,
     );
+    return sendProblem(reply, error.permission ? { ...body, permission: error.permission } : body);
   }
   if (error instanceof DomainError) {
     return sendProblem(

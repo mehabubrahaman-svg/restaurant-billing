@@ -13,7 +13,9 @@
   "dependencies": {
     "@restroos/application": "workspace:*",
     "@restroos/domain": "workspace:*",
+    "bcryptjs": "3.0.3",
     "better-sqlite3-multiple-ciphers": "13.0.3",
+    "jose": "6.2.12",
     "uuidv7": "1.2.1"
   },
   "devDependencies": {

@@ -22,3 +22,22 @@ export {
   TEST_USER_ID,
   type TestDatabase,
 } from './testing/test-database';
+export { SqliteAuditQueries } from './audit-log/sqlite-audit-queries';
+export { BcryptPasswordHasher } from './crypto/bcrypt-hasher';
+export {
+  ACCESS_TOKEN_TTL_MS,
+  APPROVAL_TOKEN_TTL_MS,
+  JoseTokenSigner,
+} from './crypto/jose-token-signer';
+export { ScryptKeyDerivation } from './crypto/scrypt-key-derivation';
+export { SqliteSecretStore } from './crypto/secret-store';
+export { nodeTokenCodec } from './crypto/token-codec';
+export { SqliteIdentityQueries } from './identity/sqlite-identity-queries';
+export { SqliteRefreshTokenStore } from './identity/sqlite-refresh-token-store';
+export { SqliteRoleRepository } from './identity/sqlite-role-repository';
+export { SqliteUserRepository } from './identity/sqlite-user-repository';
+export { SqliteSettingsRepository } from './settings/sqlite-settings-repository';
+export {
+  SqliteInstallationRepository,
+  SqliteReferenceData,
+} from './setup/sqlite-installation-repository';

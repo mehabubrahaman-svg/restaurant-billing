@@ -63,7 +63,7 @@ restaurant-billing/
 │   ├── contracts/                   # Zod request/response/WS message schemas, shared with web
 │   ├── infrastructure/              # Adapters implementing ports
 │   │   └── src/
-│   │       ├── db/                  #   connection (SQLCipher, pragmas), migrator, UoW; Drizzle schema from Sprint 2
+│   │       ├── db/                  #   connection (SQLCipher, pragmas), migrator, unit of work
 │   │       ├── repositories/        #   one per aggregate
 │   │       ├── read-models/         #   SQL for queries/reports
 │   │       ├── events/              #   event store + outbox writer, in-process bus

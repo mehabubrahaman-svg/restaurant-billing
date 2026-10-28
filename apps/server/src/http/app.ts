@@ -1,3 +1,4 @@
+import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
 import { API_PREFIX } from '@restroos/contracts';
@@ -6,18 +7,26 @@ import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Cradle } from '../container';
+import type { SetupCode } from '../setup-code';
+import { authPlugin } from './plugins/auth';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { errorHandler, problem, sendProblem } from './problem';
+import { auditRoutes } from './routes/audit';
+import { authRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
+import { settingsRoutes } from './routes/settings';
+import { setupRoutes } from './routes/setup';
+import { userRoutes } from './routes/users';
 
 export interface BuildAppOptions {
+  readonly setupCode: SetupCode;
   /** Extra API routes, registered under the API prefix. Used by tests. */
   readonly registerApiRoutes?: (api: FastifyInstance) => void | Promise<void>;
 }
 
 export async function buildApp(
   container: AwilixContainer<Cradle>,
-  options: BuildAppOptions = {},
+  options: BuildAppOptions,
 ): Promise<FastifyInstance> {
   const { config, logger, ids, idempotencyStore } = container.cradle;
   // Typed as Fastify's logger interface so the instance stays a plain FastifyInstance.
@@ -36,6 +45,7 @@ export async function buildApp(
     return payload;
   });
 
+  await app.register(cookie);
   await app.register(rateLimit, {
     max: config.rateLimitPerMinute,
     timeWindow: '1 minute',
@@ -44,8 +54,15 @@ export async function buildApp(
 
   await app.register(
     async (api) => {
+      const { cradle } = container;
+      await api.register(authPlugin, { auth: cradle.authService });
       await api.register(idempotencyPlugin, { store: idempotencyStore });
-      await api.register(healthRoutes, { cradle: container.cradle });
+      await api.register(healthRoutes, { cradle });
+      await api.register(setupRoutes, { cradle, setupCode: options.setupCode });
+      await api.register(authRoutes, { cradle });
+      await api.register(userRoutes, { cradle });
+      await api.register(settingsRoutes, { cradle });
+      await api.register(auditRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(

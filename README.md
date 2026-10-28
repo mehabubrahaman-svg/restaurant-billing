@@ -8,7 +8,7 @@ Offline-first, LAN-based restaurant POS and back office for Indian restaurants, 
 
 ## Stack
 
-Electron · Node.js (Fastify) · SQLite (SQLCipher, WAL) · Drizzle · React + TypeScript · TailwindCSS · shadcn/ui · Framer Motion · TanStack Query · Zustand · WebSockets · Bluetooth LE · i18next · Capacitor (Android tablet app) · pnpm/Turborepo
+Electron · Node.js (Fastify) · SQLite (SQLCipher, WAL) · React + TypeScript · TailwindCSS · shadcn/ui · Framer Motion · TanStack Query · Zustand · WebSockets · Bluetooth LE · i18next · Capacitor (Android tablet app) · pnpm/Turborepo
 
 ## Documentation
 

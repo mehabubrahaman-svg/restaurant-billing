@@ -14,6 +14,9 @@ import pino from 'pino';
 import { loadConfig } from './config';
 import { buildContainer } from './container';
 import { buildApp } from './http/app';
+import { checkAuditChain } from './jobs/audit-chain-check';
+import { scheduleDaily } from './jobs/daily';
+import { SetupCode } from './setup-code';
 
 async function main() {
   const config = loadConfig();
@@ -43,10 +46,21 @@ async function main() {
   if (preMigrationBackup) recordBackup(db, preMigrationBackup);
 
   const container = buildContainer(config, logger, db);
-  const app = await buildApp(container);
+  const setupCode = new SetupCode(logger, config.setupCode);
+  if (container.cradle.setupService.needsSetup()) setupCode.announce();
+  const app = await buildApp(container, { setupCode });
+
+  const auditCheck = scheduleDaily(
+    '03:30',
+    config.timeZone,
+    container.cradle.clock,
+    () => void checkAuditChain(container.cradle),
+    (error) => logger.error({ err: error }, 'audit chain check failed to run'),
+  );
 
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'shutting down');
+    auditCheck.stop();
     await app.close();
     await container.dispose();
     db.close();
