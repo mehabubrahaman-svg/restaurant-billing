@@ -196,14 +196,86 @@ CSV files start with a byte-order mark and use CRLF so Excel shows Hindi and Ben
 
 A `.rbak` file is a one-line header (format, time, kind, scrypt parameters and salt, schema version, organisation, SHA-256) followed by a SQLCipher database (AES-256, per-page HMAC) keyed with the key derived from the owner's backup passphrase. It never opens with the Hub's own database key, and opens on any PC with the passphrase. Backups run hourly when something changed, are kept 7 hourly / 30 daily / 12 monthly (10 of each other kind), and are copied to `RESTRO_BACKUP_COPY_DIR` (USB drive / NAS) when set.
 
-## 3. Phase 2–6 endpoint groups (outline)
+## 3. Endpoints (Phases 2–6)
+
+### Inventory (Phase 2)
+Implemented in Phase 2. Contracts: `packages/contracts/src/http/inventory.ts`; routes `apps/server/src/http/routes/inventory.ts`.
+
+Quantities are integer milli-units of the item's base unit (g, ml or pc: 2.5 kg of rice = `2500000`); costs are paise per 1000 base units (per kg, per litre, per 1000 pieces). Balances, levels and average cost are per branch.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/units` | `inventory.view` | g, kg, ml, l, pc, dozen, tray with `baseCode` and `toBaseMilli` |
+| GET | `/inventory-items?includeRetired=` | `inventory.view` or `menu.manage` | Each with stock `qtyMilli`, `avgCostPerBase`, `value`, `level` (OUT / LOW / OK / OVER against the reorder and maximum levels) |
+| GET/POST/PATCH | `/inventory-items`, `/inventory-items/{id}` | `inventory.manage_items` | `{sku, name, nameTranslations, category, baseUnit, purchaseUnitId, isPerishable, shelfLifeDays, reorderLevelMilli, maxLevelMilli}`. `409 SKU_TAKEN`; `422 UNIT_MISMATCH` (purchase unit of another kind); the base unit is fixed once stock has moved; `isActive:false` retires it, refused while a recipe or add-on uses it (`INGREDIENT_IN_USE`) |
+| GET | `/recipes?menuItemId=` | `inventory.view` or `menu.manage` | With cost per portion at today's average cost, the menu price and food-cost % (`foodCostBp`) |
+| POST | `/recipes` | `inventory.manage_items` | `{menuItemId, variantId|null, yieldPortions, ingredients[{inventoryItemId, qtyMilli, wastageBp}]}`, quantities per `yieldPortions` portions. A variant without its own recipe uses the dish's. `409 RECIPE_EXISTS` |
+| PATCH | `/recipes/{id}` | `inventory.manage_items` | `{version, yieldPortions?, ingredients?, isActive?}`; `isActive:false` removes it (`204`) |
+| GET/PUT | `/addons/{id}/ingredients` | read: `inventory.view` or `menu.manage`; PUT: `inventory.manage_items` | The full list per add-on per portion (extra cheese = 30 g cheese) |
+| POST | `/stock/receipts` | `inventory.adjust` | Bought directly: `{lines[{inventoryItemId, qtyMilli, totalCost, batchNo?, expiresOn?}], reference?}` → `PURCHASE` movements, weighted average cost, a batch for perishables (expiry defaults to the shelf life) |
+| POST | `/stock/opening` | `inventory.adjust` | Same lines, once per item, before its first movement (`409 STOCK_ALREADY_MOVED`) |
+| POST | `/stock/wastage` | `inventory.adjust` | `{lines[{inventoryItemId, qtyMilli}], reason}`, at average cost, earliest expiry first |
+| POST | `/stock/adjustments` | `inventory.adjust` | `{lines[{inventoryItemId, qtyMilli (signed)}], reason}` |
+| GET | `/stock/movements?inventoryItemId=&type=&from=&to=&before=&limit=` | `inventory.view` | Newest first, signed quantities and values, batch, reference (`ORDER_ITEM`, `RECEIPT`, `OPENING`, `WASTAGE`, `ADJUSTMENT`, `STOCK_COUNT`, `GRN_LINE`); `nextCursor` |
+| GET | `/stock/alerts` | `inventory.view` | Out / low / over items, negative stock, batches with stock left that expire within 3 days (or have) |
+| GET/POST | `/stock-counts`, `/stock-counts/{id}` | read: `inventory.view`; create: `inventory.count` | `{countType: OPENING|CLOSING|SPOT, notes}`; the sheet lists every active item with the balance now |
+| PUT | `/stock-counts/{id}/lines` | `inventory.count` | `{version, lines[{inventoryItemId, countedQtyMilli|null}]}` merged into the draft |
+| POST | `/stock-counts/{id}/post` | `inventory.adjust` | `{version}`: each difference against the balance at posting becomes an `ADJUSTMENT` (reference `STOCK_COUNT`); items not counted are left alone |
+| GET | `/reports/consumption?from=&to=` | `reports.inventory` | Per item: opening, received, sold (by recipe, net of reversals: the theoretical consumption), wastage, adjusted, count variance, closing, values, and `varianceBp` = −count variance ÷ sold (the Phase 2 exit criterion is under 5%) |
+
+Sales take stock automatically: see docs/03 §4.3. A sale is never blocked by stock (`INSUFFICIENT_STOCK` is reserved).
+
+### Purchasing (Phase 3)
+Implemented in Phase 3. Contracts: `packages/contracts/src/http/purchasing.ts`; routes `apps/server/src/http/routes/purchasing.ts`.
+
+Quantities on POs and GRNs are milli-units of the line's purchase unit (2.5 kg = `2500` when the unit is kg); prices are paise per purchase unit; GST rates basis points. A line's unit must measure the item's base unit (`422 UNIT_MISMATCH`). PO and GRN numbers are gapless per branch, series and financial year: `KOL1/PO/2026-27/000001`, `KOL1/GRN/2026-27/000001`.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/vendors?includeRetired=`, `/vendors/{id}` | `vendors.view`, `po.create`, `po.approve` or `grn.post` | With `due` (posted GRNs less payments, in this branch) |
+| POST/PATCH | `/vendors`, `/vendors/{id}` | `vendors.manage` | `{code, name, contactPerson, phone, email, address, taxId (GSTIN), paymentTermsDays}`; `409 VENDOR_CODE_TAKEN`; `isActive:false` retires (no new POs or GRNs) |
+| GET | `/vendors/{id}/statement?from=&to=` | `vendors.view` or `vendor_payments.create` | Opening balance, bills (posted GRNs) and payments with a running balance, closing balance |
+| GET | `/purchase-orders?status=&vendorId=`, `/purchase-orders/{id}` | as `/vendors` | The PO with received quantities per line and its GRNs |
+| POST/PATCH | `/purchase-orders`, `/purchase-orders/{id}` | `po.create` | `{vendorId, expectedOn, notes, lines[{inventoryItemId, unitId, quantityMilli, unitPrice, taxRateBp}]}`; edited only as DRAFT |
+| POST | `/purchase-orders/{id}/approve` | `po.approve` | `{version}`: DRAFT → APPROVED |
+| POST | `/purchase-orders/{id}/send`, `/close` | `po.create` | APPROVED → SENT; PARTIALLY_RECEIVED or RECEIVED → CLOSED (closed short) |
+| POST | `/purchase-orders/{id}/cancel` | `po.create` | `{version, reason}`, until goods arrive against it |
+| GET | `/grns?status=&vendorId=&purchaseOrderId=`, `/grns/{id}` | as `/vendors` | With `paid` and `balance` |
+| POST/PATCH | `/grns`, `/grns/{id}` | `grn.post` | Against an approved or sent PO (`purchaseOrderId`; lines may name the PO line, same item and unit) or direct from a vendor; `{vendorInvoiceNo, vendorInvoiceDate, notes, lines[{purchaseOrderLineId?, inventoryItemId, unitId, quantityMilli, rejectedQtyMilli, unitPrice, taxRateBp, batchNo?, expiresOn?}]}`; billed on what was accepted; edited only as DRAFT |
+| POST | `/grns/{id}/post` | `grn.post` | `{version}`: accepted goods into stock (`PURCHASE` movements at the price before tax, with the tax when the vendor has no GSTIN; batches), the PO's received quantities and status (PARTIALLY_RECEIVED / RECEIVED), `inputTaxKind` CGST_SGST / IGST / NONE by the vendor's state, `dueOn` = bill date + payment terms |
+| POST | `/grns/{id}/cancel` | `grn.post` | `{version, reason}`, a DRAFT only |
+| GET | `/vendor-payments?vendorId=&from=&to=` | `vendors.view` or `vendor_payments.create` | |
+| POST | `/vendor-payments` | `vendor_payments.create` | `{vendorId, grnId|null, method: CASH|BANK|UPI|CHEQUE, amount, reference, paidOn?}`; against a posted GRN never more than it owes (`409 OVERPAYMENT`); on account otherwise; not dated in the future |
+| GET | `/reports/vendor-dues?asOf=` | `vendors.view` or `reports.financial` | Per vendor billed, paid, due, advance and ageing by days past due (not yet due, 1–30, 31–60, 61–90, over 90); on-account payments settle the oldest bills |
+
+### Accounting (Phase 4)
+Implemented in Phase 4. Contracts: `packages/contracts/src/http/accounting.ts`; routes `apps/server/src/http/routes/accounting.ts`.
+
+Journals for bills, credit notes, payments, cancellations, GRNs, vendor payments and stock are posted by the system (docs/03 §4.4). Amounts are paise; a balance is on the account's normal side (debit for assets and expenses, credit for liabilities, equity and income). Seeded accounts have ids `<organisation id>:<code>`. Ranges are at most 366 days.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/accounts` | `accounts.view`, `accounts.journal` or `expenses.manage` | The chart with this branch's balances and `systemTag` (CASH, BANK, CARD_UPI_CLEARING, AR, INVENTORY, AP, OUTPUT_CGST, SALES_FOOD, COGS …) |
+| POST/PATCH | `/accounts`, `/accounts/{id}` | `accounts.journal` | `{code (3–6 digits), name, type, parentId}`; `409 ACCOUNT_CODE_TAKEN`; system accounts keep their type and stay active (`409 SYSTEM_ACCOUNT`); an account with postings keeps its type |
+| GET | `/journal-entries?from=&to=&sourceType=&accountId=&before=&limit=`, `/journal-entries/{id}` | as `/accounts` | Day book, newest first, with lines, the document number, who posted it (null: the system) and the reversal link |
+| POST | `/journal-entries` | `accounts.journal` | Manual: `{entryDate, narration, lines[{accountId, debit, credit, partyType?, partyId?, memo?}]}`; must balance (`422 JOURNAL_UNBALANCED`); not in the future |
+| POST | `/journal-entries/{id}/reverse` | `accounts.journal` | `{reason, entryDate?}`: a manual entry's mirror image (`409 ALREADY_REVERSED`); documents are corrected at the source (cancel or refund the bill, cancel the expense) |
+| GET | `/expenses?from=&to=` | as `/accounts` | |
+| POST | `/expenses` | `expenses.manage` | `{expenseAccountId (EXPENSE), paidFromAccountId (ASSET), amount, taxAmount (GST included, claimed as input CGST + SGST), description, reference, expenseDate?}` → posted at once |
+| POST | `/expenses/{id}/cancel` | `expenses.manage` | `{version, reason}`: cancelled, its entry reversed |
+| GET | `/ledgers/{accountId}?from=&to=` | as `/accounts` | Opening balance, entries with the other accounts ("against") and a running balance, totals, closing |
+| GET | `/ledgers/party/{CUSTOMER\|VENDOR\|EMPLOYEE}/{id}?from=&to=` | as `/accounts` | What the customer owes us or we owe the vendor |
+| GET | `/reports/trial-balance?asOf=` | `reports.financial` or `accounts.view` | Debit and credit balances per account; `balanced` |
+| GET | `/reports/profit-and-loss?from=&to=` | `reports.financial` | Income (sales, liquor sales, service charge, rounding, less returns), cost of sales (cost of goods sold, wastage, stock adjustments), gross profit and margin, expenses, net profit |
+| GET | `/reports/balance-sheet?asOf=` | `reports.financial` | Assets, liabilities, equity and the profit to date; `balanced` |
+| GET | `/reports/cash-flow?from=&to=` | `reports.financial` | Cash, bank and card/UPI clearing: opening, inflows and outflows by `CUSTOMERS`, `VENDORS`, `EXPENSES`, `STOCK`, `OTHER`, closing per account |
+| GET | `/reports/gst-summary?from=&to=` | `reports.financial` | For GSTR-1: outward supplies per rate, B2B and B2C apart, net of credit notes; operator-paid aggregator supplies. For GSTR-3B: output tax, input credit (GRNs and expenses) and net payable per CGST, SGST, IGST and cess. Liquor VAT and surcharge apart |
+
+### Phases 5–6 (outline)
 
 | Phase | Group | Key endpoints |
 |---|---|---|
-| 2 | Inventory | `/inventory-items`, `/recipes`, `/stock` (levels), `/stock/adjustments`, `/stock/wastage`, `/stock-counts` (+`/post`), `/stock/alerts` |
-| 3 | Purchasing | `/vendors`, `/purchase-orders` (+`/approve`, `/send`), `/grns` (+`/post`), `/vendor-payments`, `/vendors/{id}/statement` |
-| 4 | Accounting | `/accounts`, `/journal-entries` (+`/reverse`), `/expenses`, `/ledgers/{accountId}`, `/ledgers/party/{type}/{id}` |
-| 5 | Reporting | `/reports/{sales\|items\|tax\|gstr1\|pnl\|balance-sheet\|cash-flow\|inventory-valuation\|consumption-variance}` |
+| 5 | Reporting | `/reports/{sales\|items\|tax\|gstr1\|inventory-valuation}`, PDF/XLSX export, scheduled reports |
 | 6 | Sync | `/sync/status`, `/sync/conflicts` (+`/resolve`), `/sync/retry` · cloud side: `POST /sync/push`, `GET /sync/pull` |
 
 ## 4. Bluetooth LE interface

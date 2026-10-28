@@ -1,7 +1,7 @@
 # 03 — Database Design
 
 Source of truth: [`database/migrations/0001_initial_schema.sql`](../database/migrations/0001_initial_schema.sql) and [`0002_seed_reference_data.sql`](../database/migrations/0002_seed_reference_data.sql).
-The migrations are validated in CI (`pnpm db:validate`): 76 tables, all FKs resolve.
+The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs resolve.
 
 | Migration | Contents |
 |---|---|
@@ -14,6 +14,9 @@ The migrations are validated in CI (`pnpm db:validate`): 76 tables, all FKs reso
 | `0007_ordering_kitchen` | Merge link on orders; wastage flag, ready time, kitchen station and food mark on order items; token and KOT-by-order indexes |
 | `0008_billing` | Per-line tax breakdown and credit-note links on invoice lines, taxed charges, coupon code on discounts, B2B customer name and refunded total on invoices, denominations on cash shifts, one open shift per counter |
 | `0009_backups` | Backups table rebuilt: PRE_RESTORE and IMPORTED kinds, status (AVAILABLE / PRUNED / MISSING) instead of deleting rows, schema version, second-copy path |
+| `0010_inventory` | Hindi/Bengali names on inventory items, notes on stock counts, `projection_checkpoints` (how far each projector has read `domain_events`; the inventory one starts after the events already there, so old orders aren't consumed), batch and ingredient indexes |
+| `0011_purchasing` | PO sent time and cancel reason; GRN due date, notes, cancel reason and `input_tax_kind` (CGST_SGST / IGST / NONE); a draft GRN's lines can be replaced (refused once posted); purchasing indexes |
+| `0012_accounting` | `account_templates` and the chart of accounts seeded for every organisation (a trigger seeds new ones); `journal_entries` and `journal_lines` rebuilt so system postings have no user (`created_by` NULL), stock posts as `STOCK` and a document has one original entry (`ux_journal_source_original`); expense reference and cancel reason |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 
@@ -62,8 +65,8 @@ Writes always use `BEGIN IMMEDIATE`, so the write lock is taken up front and dea
 | Ordering & Kitchen | `sales_channels`, `orders`, `order_items`, `order_item_addons`, `kots`, `kot_status_events` |
 | Billing | `document_sequences`, `coupons`, `invoices`, `invoice_lines`, `invoice_taxes`, `invoice_discounts`, `invoice_charges`, `payments`, `cash_shifts`, `shift_tender_counts` |
 | Purchasing | `vendors`, `purchase_orders`, `purchase_order_lines`, `grns`, `grn_lines`, `vendor_payments` |
-| Accounting | `accounts`, `journal_entries`, `journal_lines`, `expenses` |
-| Platform | `audit_logs`, `notifications`, `domain_events`, `sync_queue`, `sync_state`, `sync_conflicts`, `backups` |
+| Accounting | `account_templates`, `accounts`, `journal_entries`, `journal_lines`, `expenses` |
+| Platform | `audit_logs`, `notifications`, `domain_events`, `projection_checkpoints`, `sync_queue`, `sync_state`, `sync_conflicts`, `backups` |
 
 **Mapping to the requested entities**: Users, Roles, Permissions ✔ · Tables → `dining_tables` (`tables` is an SQL keyword) ✔ · Orders, OrderItems ✔ · MenuItems, Categories ✔ · Inventory → `inventory_items` + `inventory_stock` ✔ · Recipes ✔ · Vendors ✔ · Purchases → `purchase_orders` + `grns` ✔ · StockMovements ✔ · Ledgers → `accounts` + `journal_*`, ledgers are views ✔ · Payments ✔ · AuditLogs ✔ · Notifications ✔ · SyncQueue ✔.
 
@@ -81,32 +84,42 @@ Writes always use `BEGIN IMMEDIATE`, so the write lock is taken up front and dea
 - **Payments on standalone terminals**: `payments.reference` (approval code / UPI RRN), `card_last4`, `terminal_label`. `shift_tender_counts` stores expected vs. reported totals per tender and terminal at shift close.
 
 ### 4.3 Material consumption engine
-On `KotFired`, the Inventory policy:
+Implemented in Phase 2 (`packages/application/src/inventory/`). The `InventoryProjector` reads `domain_events` after its `projection_checkpoints` row and applies each event in one transaction with the checkpoint, so a dish is consumed exactly once, also after a crash or a restart (it catches up at start). On `KotFired`, for each fired item it:
 1. Resolves the active recipe for `(menu_item_id, variant_id)`, falling back to the item-level recipe.
-2. Computes `qty_milli × quantity / yield_portions × (1 + wastage_bp/10000)` for each ingredient, plus addon ingredients.
-3. Inserts `stock_movements(SALE_CONSUMPTION, -qty)` and updates `inventory_stock`, consuming batches FEFO (earliest expiry first).
-4. If an item is cancelled after firing, a `SALE_REVERSAL` is posted, unless it's marked as wastage.
+2. Computes `qty_milli × quantity / yield_portions × (1 + wastage_bp/10000)` for each ingredient, plus addon ingredients × addon quantity.
+3. Inserts `stock_movements(SALE_CONSUMPTION, -qty)` at the weighted average cost (reference `ORDER_ITEM`) and updates `inventory_stock` in the same transaction, consuming batches FEFO (earliest expiry first).
+4. If an item is cancelled after firing (`OrderItemCancelled` with `wasSent`), its movements are put back as `SALE_REVERSAL` (into the batch they came from, at their cost); when the dish was thrown away (`isWastage`) the same quantities are then booked as `WASTAGE`.
 
-Deducting at **KOT fire** (not at payment) matches real kitchen consumption. This is configurable per branch (`settings.inventory.deduct_on = 'KOT' | 'INVOICE'`).
+Stock may go negative: a sale is never blocked (the alerts list negative stock). Every other change to stock (receipts, opening stock, GRNs, wastage, adjustments, counts) goes through the same `StockLedger`, which keeps the movement, the balance and the weighted average cost together. Deduction is at **KOT fire**, which matches real kitchen consumption; deducting at invoice instead is not built. Cancelling a whole order after firing leaves the consumption in place (the food was made).
 
 Example (Chicken Biryani, 1 portion): Rice 200 g → `200000`, Chicken 150 g → `150000`, Oil 20 ml → `20000`.
 
 ### 4.4 Accounting postings (auto-journal)
 
+Implemented in Phase 4 (`packages/application/src/accounting/`). The `AccountingProjector` posts documents from their events (checkpoint `accounting`) and stock from a cursor over `stock_movements` rowids (checkpoint `accounting-stock`), each batch in one transaction with its checkpoint. It runs after the inventory projector, and catches up at start, so history from before Phase 4 is journaled too. Accounts are found by `accounts.system_tag`; entries are numbered `KOL1/JV/2026-27/000042`; `created_by` is the user who caused the posting, NULL for stock. Expenses and manual journals are posted by `AccountingService` in their own transaction.
+
 | Event | Debit | Credit |
 |---|---|---|
-| Invoice issued | Accounts Receivable (customer) | Sales (food / liquor); Output CGST/SGST/IGST; Output VAT (liquor); Service-charge income |
-| Aggregator invoice (`gst_paid_by_operator`) | Aggregator receivable | Sales (no output GST: the operator pays it) |
-| Aggregator settlement | Bank; Commission expense; Input GST on commission | Aggregator receivable |
-| Payment received | Cash / Bank / UPI clearing | Accounts Receivable |
-| Credit note (refund) | Sales returns; Output tax | Cash/Bank (via negative payment) |
-| GRN posted | Inventory; Input CGST/SGST | Accounts Payable (vendor) |
-| Vendor payment | Accounts Payable (vendor) | Cash / Bank |
-| Stock consumption (daily) | Cost of Goods Sold | Inventory |
-| Wastage | Wastage expense | Inventory |
-| Expense | Expense account; Input tax | Cash / Bank |
+| Invoice issued (`InvoiceIssued`) | Customer receivables (party: the customer, if named) | Sales: food (GST lines) / liquor (VAT lines); Service charge income; Output CGST/SGST/IGST/cess; Output VAT and surcharge (liquor); Rounding (either side) |
+| Aggregator invoice (`gst_paid_by_operator`) | Customer receivables | Sales, with no output GST (the bill carries none: the operator pays it) |
+| Payment received (`PaymentRecorded`), one entry per payment | Cash (CASH) · Card and UPI clearing (CARD, UPI, WALLET) · Aggregator receivables (AGGREGATOR); CREDIT posts nothing, the receivable stays | Customer receivables |
+| Credit note (`CreditNoteIssued`) | Sales returns; Service charge; Output tax | Customer receivables |
+| Refund paid (`RefundPaid`, negative payment) | Customer receivables | Cash / Card and UPI clearing |
+| Invoice cancelled (`InvoiceCancelled`) | The bill's entry reversed (`reversal_of_id`); its reversing payments post as refunds | |
+| GRN posted (`GrnPosted`) | Inventory (subtotal); Input CGST + SGST (same state) or Input IGST (other state); without a GSTIN, Inventory takes the whole bill | Vendor payables (party: the vendor) |
+| Vendor payment (`VendorPaymentRecorded`) | Vendor payables (party: the vendor) | Cash (CASH) / Bank (BANK, UPI, CHEQUE) |
+| Stock sold, net of reversals | Cost of goods sold | Inventory |
+| Wastage | Wastage | Inventory |
+| Adjustments and stock-count differences | Stock adjustments (either side) | Inventory |
+| Opening stock | Inventory | Opening balance equity |
+| Stock bought for cash (direct receipt) | Inventory | Cash |
+| Expense | Expense account (amount less GST); Input CGST + SGST | Cash / Bank (any asset account) |
+| Expense cancelled | The expense's entry reversed | |
+| Manual journal | As entered (must balance); reversed, never edited | |
 
-Sub-ledgers (customer, vendor) are `journal_lines.party_type/party_id`. P&L, balance sheet, and cash flow are aggregations over `v_account_ledger`.
+Stock entries are one per branch, business day and kind each time the projector runs (in practice one per KOT, receipt or count). Aggregator settlement (bank, commission, input GST on commission) is not posted yet: aggregator receivables are cleared with a manual journal.
+
+Sub-ledgers (customer, vendor) are `journal_lines.party_type/party_id`. Trial balance, P&L, balance sheet and cash flow are aggregations over the journal lines; cost of sales in the P&L is cost of goods sold, wastage and stock adjustments.
 
 ### 4.5 Audit trail
 Every command writes one `audit_logs` row (actor, approver, device, before/after JSON, reason). The hash chain (`prev_hash`, `hash`) makes tampering detectable, even by someone with direct DB access.
