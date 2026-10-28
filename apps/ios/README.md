@@ -74,8 +74,11 @@ The profile decides what you get:
 1. Put the iPad on the restaurant's Wi-Fi and open **RestroOS**.
 2. Enter the Hub's address, for example `192.168.1.20` or `restro.local`
    (port 7400 is the default). The Hub PC shows its address when it starts.
-3. The Hub's web app opens: sign in, or pair the device under **Admin →
-   Devices**.
+3. The Hub's web app opens. Sign in, or pair the device: the owner creates
+   a code under **Admin → Devices → Pair a device**, then on the iPad tap
+   **Pair this device** on the sign-in screen and type the code. Scanning
+   the QR code with the camera opens Safari, which pairs Safari, not the
+   app.
 4. To use another Hub, shake the device, or tap **Use another Hub** when the
    Hub can't be reached.
 

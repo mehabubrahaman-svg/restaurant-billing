@@ -155,7 +155,8 @@ Stop the Hub with **Ctrl+C**; `pnpm hub` again starts it with the same data.
 
 ## Connect the other devices
 
-Every other device is just a browser; nothing is installed on it.
+Every other device uses a browser, so nothing is installed on it. iPads and
+iPhones can also use the RestroOS app ([below](#ipads-and-iphones-the-restroos-app)).
 
 1. Put the tablet, phone or PC on the **same Wi-Fi/network** as the Hub.
 2. Open the Hub's address in Chrome, e.g. `http://192.168.1.20:7400` (the
@@ -171,6 +172,25 @@ Every other device is just a browser; nothing is installed on it.
 
 Give the Hub PC a fixed IP address on the router (DHCP reservation) so the
 address doesn't change.
+
+### iPads and iPhones: the RestroOS app
+
+Safari works the same way as Chrome above. The RestroOS app also remembers
+the Hub's address and opens full screen. CSV exports go to the share sheet.
+
+1. Get the app from GitHub: **Actions** → **iOS app** → **Run workflow**, or
+   push a tag such as `ios-v0.2.0`. Download the **restroos-ios** artifact
+   (about 15 minutes).
+2. Install `RestroOS-unsigned.ipa` with Sideloadly or AltStore and a free
+   Apple ID, or use a signed build from an Apple Developer account. The
+   steps and the secrets for signing are in
+   [`apps/ios/README.md`](../apps/ios/README.md).
+3. Open **RestroOS** and enter the Hub's address, e.g. `192.168.1.20`.
+   Allow **Local Network** access when iOS asks.
+4. To pair, tap **Pair this device** on the sign-in screen and type the
+   code shown under the QR code. Scanning the QR with the camera pairs
+   Safari, not the app.
+5. Shake the device to connect to another Hub.
 
 ## Check that everything works
 
