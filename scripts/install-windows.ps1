@@ -56,8 +56,8 @@ if (Test-Path $nodeExe) {
   $name = "node-$($release.version)-win-x64"
   Write-Host "Downloading $name"
   $zip = Join-Path $env:TEMP "$name.zip"
-  Invoke-WebRequest "https://nodejs.org/dist/$($release.version)/$name.zip" -OutFile $zip
-  $expected = ((Invoke-WebRequest "https://nodejs.org/dist/$($release.version)/SHASUMS256.txt").Content -split "`n" |
+  Invoke-WebRequest -UseBasicParsing "https://nodejs.org/dist/$($release.version)/$name.zip" -OutFile $zip
+  $expected = ((Invoke-WebRequest -UseBasicParsing "https://nodejs.org/dist/$($release.version)/SHASUMS256.txt").Content -split "`n" |
     Where-Object { $_ -match "  $name\.zip$" }) -replace '\s.*$', ''
   $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
   if ($expected -ne $actual) { Fail "Node.js download checksum mismatch ($actual)" }
@@ -111,7 +111,7 @@ if (-not $python -or -not $vcTools) {
 # ---- The code ------------------------------------------------------------------------------
 Step "Downloading RestroOS ($Branch)"
 $zip = Join-Path $env:TEMP 'restroos.zip'
-Invoke-WebRequest "https://github.com/$Repo/archive/refs/heads/$Branch.zip" -OutFile $zip
+Invoke-WebRequest -UseBasicParsing "https://github.com/$Repo/archive/refs/heads/$Branch.zip" -OutFile $zip
 $unpack = Join-Path $env:TEMP 'restroos-src'
 if (Test-Path $unpack) { Remove-Item $unpack -Recurse -Force }
 Expand-Archive $zip -DestinationPath $unpack -Force
