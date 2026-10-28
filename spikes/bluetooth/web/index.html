@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RestroOS BLE spike</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        margin: 0 auto;
+        max-width: 960px;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.2rem;
+      }
+      fieldset {
+        margin: 8px 0;
+      }
+      button {
+        font-size: 1rem;
+        margin: 4px 4px 4px 0;
+        min-height: 44px;
+        padding: 6px 12px;
+      }
+      label {
+        display: inline-block;
+        margin: 4px 12px 4px 0;
+      }
+      pre {
+        background: rgba(127, 127, 127, 0.12);
+        font-size: 12px;
+        max-height: 40vh;
+        overflow: auto;
+        padding: 8px;
+        white-space: pre-wrap;
+      }
+      .good {
+        color: #15803d;
+      }
+      .bad {
+        color: #b91c1c;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>RestroOS Bluetooth spike: measurement page</h1>
+    <p id="environment">Checking Web Bluetooth…</p>
+    <p><strong id="status">not connected</strong></p>
+
+    <fieldset>
+      <legend>Setup</legend>
+      <label
+        >Tablet label <input id="tablet-label" placeholder="e.g. Lenovo Tab M10 #2, 8 m"
+      /></label>
+      <label
+        >cmd-in writes
+        <select id="write-mode">
+          <option value="with-response">with response</option>
+          <option value="without-response">without response</option>
+        </select>
+      </label>
+      <label
+        >MTU override
+        <input id="mtu-override" type="number" min="23" max="517" placeholder="from hub"
+      /></label>
+      <label><input id="keep-alive" type="checkbox" /> keep-alive ping every 5 s</label>
+      <br />
+      <button id="connect">Connect to Hub…</button>
+      <button id="read-info" data-needs-link>Read hub-info + pairing</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Measurements</legend>
+      <button id="echo-small" data-needs-link>Echo ×100 (small)</button>
+      <button id="echo-kot" data-needs-link>Echo ×100 (KOT-sized)</button>
+      <button id="upload" data-needs-link>Upload 1/10/100 KB</button>
+      <button id="download" data-needs-link>Download 1/10/100 KB</button>
+      <button id="reconnect-tablet" data-needs-link>Reconnect ×5 (tablet drops)</button>
+      <button id="reconnect-hub" data-needs-link>Reconnect ×5 (Hub drops)</button>
+      <button id="stats" data-needs-link>Hub stats</button>
+      <button id="run-all" data-needs-link>Run all</button>
+    </fieldset>
+
+    <h2>Log</h2>
+    <pre id="log"></pre>
+    <h2>Results <button id="copy">Copy as JSON</button></h2>
+    <pre id="results"></pre>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

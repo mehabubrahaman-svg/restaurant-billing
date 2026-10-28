@@ -118,16 +118,42 @@ Permission required in brackets.
 
 ## 4. Bluetooth LE interface
 
-The Hub exposes one GATT service, `RestroOS Hub` (128-bit UUID fixed in `packages/contracts/ble.ts`):
+The Hub exposes one GATT service, `RestroOS Hub`. UUIDs, frame codec, schemas and the route allow-list live in `packages/contracts/src/ble/` (import `@restroos/contracts/ble`); that code is the normative definition and this section summarises it.
 
-| Characteristic | Properties | Content |
+| Attribute | UUID | Properties | Content |
+|---|---|---|---|
+| service | `c8ef0001-26b7-4e9e-97bd-541662ebe8e4` | primary, advertised | |
+| `hub-info` | `c8ef0002-26b7-4e9e-97bd-541662ebe8e4` | read | JSON, at most 512 B: `{hubId, name (≤ 24 chars), urls: ["https://192.168.1.20:7400"] (1–3), caFingerprint (SHA-256 of the CA cert DER, lowercase hex), protocol: 1, mtu?}`. `mtu` is the ATT MTU negotiated with the central that is reading it. Web Bluetooth does not expose the MTU, so tablets use this value to size frames, or 23 if it is missing |
+| `pairing` | `c8ef0003-26b7-4e9e-97bd-541662ebe8e4` | read (rotates every 60 s) | `{hubId, nonce (≥ 128 random bits, base64url), expiresAt (epoch ms)}`: the same one-time nonce the on-screen QR shows |
+| `cmd-in` | `c8ef0004-26b7-4e9e-97bd-541662ebe8e4` | write, write without response | Frames of a request `{id, method, path, headers, body}` |
+| `evt-out` | `c8ef0005-26b7-4e9e-97bd-541662ebe8e4` | notify | Frames of responses `{id, status, headers, body}` and of events (the §5 envelope `{type, seq, branchId, occurredAt, data}`) |
+
+Values longer than MTU − 1 are read with Read Blob requests, which Chrome and Android do automatically. Each read value fits within the 512-byte attribute limit.
+
+**Frames.** Each ATT write or notification carries one frame. Multi-byte fields are little-endian, as everywhere else in GATT.
+
+| Offset | Size | Field |
 |---|---|---|
-| `hub-info` | read | `{hubId, name, urls:["https://192.168.1.20:7400"], caFingerprint, protocol: 1}` |
-| `pairing` | read (rotates every 60 s) | One-time pairing nonce, the same one the on-screen QR shows |
-| `cmd-in` | write (with response) | Chunked frames of a normal API request: `{id, method, path, headers, body}` |
-| `evt-out` | notify | Chunked frames of responses and WebSocket-equivalent events |
+| 0 | 2 | `msgId` u16: one counter per sender and direction, wraps at 65 536 |
+| 2 | 2 | `seq` u16: 0, 1, 2, … within the message |
+| 4 | 1 | `flags`: bit 0 `LAST`, bit 1 `COMPRESSED`, bits 2–7 reserved (0) |
+| 5 | n | payload slice |
 
-Frames: `[msgId u16][seq u16][last u8][payload ≤ (MTU−8)]`, gzip for payloads > 512 B. The fallback channel **only accepts an allow-list of routes** (orders, KOT, KDS status, auth refresh), and the same JWT and RBAC checks apply. The device must already have been paired over LAN or QR.
+- **Size.** An ATT write or notification carries at most MTU − 3 bytes, and no attribute value may exceed 512 bytes. A frame is therefore at most `min(MTU − 3, 512)` bytes, and its payload at most `min(MTU − 3, 512) − 5` bytes: 15 B at MTU 23, 177 B at 185, 239 B at 247 and 507 B at 517. Every frame except the last is full. An empty message is one header-only `LAST` frame.
+- **Compression.** When a compressor is available, a message of more than 512 B is gzip-compressed (RFC 1952) if that makes it smaller. Every frame of a compressed message carries `COMPRESSED`.
+- **Limits.** A message may be at most 256 KiB on the wire and 256 KiB after decompression, and up to 65 536 frames. A partial message is dropped after 10 s with no new frame. At most 16 messages may be in progress per link.
+- **Errors.** No frame is ever retransmitted. A frame whose `seq` was already received is dropped as a duplicate. A skipped or reordered `seq` drops the whole message (`GAP`), as do mixed `COMPRESSED` flags or an oversize message. A frame with reserved flag bits set is dropped. When a request goes unanswered, the client retries it with a new `msgId` and the same `Idempotency-Key`.
+- **msgIds on `evt-out`.** The Hub uses one counter across all links. Some stacks (BlueZ's D-Bus API) send a notification to every subscribed central, so tablets must ignore responses whose `id` they did not send.
+
+**Envelopes.** `path` is relative to `/api/v1` and may include a query string. Header names are lowercase. `authorization` carries the access JWT, and the same JWT and RBAC checks apply as over HTTPS. A response has `status`; an event has `type`.
+
+**Allow-list.** The fallback channel accepts only: `POST /auth/refresh`, `GET|POST /orders`, `GET /orders/{id}`, `POST /orders/{id}/items`, `PATCH /orders/{id}/items/{itemId}`, `POST /orders/{id}/kots`, `GET /kitchen/kots`, `POST /kitchen/kots/{id}/status` and `POST /kitchen/kots/{id}/items/{itemId}/ready`. Any other route returns `403` with code `BLE_ROUTE_NOT_ALLOWED`. Routes that need an approver token are left out because `/auth/approve` is not on the list either. The device must already have been paired over LAN or QR.
+
+**Open items for Phase 1.5:**
+- **Refresh token.** BLE has no cookie jar, so the Android app needs another way to present its refresh token to `/auth/refresh`.
+- **Pairing nonce exposure.** Anyone within radio range can read the nonce, which can be 10–30 m and outside the restaurant, while the QR needs line of sight. Pairing therefore needs a confirmation on the Hub.
+- **Event acks.** `resume`/`ack` for events over BLE are not designed yet.
+- **Spike results.** The Sprint 1 spike (`spikes/bluetooth/RUNBOOK.md`) records measured throughput, latency and link limits.
 
 ## 5. WebSocket protocol
 

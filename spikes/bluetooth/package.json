@@ -5,9 +5,11 @@
   "type": "module",
   "description": "Sprint 1 Bluetooth spike: hub GATT prototype + Web Bluetooth measurement page. Not production code.",
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests",
-    "hub": "tsx src/hub.ts"
+    "typecheck": "tsc -p tsconfig.json && tsc -p web/tsconfig.json",
+    "test": "vitest run",
+    "hub": "tsx src/hub.ts",
+    "build:web": "esbuild web/main.ts --bundle --format=esm --target=chrome100 --minify --sourcemap --outfile=web/dist/main.js",
+    "web": "pnpm build:web && tsx src/serve-web.ts"
   },
   "dependencies": {
     "@restroos/contracts": "workspace:*"
