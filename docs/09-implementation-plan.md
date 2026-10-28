@@ -73,6 +73,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 - UI: keyboard and touch tested, both themes, 768 px and 1366 px viewports, no a11y violations (axe).
 - No `any`, no floating-point money, and no `DELETE` statements outside migrations (lint rule).
 - Docs are updated when behaviour diverges from this design.
+- UI work packages add a curated set of screenshots to `docs/screenshots/sprint-N/` (real Hub where possible, all three languages, 768 and 1366 px).
 
 ## Risks & mitigations
 
