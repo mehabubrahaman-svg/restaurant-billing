@@ -57,6 +57,13 @@ export { SqliteCouponRepository } from './billing/sqlite-coupon-repository';
 export { SqliteInvoiceRepository } from './billing/sqlite-invoice-repository';
 export { SqliteShiftRepository } from './billing/sqlite-shift-repository';
 export { SqliteReportQueries } from './reporting/sqlite-report-queries';
+export {
+  applyPendingRestore,
+  BACKUP_EXTENSION,
+  FileBackupStore,
+  pendingRestorePath,
+} from './backup/file-backup-store';
+export { SqliteBackupRepository } from './backup/sqlite-backup-repository';
 export { ascii, escPos, twoColumns, wrap } from './printing/escpos';
 export { hubPrinterTransport } from './printing/transports';
 export {

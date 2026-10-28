@@ -39,6 +39,10 @@ const EnvSchema = z.object({
     .default('1')
     .transform((v) => v.split(',').map(Number)),
   RESTRO_TIMEZONE: z.string().default('Asia/Kolkata'),
+  /** A second folder (USB drive, NAS share) every backup is copied to. */
+  RESTRO_BACKUP_COPY_DIR: z.string().optional(),
+  /** Hourly backups; turn off only for throwaway Hubs. */
+  RESTRO_BACKUPS: z.enum(['on', 'off']).default('on'),
   /** Fixed setup code, for the desktop shell to display. Random when unset. */
   RESTRO_SETUP_CODE: z.string().min(6).max(32).optional(),
 });
@@ -54,6 +58,9 @@ export interface ServerConfig {
   readonly dataDir: string;
   readonly databasePath: string;
   readonly databaseKey: string;
+  readonly backupDir: string;
+  readonly backupCopyDir: string | null;
+  readonly backups: boolean;
   readonly migrationsDir: string | undefined;
   readonly webDist: string | undefined;
   readonly logLevel: string;
@@ -91,6 +98,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     dataDir,
     databasePath: resolve(dataDir, 'restro.db'),
     databaseKey: key,
+    backupDir: resolve(dataDir, 'backups'),
+    backupCopyDir: e.RESTRO_BACKUP_COPY_DIR ? resolve(e.RESTRO_BACKUP_COPY_DIR) : null,
+    backups: e.RESTRO_BACKUPS === 'on',
     migrationsDir: e.RESTRO_MIGRATIONS_DIR && resolve(e.RESTRO_MIGRATIONS_DIR),
     webDist: e.RESTRO_WEB_DIST && resolve(e.RESTRO_WEB_DIST),
     logLevel: e.RESTRO_LOG_LEVEL,

@@ -29,4 +29,19 @@ export class ScryptKeyDerivation implements KeyDerivation {
       );
     });
   }
+
+  /** The key for an existing `kdf` (from a backup header) and its passphrase. */
+  keyFor(passphrase: string, kdf: string): Promise<string> {
+    const [name, n, r, p, salt] = kdf.split('$');
+    if (name !== 'scrypt' || !n || !r || !p || !salt) throw new Error(`unknown kdf ${name}`);
+    return new Promise((resolve, reject) => {
+      scrypt(
+        passphrase.normalize('NFKC'),
+        Buffer.from(salt, 'base64'),
+        32,
+        { N: Number(n), r: Number(r), p: Number(p), maxmem: 64 * 1024 * 1024 },
+        (error, key) => (error ? reject(error) : resolve(key.toString('hex'))),
+      );
+    });
+  }
 }

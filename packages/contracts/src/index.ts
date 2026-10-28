@@ -1,5 +1,6 @@
 export * from './http/audit';
 export * from './http/auth';
+export * from './http/backups';
 export * from './http/billing';
 export * from './http/catalog';
 export * from './http/common';

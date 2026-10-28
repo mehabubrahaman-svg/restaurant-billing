@@ -10,6 +10,7 @@ import {
 } from '@restroos/infrastructure';
 import type { AwilixContainer } from 'awilix';
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify';
+import { join } from 'node:path';
 import pino from 'pino';
 import type { ServerConfig } from '../config';
 import { buildContainer, type Cradle } from '../container';
@@ -64,6 +65,8 @@ export interface TestServer {
   readonly database: TestDatabase;
   readonly clock: FixedClock;
   readonly setupCode: SetupCode;
+  /** Restarts a restore asked for (the real Hub exits and is started again). */
+  readonly restarts: string[];
   /** Signs in with a password and returns the session. */
   login(username?: string, password?: string): Promise<SessionResponse & { cookie: string }>;
   /** `app.inject` with a bearer token. */
@@ -92,6 +95,9 @@ export async function createTestServer(
     dataDir: database.dir,
     databasePath: database.path,
     databaseKey: database.key,
+    backupDir: join(database.dir, 'backups'),
+    backupCopyDir: null,
+    backups: false,
     migrationsDir: undefined,
     webDist: undefined,
     logLevel: 'silent',
@@ -104,8 +110,10 @@ export async function createTestServer(
     ...options.config,
   };
   const logger = pino({ level: 'silent' });
+  const restarts: string[] = [];
   const container = buildContainer(config, logger, database.db, {
     clock,
+    hubLifecycle: { requestRestart: (reason) => restarts.push(reason) },
     hasher: new BcryptPasswordHasher({ password: 4, pin: 4 }), // fast in tests
     hubNetwork: {
       httpPort: 7400,
@@ -132,6 +140,7 @@ export async function createTestServer(
     database,
     clock,
     setupCode,
+    restarts,
     async login(username = ADMIN.username, password = ADMIN.password) {
       const res = await app.inject({
         method: 'POST',

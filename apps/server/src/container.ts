@@ -10,6 +10,8 @@ import {
   ShiftService,
   type BillingQueries,
   type ReportQueries,
+  BackupService,
+  type HubLifecycle,
   DeviceService,
   FloorService,
   KitchenService,
@@ -44,6 +46,8 @@ import {
   SqliteAuditQueries,
   SqliteBillingQueries,
   SqliteReportQueries,
+  FileBackupStore,
+  SqliteBackupRepository,
   SqliteCouponRepository,
   SqliteCustomerRepository,
   SqliteInvoiceRepository,
@@ -120,6 +124,7 @@ export interface Cradle {
   printService: PrintService;
   salesChannelService: SalesChannelService;
   customerService: CustomerService;
+  backupService: BackupService;
 }
 
 export interface ContainerOverrides {
@@ -132,6 +137,8 @@ export interface ContainerOverrides {
   /** Image renderer for Hindi/Bengali slips; tests pass null (English text only). */
   rasterRenderer?: RasterRenderer | null;
   printerTransport?: PrinterTransport;
+  /** What a restore does to restart the Hub; main.ts shuts down and exits for the supervisor. */
+  hubLifecycle?: HubLifecycle;
 }
 
 export function buildContainer(
@@ -307,6 +314,29 @@ export function buildContainer(
           queries: c.kitchenQueries,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
+        }),
+    ),
+    backupService: single(
+      (c) =>
+        new BackupService({
+          store: new FileBackupStore({
+            db: c.db,
+            databasePath: config.databasePath,
+            databaseKey: config.databaseKey,
+            backupDir: config.backupDir,
+            copyDir: config.backupCopyDir,
+            deriveKey: (passphrase, kdf) => new ScryptKeyDerivation().keyFor(passphrase, kdf),
+            onCopyError: (error) =>
+              c.logger.warn({ err: error }, 'could not copy the backup to the second folder'),
+          }),
+          backups: new SqliteBackupRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          ids: c.ids,
+          clock: c.clock,
+          timeZone: config.timeZone,
+          lifecycle: overrides.hubLifecycle ?? {
+            requestRestart: (reason) => c.logger.warn({ reason }, 'restart requested'),
+          },
         }),
     ),
     reportQueries: single((c) => new SqliteReportQueries(c.db, c.calendar)),

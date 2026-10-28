@@ -1,6 +1,10 @@
 import {
   advertiseHub,
+  applyPendingRestore,
+  FileBackupStore,
   findMigrationsDir,
+  ScryptKeyDerivation,
+  SqliteBackupRepository,
   migrate,
   openDatabase,
   snapshotDatabase,
@@ -8,13 +12,12 @@ import {
   uuidv7Generator,
   type SqliteDatabase,
 } from '@restroos/infrastructure';
-import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { createServer as createHttpsServer, type Server as HttpsServer } from 'node:https';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
 import pino from 'pino';
-import { loadConfig } from './config';
+import { loadConfig, type ServerConfig } from './config';
 import { buildContainer } from './container';
 import { buildApp } from './http/app';
 import { checkAuditChain } from './jobs/audit-chain-check';
@@ -30,27 +33,48 @@ async function main() {
     ...(config.env === 'development' && { transport: { target: 'pino-pretty' } }),
   });
 
-  mkdirSync(join(config.dataDir, 'backups'), { recursive: true });
+  mkdirSync(config.backupDir, { recursive: true });
+  const replaced = applyPendingRestore(config.databasePath, systemClock.now());
+  if (replaced) logger.warn({ replaced }, 'restored a backup; the previous data was kept aside');
   const db = openDatabase({ path: config.databasePath, key: config.databaseKey });
 
-  let preMigrationBackup: string | undefined;
+  let preMigration: (() => void) | undefined;
   const applied = migrate(db, {
     migrationsDir: config.migrationsDir ?? findMigrationsDir(),
     beforeMigrate: (pending) => {
-      const stamp = systemClock.now().toISOString().replaceAll(':', '-');
-      preMigrationBackup = join(config.dataDir, 'backups', `pre-migration-${stamp}.db`);
-      logger.info(
-        { pending: pending.map((m) => m.version), backup: preMigrationBackup },
-        'backing up before migration',
-      );
-      snapshotDatabase(db, preMigrationBackup);
+      logger.info({ pending: pending.map((m) => m.version) }, 'backing up before migration');
+      preMigration = preMigrationBackup(db, config);
     },
   });
   if (applied.length > 0)
     logger.info({ applied: applied.map((m) => `${m.version}_${m.name}`) }, 'migrations applied');
-  if (preMigrationBackup) recordBackup(db, preMigrationBackup);
+  preMigration?.();
 
-  const container = buildContainer(config, logger, db);
+  let shutdown: (signal: string, exitCode?: number) => Promise<void> = async () => {};
+  const container = buildContainer(config, logger, db, {
+    hubLifecycle: {
+      // Exit with EX_TEMPFAIL once the response is out; the OS service or the
+      // desktop shell starts the Hub again, which swaps in the restored data.
+      requestRestart: (reason) => {
+        logger.warn({ reason }, 'restarting the Hub');
+        setTimeout(() => void shutdown('restart', 75), 500);
+      },
+    },
+  });
+  const { backupService } = container.cradle;
+  const adopted = backupService.adoptUntracked();
+  if (adopted > 0) logger.info({ adopted }, 'listed backup files the database did not know about');
+  const backupJob = config.backups
+    ? setInterval(() => {
+        try {
+          const made = backupService.scheduled();
+          if (made) logger.info({ file: made.filePath, bytes: made.sizeBytes }, 'backup written');
+        } catch (error) {
+          logger.error({ err: error }, 'scheduled backup failed');
+        }
+      }, 60 * 60_000)
+    : undefined;
+  backupJob?.unref();
   const setupCode = new SetupCode(logger, config.setupCode);
   if (container.cradle.setupService.needsSetup()) setupCode.announce();
   const app = await buildApp(container, { setupCode });
@@ -115,8 +139,9 @@ async function main() {
       })
     : undefined;
 
-  const shutdown = async (signal: string) => {
+  shutdown = async (signal: string, exitCode = 0) => {
     logger.info({ signal }, 'shutting down');
+    clearInterval(backupJob);
     auditCheck.stop();
     stopKotPrinting();
     clearInterval(addressWatch);
@@ -126,23 +151,41 @@ async function main() {
     await app.close();
     await container.dispose();
     db.close();
-    process.exit(0);
+    process.exit(exitCode);
   };
   process.once('SIGINT', () => void shutdown('SIGINT'));
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
-function recordBackup(db: SqliteDatabase, path: string) {
-  db.prepare(
-    `INSERT INTO backups (id, file_path, size_bytes, sha256, is_encrypted, kind, created_at)
-     VALUES (?, ?, ?, ?, 1, 'PRE_MIGRATION', ?)`,
-  ).run(
-    uuidv7Generator.next(),
-    path,
-    statSync(path).size,
-    createHash('sha256').update(readFileSync(path)).digest('hex'),
-    systemClock.now().toISOString(),
-  );
+/**
+ * The encrypted backup taken before migrations run. Written now, recorded
+ * once the migrations have brought the backups table up to date. Before
+ * setup (no backup key yet) it falls back to a plain snapshot.
+ */
+function preMigrationBackup(db: SqliteDatabase, config: ServerConfig): () => void {
+  const at = systemClock.now();
+  const store = new FileBackupStore({
+    db,
+    databasePath: config.databasePath,
+    databaseKey: config.databaseKey,
+    backupDir: config.backupDir,
+    copyDir: config.backupCopyDir,
+    deriveKey: (passphrase, kdf) => new ScryptKeyDerivation().keyFor(passphrase, kdf),
+  });
+  try {
+    const file = store.snapshot('PRE_MIGRATION', at);
+    return () =>
+      new SqliteBackupRepository(db).insert({
+        ...file,
+        id: uuidv7Generator.next(),
+        kind: 'PRE_MIGRATION',
+        createdAt: at,
+        createdBy: null,
+      });
+  } catch {
+    snapshotDatabase(db, join(config.backupDir, `pre-migration-${at.getTime()}.db`));
+    return () => {};
+  }
 }
 
 main().catch((error: unknown) => {

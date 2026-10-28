@@ -55,6 +55,10 @@ export const ERROR_STATUS = {
   COUPON_INVALID: 422,
   /** That aggregator order id was already entered. */
   DUPLICATE_EXTERNAL_ORDER: 409,
+  /** The backup file is gone or fails its checksum. */
+  BACKUP_UNAVAILABLE: 422,
+  /** The passphrase does not open this backup, or the file is not a RestroOS backup. */
+  BACKUP_UNREADABLE: 422,
   /** No active printer for this purpose is set up. */
   NO_PRINTER: 409,
   /** The printer didn't answer (off, out of paper, wrong address). */

@@ -42,3 +42,6 @@ export * from './ordering/channels';
 export * from './crm/customers';
 export type * from './reporting/ports';
 export * from './reporting/csv';
+export * from './backup/backup-service';
+export type * from './backup/ports';
+export * from './backup/retention';
