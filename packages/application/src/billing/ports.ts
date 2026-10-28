@@ -100,6 +100,7 @@ export interface InvoiceView {
   tokenNo: number | null;
   businessDate: string;
   supplyType: 'B2B' | 'B2C';
+  customerId: string | null;
   customerName: string | null;
   customerTaxId: string | null;
   gstPaidByOperator: boolean;

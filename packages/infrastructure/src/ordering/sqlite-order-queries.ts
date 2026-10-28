@@ -18,6 +18,9 @@ interface SummaryRow {
   status: OrderStatus;
   dining_table_id: string | null;
   table_label: string | null;
+  sales_channel_id: string | null;
+  sales_channel_name: string | null;
+  external_order_id: string | null;
   covers: number | null;
   captain_id: string | null;
   captain_name: string | null;
@@ -33,7 +36,7 @@ interface SummaryRow {
 
 const SUMMARY_SQL = `
   SELECT o.id, o.order_no, o.token_no, o.business_date, o.order_type, o.status, o.dining_table_id,
-         t.label AS table_label, o.covers, o.captain_id, u.full_name AS captain_name, o.notes,
+         t.label AS table_label, o.sales_channel_id, sc.name AS sales_channel_name, o.external_order_id, o.covers, o.captain_id, u.full_name AS captain_name, o.notes,
          coalesce(sum(CASE WHEN i.status <> 'CANCELLED' THEN i.line_total END), 0) AS subtotal,
          coalesce(sum(CASE WHEN i.status <> 'CANCELLED' THEN i.quantity END), 0) AS item_count,
          coalesce(sum(CASE WHEN i.status = 'PENDING' THEN i.quantity END), 0) AS pending_count,
@@ -42,6 +45,7 @@ const SUMMARY_SQL = `
     FROM orders o
     LEFT JOIN dining_tables t ON t.id = o.dining_table_id
     LEFT JOIN users u ON u.id = o.captain_id
+    LEFT JOIN sales_channels sc ON sc.id = o.sales_channel_id
     LEFT JOIN order_items i ON i.order_id = o.id`;
 
 const toSummary = (r: SummaryRow): OrderSummaryView => ({
@@ -53,6 +57,9 @@ const toSummary = (r: SummaryRow): OrderSummaryView => ({
   status: r.status,
   tableId: r.dining_table_id,
   tableLabel: r.table_label,
+  salesChannelId: r.sales_channel_id,
+  salesChannelName: r.sales_channel_name,
+  externalOrderId: r.external_order_id,
   covers: r.covers,
   captainId: r.captain_id,
   captainName: r.captain_name,

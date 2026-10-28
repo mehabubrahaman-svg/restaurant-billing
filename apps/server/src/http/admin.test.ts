@@ -219,11 +219,13 @@ describe('settings', () => {
     const printer = await call('POST', '/printers', {
       name: 'Counter printer',
       connection: 'NETWORK',
-      address: '192.168.1.50:9100',
+      address: '127.0.0.1:1', // nothing listens here
       purpose: 'BILL',
     });
     expect(printer.statusCode).toBe(201);
-    expect((await call('POST', `/printers/${printer.json().id}/test`)).statusCode).toBe(202);
+    // The test page really prints (printing.test.ts); an unreachable printer is reported, not queued.
+    const test = await call('POST', `/printers/${printer.json().id}/test`);
+    expect(test.json()).toMatchObject({ code: 'PRINTER_OFFLINE' });
     expect((await call('GET', '/printers')).json().data).toHaveLength(1);
   });
 });

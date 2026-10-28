@@ -1,5 +1,9 @@
 import {
   AddOrderItemsRequestSchema,
+  AggregatorOrderRequestSchema,
+  SaveSalesChannelRequestSchema,
+  UpdateSalesChannelRequestSchema,
+  type SalesChannelsResponse,
   CancelOrderItemRequestSchema,
   CancelOrderRequestSchema,
   OpenOrderRequestSchema,
@@ -51,6 +55,50 @@ export async function orderRoutes(app: FastifyInstance, { cradle }: { cradle: Cr
       const order = orders.open({ ...body, source }, commandContext(request));
       reply.status(201);
       return view(request, order.id);
+    },
+  );
+
+  // Swiggy / Zomato orders keyed in at the counter.
+  app.post(
+    '/orders/aggregator',
+    { config: { permission: 'orders.create' } },
+    async (request, reply): Promise<FireKotsResponse> => {
+      const body = AggregatorOrderRequestSchema.parse(request.body);
+      const { order, kots } = orders.openAggregator(body, commandContext(request));
+      const current = view(request, order.id);
+      const fired = new Set(kots.map((k) => k.id));
+      reply.status(201);
+      return { order: current, kots: current.kots.filter((k) => fired.has(k.id)) };
+    },
+  );
+
+  app.get(
+    '/sales-channels',
+    { config: { permission: ['settings.manage', 'orders.create', 'billing.create'] } },
+    async (): Promise<SalesChannelsResponse> => ({ data: cradle.salesChannelService.list() }),
+  );
+  app.post(
+    '/sales-channels',
+    { config: { permission: 'settings.manage' } },
+    async (request, reply) => {
+      const channel = cradle.salesChannelService.create(
+        SaveSalesChannelRequestSchema.parse(request.body),
+        commandContext(request),
+      );
+      reply.status(201);
+      return channel;
+    },
+  );
+  app.patch(
+    '/sales-channels/:id',
+    { config: { permission: 'settings.manage' } },
+    async (request) => {
+      const { id } = IdParams.parse(request.params);
+      return cradle.salesChannelService.update(
+        id,
+        UpdateSalesChannelRequestSchema.parse(request.body),
+        commandContext(request),
+      );
     },
   );
 

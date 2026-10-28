@@ -198,6 +198,7 @@ export class SqliteBillingQueries implements BillingQueries {
       tokenNo: extra.token_no,
       businessDate: s.businessDate,
       supplyType: s.supplyType,
+      customerId: s.customerId,
       customerName: s.customerName,
       customerTaxId: s.customerTaxId,
       gstPaidByOperator: s.gstPaidByOperator,

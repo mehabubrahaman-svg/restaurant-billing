@@ -53,6 +53,15 @@ export const ERROR_STATUS = {
   SHIFT_NOT_OPEN: 409,
   SHIFT_ALREADY_OPEN: 409,
   COUPON_INVALID: 422,
+  /** That aggregator order id was already entered. */
+  DUPLICATE_EXTERNAL_ORDER: 409,
+  /** No active printer for this purpose is set up. */
+  NO_PRINTER: 409,
+  /** The printer didn't answer (off, out of paper, wrong address). */
+  PRINTER_OFFLINE: 503,
+  /** A Bluetooth LE printer is driven by the tablet it's paired with. */
+  PRINTER_ON_DEVICE: 409,
+  PRINTER_UNSUPPORTED: 409,
   IDEMPOTENCY_IN_PROGRESS: 409,
   IDEMPOTENCY_KEY_REUSED: 422,
   VALIDATION_FAILED: 422,

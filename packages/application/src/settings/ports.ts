@@ -59,6 +59,8 @@ export interface PrinterRecord {
   address: string | null;
   paperWidthMm: 58 | 80;
   purpose: 'BILL' | 'KOT' | 'REPORT' | 'LABEL';
+  stationId: string | null;
+  deviceId: string | null;
   isActive: boolean;
   version: number;
 }

@@ -5,6 +5,7 @@ import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, TransactionScope, UnitOfWork } from '../ports/unit-of-work';
 import { recordChanged } from '../shared-events';
+import type { SalesChannelRepository } from './channels';
 import type { BusinessCalendar, KotRepository, OrderRepository } from './ports';
 
 export interface OrderServiceDeps {
@@ -12,6 +13,7 @@ export interface OrderServiceDeps {
   readonly kots: KotRepository;
   readonly catalog: CatalogRepository;
   readonly floor: FloorRepository;
+  readonly channels: SalesChannelRepository;
   readonly calendar: BusinessCalendar;
   readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
@@ -81,6 +83,9 @@ export class OrderService {
         orderType: input.orderType,
         source: input.source,
         tableId: table?.id ?? null,
+        salesChannelId: null,
+        externalOrderId: null,
+        externalOtp: null,
         captainId: ctx.actorId,
         covers: input.covers ?? null,
         notes: input.notes ?? null,
@@ -218,41 +223,8 @@ export class OrderService {
   /** FireKot: every PENDING item, one KOT per kitchen station (docs/07 §7.2). */
   fire(id: string, ctx: CommandContext): { order: Order; kots: Kot[] } {
     return this.d.unitOfWork.run(ctx, (scope) => {
-      const now = this.d.clock.now();
       const order = this.load(ctx.branchId, id);
-      const pending = order.pendingLines();
-      if (pending.length === 0)
-        throw new DomainError('NOTHING_TO_FIRE', 'nothing new to send to the kitchen');
-      const byStation = new Map<string | null, OrderLine[]>();
-      for (const line of pending) {
-        const group = byStation.get(line.kitchenStationId) ?? [];
-        group.push(line);
-        byStation.set(line.kitchenStationId, group);
-      }
-      const businessDate = this.d.calendar.businessDate(ctx.branchId, now);
-      const kots: Kot[] = [];
-      const assignments = new Map<string, string>();
-      for (const [stationId, lines] of byStation) {
-        const prep = lines.map((l) => l.prepTimeSec).filter((p): p is number => p !== null);
-        const kot = Kot.fire(
-          this.d.ids.next(),
-          {
-            branchId: ctx.branchId,
-            orderId: order.id,
-            kitchenStationId: stationId,
-            kotNo: this.d.kots.nextKotNo(ctx.branchId, businessDate),
-            businessDate,
-            createdBy: ctx.actorId!,
-            lineIds: lines.map((l) => l.id),
-            prepTimeSec: prep.length > 0 ? Math.max(...prep) : null,
-          },
-          now,
-        );
-        this.d.kots.insert(kot);
-        for (const line of lines) assignments.set(line.id, kot.id);
-        kots.push(kot);
-      }
-      order.markSent(assignments, now);
+      const kots = this.fireIn(order, ctx, this.d.clock.now());
       this.d.orders.save(order);
       scope.audit({
         action: 'order.kot.fire',
@@ -265,6 +237,114 @@ export class OrderService {
       scope.recordEvents([...order.pullEvents(), ...kots.flatMap((k) => k.pullEvents())]);
       return { order, kots };
     });
+  }
+
+  /**
+   * Manual entry of a Swiggy/Zomato order (docs/01 §5.10): a delivery with a
+   * token, priced at the channel's markup, rejected if that channel's order id
+   * was already entered, and usually sent to the kitchen at once.
+   */
+  openAggregator(
+    input: {
+      salesChannelId: string;
+      externalOrderId: string;
+      externalOtp?: string | undefined;
+      notes?: string | undefined;
+      items: readonly NewItemInput[];
+      fire: boolean;
+    },
+    ctx: CommandContext,
+  ): { order: Order; kots: Kot[] } {
+    return this.d.unitOfWork.run(ctx, (scope) => {
+      const now = this.d.clock.now();
+      const channel = this.d.channels.get(input.salesChannelId);
+      if (!channel || !channel.isActive || channel.kind !== 'AGGREGATOR') {
+        throw new DomainError('VALIDATION_FAILED', 'choose an active aggregator channel');
+      }
+      const externalOrderId = input.externalOrderId.trim();
+      if (this.d.channels.existingOrderId(channel.id, externalOrderId)) {
+        throw new DomainError(
+          'DUPLICATE_EXTERNAL_ORDER',
+          `${channel.name} order ${externalOrderId} was already entered`,
+        );
+      }
+      const businessDate = this.d.calendar.businessDate(ctx.branchId, now);
+      const order = Order.open(this.d.ids.next(), {
+        branchId: ctx.branchId,
+        orderNo: this.d.orders.nextOrderNo(ctx.branchId, businessDate),
+        tokenNo: this.d.orders.nextTokenNo(ctx.branchId, businessDate),
+        businessDate,
+        orderType: 'DELIVERY',
+        source: 'AGGREGATOR',
+        tableId: null,
+        salesChannelId: channel.id,
+        externalOrderId,
+        externalOtp: input.externalOtp?.trim() || null,
+        captainId: ctx.actorId,
+        covers: null,
+        notes: input.notes ?? null,
+        openedAt: now,
+        createdBy: ctx.actorId!,
+      });
+      order.addLines(
+        input.items.map((item) => this.priceLine(ctx, item, now, channel.priceMarkupBp)),
+        now,
+      );
+      this.d.orders.insert(order);
+      const kots = input.fire ? this.fireIn(order, ctx, now) : [];
+      if (input.fire) this.d.orders.save(order);
+      scope.audit({
+        action: 'order.aggregator.open',
+        entityType: 'Order',
+        entityId: order.id,
+        after: {
+          channel: channel.code,
+          externalOrderId,
+          items: input.items.length,
+          fired: kots.length,
+        },
+      });
+      scope.recordEvents([...order.pullEvents(), ...kots.flatMap((k) => k.pullEvents())]);
+      return { order, kots };
+    });
+  }
+
+  /** FireKot inside an open transaction: one KOT per kitchen station for every PENDING line. */
+  private fireIn(order: Order, ctx: CommandContext, now: Date): Kot[] {
+    const pending = order.pendingLines();
+    if (pending.length === 0)
+      throw new DomainError('NOTHING_TO_FIRE', 'nothing new to send to the kitchen');
+    const byStation = new Map<string | null, OrderLine[]>();
+    for (const line of pending) {
+      const group = byStation.get(line.kitchenStationId) ?? [];
+      group.push(line);
+      byStation.set(line.kitchenStationId, group);
+    }
+    const businessDate = this.d.calendar.businessDate(ctx.branchId, now);
+    const kots: Kot[] = [];
+    const assignments = new Map<string, string>();
+    for (const [stationId, lines] of byStation) {
+      const prep = lines.map((l) => l.prepTimeSec).filter((p): p is number => p !== null);
+      const kot = Kot.fire(
+        this.d.ids.next(),
+        {
+          branchId: ctx.branchId,
+          orderId: order.id,
+          kitchenStationId: stationId,
+          kotNo: this.d.kots.nextKotNo(ctx.branchId, businessDate),
+          businessDate,
+          createdBy: ctx.actorId!,
+          lineIds: lines.map((l) => l.id),
+          prepTimeSec: prep.length > 0 ? Math.max(...prep) : null,
+        },
+        now,
+      );
+      this.d.kots.insert(kot);
+      for (const line of lines) assignments.set(line.id, kot.id);
+      kots.push(kot);
+    }
+    order.markSent(assignments, now);
+    return kots;
   }
 
   cancel(
@@ -380,7 +460,23 @@ export class OrderService {
   }
 
   /** Snapshot name, price, tax group and station from the menu; checks variant and add-on rules. */
-  private priceLine(ctx: CommandContext, input: NewItemInput, now: Date): NewOrderLine {
+  private priceLine(
+    ctx: CommandContext,
+    input: NewItemInput,
+    now: Date,
+    markupBp = 0,
+  ): NewOrderLine {
+    const line = this.basePriceLine(ctx, input, now);
+    if (markupBp === 0) return line;
+    const up = (paise: number) => paise + Math.round((paise * markupBp) / 10_000);
+    return {
+      ...line,
+      unitPrice: up(line.unitPrice),
+      addons: line.addons.map((a) => ({ ...a, price: up(a.price) })),
+    };
+  }
+
+  private basePriceLine(ctx: CommandContext, input: NewItemInput, now: Date): NewOrderLine {
     const item = this.d.catalog.item(ctx.branchId, input.menuItemId);
     if (!item) throw new DomainError('NOT_FOUND', 'menu item not found');
     if (!item.isActive || !item.isAvailable) {

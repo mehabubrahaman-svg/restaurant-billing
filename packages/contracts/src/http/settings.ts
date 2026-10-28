@@ -131,6 +131,10 @@ export const PrinterSchema = z.object({
   address: z.string().nullable(),
   paperWidthMm: z.union([z.literal(58), z.literal(80)]),
   purpose: z.enum(['BILL', 'KOT', 'REPORT', 'LABEL']),
+  /** KOT printers: the kitchen station it prints for; null = every station. */
+  stationId: IdSchema.nullable().default(null),
+  /** A printer attached to a tablet (Bluetooth), printed to by that device; null = the Hub prints. */
+  deviceId: IdSchema.nullable().default(null),
   isActive: z.boolean(),
   version: z.number().int(),
 });
@@ -143,6 +147,8 @@ export const SavePrinterRequestSchema = z.object({
   address: z.string().trim().max(200).nullable().default(null),
   paperWidthMm: z.union([z.literal(58), z.literal(80)]).default(80),
   purpose: z.enum(['BILL', 'KOT', 'REPORT', 'LABEL']),
+  stationId: IdSchema.nullable().default(null),
+  deviceId: IdSchema.nullable().default(null),
 });
 export const UpdatePrinterRequestSchema = SavePrinterRequestSchema.partial().extend({
   version: z.number().int(),

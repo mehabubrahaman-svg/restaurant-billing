@@ -16,10 +16,12 @@ import { auditRoutes } from './routes/audit';
 import { authRoutes } from './routes/auth';
 import { billingRoutes } from './routes/billing';
 import { catalogRoutes } from './routes/catalog';
+import { customerRoutes } from './routes/customers';
 import { deviceRoutes } from './routes/devices';
 import { floorRoutes } from './routes/floor';
 import { kitchenRoutes } from './routes/kitchen';
 import { orderRoutes } from './routes/orders';
+import { printingRoutes } from './routes/printing';
 import { healthRoutes } from './routes/health';
 import { settingsRoutes } from './routes/settings';
 import { setupRoutes } from './routes/setup';
@@ -92,6 +94,8 @@ export async function buildApp(
       await api.register(orderRoutes, { cradle });
       await api.register(kitchenRoutes, { cradle });
       await api.register(billingRoutes, { cradle });
+      await api.register(printingRoutes, { cradle });
+      await api.register(customerRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(

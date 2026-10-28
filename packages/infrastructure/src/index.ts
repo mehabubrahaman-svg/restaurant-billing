@@ -56,3 +56,13 @@ export { SqliteBillingQueries } from './billing/sqlite-billing-queries';
 export { SqliteCouponRepository } from './billing/sqlite-coupon-repository';
 export { SqliteInvoiceRepository } from './billing/sqlite-invoice-repository';
 export { SqliteShiftRepository } from './billing/sqlite-shift-repository';
+export { ascii, escPos, twoColumns, wrap } from './printing/escpos';
+export { hubPrinterTransport } from './printing/transports';
+export {
+  ChromiumRasterRenderer,
+  fontsourceFiles,
+  type FontFile,
+  type ScriptExecutor,
+} from './printing/chromium-raster';
+export { SqliteSalesChannelRepository } from './ordering/sqlite-sales-channel-repository';
+export { SqliteCustomerRepository } from './crm/sqlite-customer-repository';

@@ -19,6 +19,9 @@ interface OrderRow {
   order_type: OrderState['orderType'];
   source: OrderState['source'];
   dining_table_id: string | null;
+  sales_channel_id: string | null;
+  external_order_id: string | null;
+  external_otp: string | null;
   captain_id: string | null;
   covers: number | null;
   status: OrderState['status'];
@@ -91,6 +94,9 @@ export class SqliteOrderRepository implements OrderRepository {
       orderType: row.order_type,
       source: row.source,
       tableId: row.dining_table_id,
+      salesChannelId: row.sales_channel_id,
+      externalOrderId: row.external_order_id,
+      externalOtp: row.external_otp,
       captainId: row.captain_id,
       covers: row.covers,
       status: row.status,
@@ -144,9 +150,9 @@ export class SqliteOrderRepository implements OrderRepository {
     this.db
       .prepare(
         `INSERT INTO orders (id, branch_id, order_no, token_no, business_date, order_type, source, dining_table_id,
-                             captain_id, covers, status, notes, subtotal, opened_at, created_at, created_by,
-                             updated_at, version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             sales_channel_id, external_order_id, external_otp, captain_id, covers, status, notes,
+                             subtotal, opened_at, created_at, created_by, updated_at, version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         order.id,
@@ -157,6 +163,9 @@ export class SqliteOrderRepository implements OrderRepository {
         s.orderType,
         s.source,
         s.tableId,
+        s.salesChannelId,
+        s.externalOrderId,
+        s.externalOtp,
         s.captainId,
         s.covers,
         s.status,

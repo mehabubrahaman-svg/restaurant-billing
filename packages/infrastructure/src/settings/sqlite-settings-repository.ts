@@ -275,9 +275,9 @@ export class SqliteSettingsRepository implements SettingsRepository {
     const t = at.toISOString();
     this.db
       .prepare(
-        `INSERT INTO printers (id, branch_id, name, connection, address, paper_width_mm, purpose, is_active,
-                               created_at, updated_at, version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+        `INSERT INTO printers (id, branch_id, name, connection, address, paper_width_mm, purpose, station_id,
+                               device_id, is_active, created_at, updated_at, version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
       )
       .run(
         r.id,
@@ -287,6 +287,8 @@ export class SqliteSettingsRepository implements SettingsRepository {
         r.address,
         r.paperWidthMm,
         r.purpose,
+        r.stationId,
+        r.deviceId,
         t,
         t,
         r.version,
@@ -296,8 +298,8 @@ export class SqliteSettingsRepository implements SettingsRepository {
   updatePrinter(branchId: string, r: PrinterRecord, at: Date): void {
     const result = this.db
       .prepare(
-        `UPDATE printers SET name = ?, connection = ?, address = ?, paper_width_mm = ?, purpose = ?, is_active = ?,
-                updated_at = ?, version = ?
+        `UPDATE printers SET name = ?, connection = ?, address = ?, paper_width_mm = ?, purpose = ?, station_id = ?,
+                device_id = ?, is_active = ?, updated_at = ?, version = ?
           WHERE branch_id = ? AND id = ? AND version = ?`,
       )
       .run(
@@ -306,6 +308,8 @@ export class SqliteSettingsRepository implements SettingsRepository {
         r.address,
         r.paperWidthMm,
         r.purpose,
+        r.stationId,
+        r.deviceId,
         r.isActive ? 1 : 0,
         at.toISOString(),
         r.version,
@@ -383,6 +387,8 @@ interface PrinterRow {
   address: string | null;
   paper_width_mm: 58 | 80;
   purpose: PrinterRecord['purpose'];
+  station_id: string | null;
+  device_id: string | null;
   is_active: number;
   version: number;
 }
@@ -409,6 +415,8 @@ function toPrinter(r: PrinterRow): PrinterRecord {
     address: r.address,
     paperWidthMm: r.paper_width_mm,
     purpose: r.purpose,
+    stationId: r.station_id,
+    deviceId: r.device_id,
     isActive: r.is_active === 1,
     version: r.version,
   };

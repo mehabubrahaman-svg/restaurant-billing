@@ -14,7 +14,9 @@ import {
   type TaxGroupSpec,
 } from '@restroos/domain';
 import type { CatalogRepository } from '../catalog/ports';
+import type { CustomerRepository, CustomerService } from '../crm/customers';
 import type { FloorRepository } from '../floor/ports';
+import type { SalesChannelRepository } from '../ordering/channels';
 import type { BusinessCalendar, OrderRepository } from '../ordering/ports';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
@@ -31,6 +33,9 @@ export interface BillingServiceDeps {
   readonly catalog: CatalogRepository;
   readonly settings: SettingsRepository;
   readonly floor: FloorRepository;
+  readonly channels: SalesChannelRepository;
+  readonly customers: CustomerRepository;
+  readonly customerService: CustomerService;
   readonly calendar: BusinessCalendar;
   /** billing.default_tax_group_id: for menu items without a tax group of their own. */
   readonly defaultTaxGroupId: () => string | null;
@@ -44,7 +49,9 @@ export interface BillOptions {
   couponCode?: string | undefined;
   complimentary?: { reason: string } | undefined;
   removeChargeRuleIds: readonly string[];
-  customer?: { name?: string | undefined; taxId?: string | undefined } | undefined;
+  customer?:
+    | { phone?: string | undefined; name?: string | undefined; taxId?: string | undefined }
+    | undefined;
 }
 
 /** What the caller may do, from their permissions or a manager's approval for this request. */
@@ -94,7 +101,18 @@ export class BillingService {
       const computed = computeBill(input);
       const businessDate = this.d.calendar.businessDate(ctx.branchId, now);
       const fiscalYear = BusinessDate.parse(businessDate).fiscalYear();
-      const taxId = options.customer?.taxId ?? null;
+      const guest = options.customer?.phone
+        ? this.d.customerService.findOrCreateIn(
+            scope,
+            {
+              phone: options.customer.phone,
+              name: options.customer.name,
+              taxId: options.customer.taxId,
+            },
+            ctx,
+          )
+        : null;
+      const taxId = options.customer?.taxId ?? guest?.taxId ?? null;
       const invoices = computed.map((bill) => {
         const { series, lines, ...rest } = bill;
         const invoice = Invoice.issue(this.d.ids.next(), {
@@ -108,7 +126,8 @@ export class BillingService {
           originalInvoiceId: null,
           businessDate,
           fiscalYear,
-          customerName: options.customer?.name ?? null,
+          customerId: guest?.id ?? null,
+          customerName: options.customer?.name ?? guest?.name ?? null,
           customerTaxId: taxId,
           placeOfSupply: branch.stateCode,
           bill: {
@@ -124,7 +143,10 @@ export class BillingService {
       });
       if (coupon) this.d.coupons.markUsed(coupon.id, now);
       const allFree = invoices.every((i) => i.isSettled);
-      if (allFree) order.markPaid(now);
+      if (allFree) {
+        order.markPaid(now);
+        if (guest) this.d.customers.recordVisit(guest.id, 0, now);
+      }
       this.d.orders.save(order);
       this.setTable(scope, ctx.branchId, order, allFree ? 'CLEANING' : 'BILLING', now);
       scope.audit({
@@ -199,6 +221,7 @@ export class BillingService {
         order.markPaid(now);
         this.d.orders.save(order);
         this.setTable(scope, ctx.branchId, order, 'CLEANING', now);
+        this.recordVisit(order.id, now);
       }
       scope.audit({
         action: 'billing.payment.record',
@@ -357,6 +380,8 @@ export class BillingService {
         now,
       );
       original.recordRefund(bill.grandTotal, creditNote.id, now);
+      if (original.state.customerId)
+        this.d.customers.addLifetimeValue(original.state.customerId, -bill.grandTotal);
       this.d.invoices.insert(creditNote);
       this.d.invoices.save(original);
       scope.audit({
@@ -496,7 +521,9 @@ export class BillingService {
         discounts,
         // Restaurant service is supplied where the restaurant is (IGST Act s.12(3)), so always intra-state.
         supply: 'INTRA_STATE',
-        gstPaidByOperator: false,
+        gstPaidByOperator: order.state.salesChannelId
+          ? (this.d.channels.get(order.state.salesChannelId)?.gstPaidByOperator ?? false)
+          : false,
         cashRounding: branch.cashRounding,
         separateLiquor: branch.liquorInvoice === 'SEPARATE',
       },
@@ -553,6 +580,18 @@ export class BillingService {
         now,
       ),
     ]);
+  }
+
+  /** One visit per paid order for its guest, worth what the order's bills came to. */
+  private recordVisit(orderId: string, now: Date): void {
+    const invoices = this.d.invoices.forOrder(orderId).filter((i) => i.isSettled);
+    const customerId = invoices.find((i) => i.state.customerId)?.state.customerId;
+    if (!customerId) return;
+    this.d.customers.recordVisit(
+      customerId,
+      invoices.reduce((s, i) => s + i.state.bill.grandTotal, 0),
+      now,
+    );
   }
 
   private branch(branchId: string): BranchSettingsRecord {

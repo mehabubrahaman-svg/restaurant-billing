@@ -19,6 +19,7 @@ import { buildContainer } from './container';
 import { buildApp } from './http/app';
 import { checkAuditChain } from './jobs/audit-chain-check';
 import { scheduleDaily } from './jobs/daily';
+import { printKotsWhenFired } from './jobs/kot-printing';
 import { SetupCode } from './setup-code';
 import { WsGateway } from './ws/gateway';
 
@@ -54,6 +55,7 @@ async function main() {
   if (container.cradle.setupService.needsSetup()) setupCode.announce();
   const app = await buildApp(container, { setupCode });
 
+  const stopKotPrinting = printKotsWhenFired(container.cradle);
   const auditCheck = scheduleDaily(
     '03:30',
     config.timeZone,
@@ -116,6 +118,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'shutting down');
     auditCheck.stop();
+    stopKotPrinting();
     clearInterval(addressWatch);
     gateway.close();
     await mdns?.stop();

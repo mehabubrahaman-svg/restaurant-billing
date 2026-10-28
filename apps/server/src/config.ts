@@ -8,6 +8,10 @@ const EnvSchema = z.object({
   RESTRO_PORT: z.coerce.number().int().min(1).max(65535).default(7400),
   /** HTTPS with the Hub's local CA, for devices that trust it (after pairing). 0 turns it off. */
   RESTRO_HTTPS_PORT: z.coerce.number().int().min(0).max(65535).default(7443),
+  /** Hindi/Bengali slips are drawn by Chromium ("auto": if available) or not at all ("off": English only). */
+  RESTRO_RASTER: z.enum(['auto', 'off']).default('auto'),
+  /** The @fontsource directory holding the Noto fonts for those slips. */
+  RESTRO_FONTS_DIR: z.string().optional(),
   /** Advertise the Hub on the LAN with mDNS (_restroos._tcp). */
   RESTRO_MDNS: z
     .enum(['true', 'false'])
@@ -45,6 +49,8 @@ export interface ServerConfig {
   readonly port: number;
   readonly httpsPort: number;
   readonly mdns: boolean;
+  readonly raster: 'auto' | 'off';
+  readonly fontsDir: string | undefined;
   readonly dataDir: string;
   readonly databasePath: string;
   readonly databaseKey: string;
@@ -80,6 +86,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     port: e.RESTRO_PORT,
     httpsPort: e.RESTRO_HTTPS_PORT,
     mdns: e.RESTRO_MDNS,
+    raster: e.RESTRO_RASTER,
+    fontsDir: e.RESTRO_FONTS_DIR && resolve(e.RESTRO_FONTS_DIR),
     dataDir,
     databasePath: resolve(dataDir, 'restro.db'),
     databaseKey: key,

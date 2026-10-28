@@ -3,6 +3,10 @@ import {
   BillingService,
   CatalogService,
   CouponService,
+  CustomerService,
+  PrintService,
+  SalesChannelService,
+  type RasterRenderer,
   ShiftService,
   type BillingQueries,
   DeviceService,
@@ -12,6 +16,7 @@ import {
   type BusinessCalendar,
   type KitchenQueries,
   type OrderQueries,
+  type PrinterTransport,
   MenuImporter,
   RoleAdminService,
   SettingsService,
@@ -38,8 +43,12 @@ import {
   SqliteAuditQueries,
   SqliteBillingQueries,
   SqliteCouponRepository,
+  SqliteCustomerRepository,
   SqliteInvoiceRepository,
   SqliteShiftRepository,
+  SqliteSalesChannelRepository,
+  escPos,
+  hubPrinterTransport,
   SqliteBusinessCalendar,
   SqliteKitchenQueries,
   SqliteKotRepository,
@@ -67,6 +76,7 @@ import type { Logger } from 'pino';
 import { randomInt } from 'node:crypto';
 import type { ServerConfig } from './config';
 import { hubNetwork, type HubNetwork } from './hub-network';
+import { findFontsDir, rasterRenderer } from './printing';
 
 /** Everything the HTTP layer may resolve. */
 export interface Cradle {
@@ -104,6 +114,9 @@ export interface Cradle {
   billingService: BillingService;
   couponService: CouponService;
   shiftService: ShiftService;
+  printService: PrintService;
+  salesChannelService: SalesChannelService;
+  customerService: CustomerService;
 }
 
 export interface ContainerOverrides {
@@ -113,6 +126,9 @@ export interface ContainerOverrides {
   hasher?: PasswordHasher;
   /** Tests pass fixed LAN addresses and a pre-made certificate. */
   hubNetwork?: HubNetwork;
+  /** Image renderer for Hindi/Bengali slips; tests pass null (English text only). */
+  rasterRenderer?: RasterRenderer | null;
+  printerTransport?: PrinterTransport;
 }
 
 export function buildContainer(
@@ -256,7 +272,26 @@ export function buildContainer(
           kots: new SqliteKotRepository(c.db, now),
           catalog: new SqliteCatalogRepository(c.db),
           floor: new SqliteFloorRepository(c.db),
+          channels: new SqliteSalesChannelRepository(c.db),
           calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    customerService: single(
+      (c) =>
+        new CustomerService({
+          customers: new SqliteCustomerRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    salesChannelService: single(
+      (c) =>
+        new SalesChannelService({
+          channels: new SqliteSalesChannelRepository(c.db),
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
@@ -290,6 +325,9 @@ export function buildContainer(
           catalog: new SqliteCatalogRepository(c.db),
           settings: new SqliteSettingsRepository(c.db),
           floor: new SqliteFloorRepository(c.db),
+          channels: new SqliteSalesChannelRepository(c.db),
+          customers: new SqliteCustomerRepository(c.db),
+          customerService: c.customerService,
           calendar: c.calendar,
           defaultTaxGroupId: () =>
             c.db
@@ -310,6 +348,36 @@ export function buildContainer(
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
+        }),
+    ),
+    printService: single(
+      (c) =>
+        new PrintService({
+          settings: new SqliteSettingsRepository(c.db),
+          billing: c.billingQueries,
+          invoices: new SqliteInvoiceRepository(c.db, now, (b, at) =>
+            c.calendar.businessDate(b, at),
+          ),
+          orders: c.orderQueries,
+          kitchen: c.kitchenQueries,
+          catalog: new SqliteCatalogRepository(c.db),
+          encoder: escPos,
+          transport: overrides.printerTransport ?? hubPrinterTransport,
+          renderer:
+            overrides.rasterRenderer !== undefined
+              ? overrides.rasterRenderer
+              : rasterRenderer(
+                  { mode: c.config.raster, fontsDir: findFontsDir(c.config.fontsDir) },
+                  c.logger,
+                ),
+          organizationName: () =>
+            c.db
+              .prepare<[], string>('SELECT name FROM organizations ORDER BY created_at LIMIT 1')
+              .pluck()
+              .get() ?? 'RestroOS',
+          timeZone: c.config.timeZone,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
         }),
     ),
     shiftService: single(

@@ -22,6 +22,7 @@ export interface InvoiceState {
   originalInvoiceId: string | null;
   businessDate: string;
   fiscalYear: string;
+  customerId: string | null;
   customerName: string | null;
   customerTaxId: string | null;
   placeOfSupply: string | null;
@@ -209,6 +210,12 @@ export class Invoice extends AggregateRoot {
     this.s.status =
       this.s.refundedTotal >= this.s.bill.grandTotal ? 'REFUNDED' : 'PARTIALLY_REFUNDED';
     this.raise('InvoiceRefunded', { amount, creditNoteId, status: this.s.status }, at);
+  }
+
+  /** Printed (or reprinted: the slip says DUPLICATE from the second copy on). */
+  markPrinted(copy: 'ORIGINAL' | 'DUPLICATE', at: Date): void {
+    this.s.printCount += 1;
+    this.raise('InvoicePrinted', { copy, printCount: this.s.printCount }, at);
   }
 
   /** A credit note pays out its refund immediately. */

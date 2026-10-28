@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IdSchema, PaiseSchema } from './common';
+import { IndianMobileSchema } from './customers';
 
 const Version = z.number().int();
 
@@ -122,6 +123,7 @@ export const InvoiceSchema = InvoiceDraftSchema.extend({
   tokenNo: z.number().int().nullable(),
   businessDate: z.string(),
   supplyType: z.enum(['B2B', 'B2C']),
+  customerId: IdSchema.nullable(),
   customerName: z.string().nullable(),
   customerTaxId: z.string().nullable(),
   gstPaidByOperator: z.boolean(),
@@ -181,9 +183,13 @@ export const BillRequestSchema = z.object({
   couponCode: z.string().trim().toUpperCase().max(32).optional(),
   complimentary: z.object({ reason: z.string().trim().min(3).max(120) }).optional(),
   removeChargeRuleIds: z.array(IdSchema).max(10).default([]),
-  /** B2B: the guest's GSTIN, printed on the tax invoice. */
+  /**
+   * The guest, found or added by mobile number (their visits and spend are
+   * tracked). B2B: their GSTIN is printed on the tax invoice.
+   */
   customer: z
     .object({
+      phone: IndianMobileSchema.optional(),
       name: z.string().trim().min(1).max(120).optional(),
       taxId: z
         .string()

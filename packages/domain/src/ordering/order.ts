@@ -63,6 +63,10 @@ export interface OrderState {
   orderType: OrderType;
   source: 'POS' | 'CAPTAIN' | 'QR' | 'KIOSK' | 'ONLINE' | 'AGGREGATOR';
   tableId: string | null;
+  /** Swiggy, Zomato… (null = direct). */
+  salesChannelId: string | null;
+  externalOrderId: string | null;
+  externalOtp: string | null;
   captainId: string | null;
   covers: number | null;
   status: OrderStatus;

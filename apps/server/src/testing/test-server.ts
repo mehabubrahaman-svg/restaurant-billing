@@ -87,6 +87,8 @@ export async function createTestServer(
     port: 7400,
     httpsPort: 7443,
     mdns: false,
+    raster: 'off',
+    fontsDir: undefined,
     dataDir: database.dir,
     databasePath: database.path,
     databaseKey: database.key,
@@ -112,6 +114,7 @@ export async function createTestServer(
       addresses: () => [TEST_LAN_IP],
       refresh: () => false,
     } satisfies HubNetwork,
+    rasterRenderer: null,
   });
   const setupCode = new SetupCode(logger, config.setupCode);
   if (options.install ?? true) {

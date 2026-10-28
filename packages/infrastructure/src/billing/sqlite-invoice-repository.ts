@@ -16,6 +16,7 @@ interface InvoiceRow {
   original_invoice_id: string | null;
   business_date: string;
   fiscal_year: string;
+  customer_id: string | null;
   customer_name: string | null;
   customer_tax_id: string | null;
   place_of_supply: string | null;
@@ -130,11 +131,11 @@ export class SqliteInvoiceRepository implements InvoiceRepository {
     this.db
       .prepare(
         `INSERT INTO invoices (id, branch_id, order_id, invoice_no, kind, series, supply_type, gst_paid_by_operator,
-                               original_invoice_id, business_date, fiscal_year, customer_name, customer_tax_id,
+                               original_invoice_id, business_date, fiscal_year, customer_id, customer_name, customer_tax_id,
                                place_of_supply, subtotal, discount_total, charges_total, taxable_total, tax_total,
                                round_off, grand_total, paid_total, refunded_total, status, approved_by,
                                created_at, created_by, updated_at, version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         invoice.id,
@@ -148,6 +149,7 @@ export class SqliteInvoiceRepository implements InvoiceRepository {
         s.originalInvoiceId,
         s.businessDate,
         s.fiscalYear,
+        s.customerId,
         s.customerName,
         s.customerTaxId,
         s.placeOfSupply,
@@ -391,6 +393,7 @@ export class SqliteInvoiceRepository implements InvoiceRepository {
       originalInvoiceId: row.original_invoice_id,
       businessDate: row.business_date,
       fiscalYear: row.fiscal_year,
+      customerId: row.customer_id,
       customerName: row.customer_name,
       customerTaxId: row.customer_tax_id,
       placeOfSupply: row.place_of_supply,

@@ -83,6 +83,6 @@ export async function settingsRoutes(app: FastifyInstance, { cradle }: { cradle:
   app.post('/printers/:id/test', { config: MANAGE }, async (request, reply) => {
     const { id } = IdParams.parse(request.params);
     settings.requestTestPrint(id, commandContext(request));
-    return reply.status(202).send({ status: 'queued' });
+    return reply.send(await cradle.printService.testPage(id, request.principal!.branchId));
   });
 }

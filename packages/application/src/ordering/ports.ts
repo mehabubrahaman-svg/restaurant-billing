@@ -46,6 +46,9 @@ export interface OrderSummaryView {
   status: OrderStatus;
   tableId: string | null;
   tableLabel: string | null;
+  salesChannelId: string | null;
+  salesChannelName: string | null;
+  externalOrderId: string | null;
   covers: number | null;
   captainId: string | null;
   captainName: string | null;

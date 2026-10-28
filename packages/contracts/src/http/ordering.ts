@@ -97,6 +97,10 @@ export const OrderSummarySchema = z.object({
   status: OrderStatusSchema,
   tableId: IdSchema.nullable(),
   tableLabel: z.string().nullable(),
+  /** Aggregator orders: the channel and its order id. */
+  salesChannelId: IdSchema.nullable(),
+  salesChannelName: z.string().nullable(),
+  externalOrderId: z.string().nullable(),
   covers: z.number().int().nullable(),
   captainId: IdSchema.nullable(),
   captainName: z.string().nullable(),
@@ -200,4 +204,51 @@ export type FireKotsResponse = z.infer<typeof FireKotsResponseSchema>;
 export const TransferTableRequestSchema = z.object({
   targetTableId: IdSchema,
   mode: z.enum(['MOVE', 'MERGE']),
+});
+
+// ---- sales channels and aggregator orders (Swiggy, Zomato, …) -------------------------------
+export const SalesChannelSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  name: z.string(),
+  kind: z.enum(['DIRECT', 'AGGREGATOR', 'OWN_ONLINE']),
+  integration: z.enum(['MANUAL', 'MIDDLEWARE', 'DIRECT_API']),
+  /** The aggregator's commission, for net revenue per channel. */
+  commissionBp: z.number().int(),
+  /** Channel prices = menu prices + this much. */
+  priceMarkupBp: z.number().int(),
+  /** CGST Act s.9(5): the operator pays the GST, so the bill charges none. */
+  gstPaidByOperator: z.boolean(),
+  isActive: z.boolean(),
+  version: Version,
+});
+export type SalesChannel = z.infer<typeof SalesChannelSchema>;
+export const SalesChannelsResponseSchema = z.object({ data: z.array(SalesChannelSchema) });
+export type SalesChannelsResponse = z.infer<typeof SalesChannelsResponseSchema>;
+export const SaveSalesChannelRequestSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9_]{2,20}$/),
+  name: z.string().trim().min(2).max(60),
+  kind: z.enum(['AGGREGATOR', 'OWN_ONLINE']).default('AGGREGATOR'),
+  commissionBp: z.number().int().min(0).max(10_000).default(0),
+  priceMarkupBp: z.number().int().min(0).max(10_000).default(0),
+  gstPaidByOperator: z.boolean().default(true),
+});
+export const UpdateSalesChannelRequestSchema = SaveSalesChannelRequestSchema.partial().extend({
+  version: Version,
+  isActive: z.boolean().optional(),
+});
+
+/** Keyed in from the aggregator's tablet: a DELIVERY with a token, sent to the kitchen unless `fire` is false. */
+export const AggregatorOrderRequestSchema = z.object({
+  salesChannelId: IdSchema,
+  externalOrderId: z.string().trim().min(3).max(40),
+  /** Rider pickup code, printed on the bill. */
+  externalOtp: z.string().trim().max(12).optional(),
+  notes: z.string().trim().max(200).optional(),
+  items: z.array(NewOrderItemSchema).min(1).max(50),
+  fire: z.boolean().default(true),
 });
