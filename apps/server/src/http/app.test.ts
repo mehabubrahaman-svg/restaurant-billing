@@ -109,7 +109,7 @@ describe('Idempotency-Key', () => {
     let created = 0;
     const s = await createTestServer({
       registerApiRoutes: (api) => {
-        api.post('/orders', { config: { public: true } }, async (_request, reply) => {
+        api.post('/test-orders', { config: { public: true } }, async (_request, reply) => {
           created += 1;
           return reply.status(201).send({ orderNo: created });
         });
@@ -120,7 +120,7 @@ describe('Idempotency-Key', () => {
   const post = (s: TestServer, key: string | undefined, body: object, device = 'tab-1') =>
     s.app.inject({
       method: 'POST',
-      url: '/api/v1/orders',
+      url: '/api/v1/test-orders',
       headers: { 'x-device-id': device, ...(key && { 'idempotency-key': key }) },
       payload: body,
     });
@@ -207,5 +207,30 @@ describe('serving the web app', () => {
     } finally {
       rmSync(webDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('JSON bodies', () => {
+  it('treats an empty JSON body as no body, and rejects broken JSON', async () => {
+    server = await createTestServer({
+      registerApiRoutes: (api) => {
+        api.post('/echo', { config: { public: true } }, async (request) => ({ body: request.body ?? null }));
+      },
+    });
+    const empty = await server.app.inject({
+      method: 'POST',
+      url: '/api/v1/echo',
+      headers: { 'content-type': 'application/json' },
+      payload: '',
+    });
+    expect(empty.json()).toEqual({ body: null });
+    const broken = await server.app.inject({
+      method: 'POST',
+      url: '/api/v1/echo',
+      headers: { 'content-type': 'application/json' },
+      payload: '{"a":',
+    });
+    expect(broken.statusCode).toBe(400);
+    expect(broken.json().code).toBe('VALIDATION_FAILED');
   });
 });

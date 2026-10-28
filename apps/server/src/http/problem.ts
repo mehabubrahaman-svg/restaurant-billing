@@ -70,10 +70,9 @@ export function errorHandler(
     return sendProblem(reply, error.permission ? { ...body, permission: error.permission } : body);
   }
   if (error instanceof DomainError) {
-    return sendProblem(
-      reply,
-      problem(request, statusForCode(error.code), error.code, error.message),
-    );
+    const body = problem(request, statusForCode(error.code), error.code, error.message);
+    const permission = error.details?.['permission'];
+    return sendProblem(reply, typeof permission === 'string' ? { ...body, permission } : body);
   }
   if (error instanceof ZodError) {
     const errors = error.issues.map((i) => ({ path: i.path.join('.'), message: i.message }));

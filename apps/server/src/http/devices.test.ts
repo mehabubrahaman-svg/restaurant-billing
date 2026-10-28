@@ -86,7 +86,7 @@ describe('device pairing', () => {
       platform: 'ANDROID',
       isActive: true,
     });
-    expect(cookie).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/api' });
+    expect(cookie).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/' });
     expect(trail(s, paired.device.id)).toMatchObject({
       audit: ['device.pair'],
       events: ['DevicePaired'],

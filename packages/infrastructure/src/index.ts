@@ -47,3 +47,8 @@ export { SqliteFloorRepository } from './floor/sqlite-floor-repository';
 export { lanAddresses } from './network/lan-addresses';
 export { ensureTlsMaterial, type TlsMaterial, type TlsSecretStore } from './network/local-ca';
 export { advertiseHub, type MdnsAdvertisement } from './network/mdns-advertiser';
+export { SqliteBusinessCalendar } from './ordering/sqlite-business-calendar';
+export { SqliteKitchenQueries } from './ordering/sqlite-kitchen-queries';
+export { SqliteKotRepository } from './ordering/sqlite-kot-repository';
+export { SqliteOrderQueries } from './ordering/sqlite-order-queries';
+export { SqliteOrderRepository } from './ordering/sqlite-order-repository';

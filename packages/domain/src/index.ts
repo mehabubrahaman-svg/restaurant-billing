@@ -16,3 +16,5 @@ export * from './tax/tax-templates';
 export * from './identity/role';
 export * from './catalog/menu-rules';
 export * from './floor/table-status';
+export * from './ordering/order';
+export * from './kitchen/kot';

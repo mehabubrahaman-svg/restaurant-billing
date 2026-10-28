@@ -12,9 +12,10 @@ declare module 'fastify' {
 
 const HEADER = 'idempotency-key';
 const KEY_RE = /^[A-Za-z0-9_-]{8,128}$/;
+const NOT_STORED = new Set([401, 403, 429]);
 
 /**
- * Makes POST commands safe to retry. A tablet that lost Wi-Fi replays its
+ * Makes POST and PATCH commands safe to retry. A tablet that lost Wi-Fi replays its
  * queued commands with the same Idempotency-Key; we return the stored response
  * instead of creating a second order or a second payment.
  *
@@ -27,7 +28,8 @@ export const idempotencyPlugin = fp<{ store: IdempotencyStore }>(
 
     app.addHook('preHandler', async (request, reply) => {
       const key = request.headers[HEADER];
-      if (request.method !== 'POST' || typeof key !== 'string') return;
+      if ((request.method !== 'POST' && request.method !== 'PATCH') || typeof key !== 'string')
+        return;
       if (!KEY_RE.test(key)) {
         throw new HttpProblem(
           'VALIDATION_FAILED',
@@ -64,8 +66,13 @@ export const idempotencyPlugin = fp<{ store: IdempotencyStore }>(
     app.addHook('onSend', async (request, reply, payload) => {
       const ctx = request.idempotency;
       if (!ctx || reply.getHeader('idempotent-replayed')) return payload;
-      // Server errors are not remembered: the client should be able to retry them.
-      if (reply.statusCode < 500 && typeof payload === 'string') {
+      // Not remembered: server errors, and refusals the client fixes by retrying the same
+      // request (signing in again, adding a manager's X-Approver-Token, waiting out a rate limit).
+      if (
+        !NOT_STORED.has(reply.statusCode) &&
+        reply.statusCode < 500 &&
+        typeof payload === 'string'
+      ) {
         store.save(ctx.scope, ctx.key, {
           requestHash: ctx.requestHash,
           statusCode: reply.statusCode,

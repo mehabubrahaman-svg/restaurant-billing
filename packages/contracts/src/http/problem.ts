@@ -36,6 +36,15 @@ export const ERROR_STATUS = {
   VERSION_CONFLICT: 409,
   INVALID_STATE_TRANSITION: 409,
   INSUFFICIENT_STOCK: 409,
+  /** The table already has guests, a bill, or is blocked. */
+  TABLE_NOT_FREE: 409,
+  /** The order is billed, paid or cancelled; it can't change. */
+  ORDER_NOT_OPEN: 409,
+  /** Only items still on the order pad can be edited. */
+  ITEM_ALREADY_SENT: 409,
+  NOTHING_TO_FIRE: 409,
+  /** 86'd in this branch, or retired. */
+  ITEM_UNAVAILABLE: 409,
   IDEMPOTENCY_IN_PROGRESS: 409,
   IDEMPOTENCY_KEY_REUSED: 422,
   VALIDATION_FAILED: 422,

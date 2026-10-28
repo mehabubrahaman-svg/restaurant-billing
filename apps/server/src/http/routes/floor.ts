@@ -7,6 +7,7 @@ import {
   UpdateFloorAreaRequestSchema,
   UpdateTableRequestSchema,
   type DiningTable,
+  type TableOrder,
   type FloorResponse,
   type TableQrResponse,
 } from '@restroos/contracts';
@@ -23,13 +24,16 @@ const VIEW = { permission: ['tables.view', 'floor.manage'] } as const;
 const SET_STATUS = { permission: ['tables.update_status', 'floor.manage'] } as const;
 
 /** The QR token never leaves the Hub except inside the QR URL. */
-export function toTable({ qrToken, ...table }: TableRecord): DiningTable {
-  return { ...table, hasQr: qrToken !== null };
+export function toTable(
+  { qrToken, ...table }: TableRecord,
+  openOrder: TableOrder | null = null,
+): DiningTable {
+  return { ...table, openOrder, hasQr: qrToken !== null };
 }
 
 /** WP 3.3: floor areas, tables, layout and table status (docs/05 §2 Floor). */
 export async function floorRoutes(app: FastifyInstance, { cradle }: { cradle: Cradle }) {
-  const { floorService: floor, hubNetwork } = cradle;
+  const { floorService: floor, hubNetwork, orderQueries } = cradle;
   const branchOf = (r: { principal?: { branchId: string } }) => r.principal!.branchId;
 
   const qrOf = (table: TableRecord): TableQrResponse => {
@@ -39,11 +43,15 @@ export async function floorRoutes(app: FastifyInstance, { cradle }: { cradle: Cr
     return { url: `${base}/qr/${table.qrToken}`, label: table.label };
   };
 
-  app.get('/floor', { config: VIEW }, async (request): Promise<FloorResponse> => ({
-    areas: floor
-      .floor(branchOf(request))
-      .map((area) => ({ ...area, tables: area.tables.map(toTable) })),
-  }));
+  app.get('/floor', { config: VIEW }, async (request): Promise<FloorResponse> => {
+    const open = orderQueries.openOrdersByTable(branchOf(request));
+    return {
+      areas: floor.floor(branchOf(request)).map((area) => ({
+        ...area,
+        tables: area.tables.map((t) => toTable(t, open.get(t.id) ?? null)),
+      })),
+    };
+  });
 
   app.post('/floor-areas', { config: MANAGE }, async (request, reply) => {
     const body = SaveFloorAreaRequestSchema.parse(request.body);
@@ -59,7 +67,7 @@ export async function floorRoutes(app: FastifyInstance, { cradle }: { cradle: Cr
       commandContext(request),
     );
     const tables = floor.floor(branchOf(request)).find((a) => a.id === id)?.tables ?? [];
-    return { ...area, tables: tables.map(toTable) };
+    return { ...area, tables: tables.map((t) => toTable(t)) };
   });
 
   app.post('/tables', { config: MANAGE }, async (request, reply) => {
@@ -76,7 +84,7 @@ export async function floorRoutes(app: FastifyInstance, { cradle }: { cradle: Cr
   // Drag-and-drop save: every move applies, or none.
   app.put('/floor/layout', { config: MANAGE }, async (request) => {
     const { tables } = SaveLayoutRequestSchema.parse(request.body);
-    return { data: floor.saveLayout(tables, commandContext(request)).map(toTable) };
+    return { data: floor.saveLayout(tables, commandContext(request)).map((t) => toTable(t)) };
   });
   app.post('/tables/:id/status', { config: SET_STATUS }, async (request) => {
     const { id } = IdParams.parse(request.params);

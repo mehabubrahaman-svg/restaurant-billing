@@ -66,7 +66,7 @@ Implemented in Sprint 3. Contracts: `packages/contracts/src/http/devices.ts`.
 | GET | `/hub/info` | public | `{name, version, needsSetup, urls:{http[], https[]}, caFingerprint, mdnsHost}` |
 | GET | `/hub/ca.crt` | public | The Hub's local CA (PEM) for the device to trust |
 | POST | `/devices/pairing-codes` | `settings.manage` | `{name, kind}` → `{code, expiresAt, pairUrl, caFingerprint}`. 8 characters, single use, 10 min. The QR encodes `pairUrl` (`http://<lan-ip>:7400/pair?code=…`) |
-| POST | `/devices/pair` | public, 10/min/IP | `{code, fingerprint, platform?}` → `{device, deviceToken}` + httpOnly cookie `restro_dt` (path `/api`). Native shells send the token as `X-Device-Token`. The same browser fingerprint re-pairs in place |
+| POST | `/devices/pair` | public, 10/min/IP | `{code, fingerprint, platform?}` → `{device, deviceToken}` + httpOnly cookie `restro_dt` (path `/`, so the WebSocket upgrade carries it too). Native shells send the token as `X-Device-Token`. The same browser fingerprint re-pairs in place |
 | GET | `/devices/me` | public | The calling device, or `403 DEVICE_NOT_PAIRED` |
 | GET/PATCH | `/devices`, `/devices/{id}` | `settings.manage` | Registry. `isActive:false` unpairs at once; re-activating needs a new code (`DEVICE_MUST_REPAIR`) |
 | GET/POST/PATCH | `/peripherals` | `settings.manage` | Scanners, scales, cash drawers, pagers, customer displays, on the Hub or on a device |
@@ -98,28 +98,38 @@ Implemented in Sprint 3 (live order summaries arrive with orders in Sprint 4). C
 Implemented in Sprint 3. Contracts: `packages/contracts/src/http/catalog.ts`.
 
 ### Orders (Captain + POS)
+Implemented in Sprint 4 (aggregator entry and customers arrive in Sprint 5). Contracts: `packages/contracts/src/http/ordering.ts`.
+
 | Method | Path | Perm | Body / Notes |
 |---|---|---|---|
-| POST | `/orders` | `orders.create` | `{orderType, tableId?, covers?, customerId?}` → order. Sets table to OCCUPIED |
-| POST | `/orders/aggregator` | `orders.create` | Manual Swiggy/Zomato entry: `{salesChannelId, externalOrderId, externalOtp?, items[]}`. Rejects duplicates of `(channel, externalOrderId)` |
-| GET | `/orders?status=OPEN` | `tables.view` | |
-| GET | `/orders/{id}` | `tables.view` | Order + items + KOTs + running totals |
-| POST | `/orders/{id}/items` | `orders.create` | `{items:[{menuItemId, variantId?, quantity, addons:[{addonId,quantity}], specialNote?, course?}]}`. Items are PENDING until fired |
-| PATCH | `/orders/{id}/items/{itemId}` | `orders.update` | quantity/note, only while PENDING |
-| POST | `/orders/{id}/kots` | `orders.fire_kot` | Fires all PENDING items, one KOT per station → `KotFired` pushed to KDS |
-| POST | `/orders/{id}/items/{itemId}/cancel` | `orders.item_cancel` (+ approver if already fired) | `{reason, isWastage}` |
-| POST | `/orders/{id}/cancel` | `orders.cancel` + approver | `{reason}` |
-| POST | `/orders/{id}/customer` | `customers.manage` | attach/create customer by phone |
+| POST | `/orders` | `orders.create` | `{orderType: DINE_IN\|TAKEAWAY\|DELIVERY, tableId?, covers?, notes?}` → Order. Dine-in needs a free or reserved table (`409 TABLE_NOT_FREE`) and sets it OCCUPIED. Takeaway/delivery get a `tokenNo`. `orderNo` and `tokenNo` restart each business day |
+| POST | `/orders/aggregator` | `orders.create` | Sprint 5 (WP 5.5b): manual Swiggy/Zomato entry `{salesChannelId, externalOrderId, externalOtp?, items[]}`, rejecting duplicate `(channel, externalOrderId)` |
+| GET | `/orders?status=OPEN` | `tables.view`, `billing.create` or `kds.view` | Summaries: subtotal, item / pending / ready counts, table, captain |
+| GET | `/orders/{id}` | same | Order + items (name, price and tax group frozen at order time) + KOT summaries |
+| PATCH | `/orders/{id}` | `orders.update` | `{version, covers?, notes?}` |
+| POST | `/orders/{id}/items` | `orders.create` | `{items:[{menuItemId, variantId?, quantity, addons:[{addonId, quantity}], specialNote?, course?}]}`. Items are PENDING until fired. A size is required when the item has variants; add-ons must belong to the item's groups and respect min/max; 86'd or retired items → `409 ITEM_UNAVAILABLE` |
+| PATCH | `/orders/{id}/items/{itemId}` | `orders.update` | `{version, quantity?, specialNote?, course?}`, only while PENDING (`409 ITEM_ALREADY_SENT`) |
+| POST | `/orders/{id}/kots` | `orders.fire_kot` | Fires every PENDING item, one KOT per kitchen station (`409 NOTHING_TO_FIRE`). Target time = fired + the slowest item's prep time (15 min default). Send an `Idempotency-Key` |
+| POST | `/orders/{id}/items/{itemId}/cancel` | `orders.update`; `orders.item_cancel` or a manager's approval once the kitchen has it | `{version, reason?, isWastage}`. A PENDING item is just removed. A sent item needs a reason; without the permission → `403 APPROVAL_REQUIRED` (`permission: orders.item_cancel`), retry with `X-Approver-Token`. The item is struck through on its KOT; a KOT left empty is cancelled |
+| POST | `/orders/{id}/cancel` | `orders.update`; `orders.cancel` or approval once anything was sent | `{version, reason}`. Cancels open KOTs and frees the table |
+| POST | `/tables/{id}/transfer` | `orders.transfer_table` | `{targetTableId, mode: MOVE\|MERGE}`. MOVE needs a free target; MERGE moves every item and KOT into the target table's open order (covers add up) and closes this one as merged |
+| POST | `/orders/{id}/customer` | `customers.manage` | Sprint 5 (WP 5.6) |
+
+Idempotency-Key works on POST and PATCH. Refusals the client fixes by retrying the same request (401, 403, 429) are not stored, so an approval retry can reuse the key.
 
 ### Kitchen (KDS)
+Implemented in Sprint 4. Contracts: `packages/contracts/src/http/kitchen.ts`.
+
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| GET | `/kitchen/kots?station=&status=` | `kds.view` | Active board |
-| POST | `/kitchen/kots/{id}/status` | `kds.update_status` | `{to: ACCEPTED\|COOKING\|READY\|SERVED}`. Invalid transitions → 409 |
-| POST | `/kitchen/kots/{id}/items/{itemId}/ready` | `kds.update_status` | Item-level bump |
-| POST | `/kitchen/kots/{id}/assign` | `kds.assign_chef` | `{chefId}` |
-| POST | `/kitchen/kots/{id}/reprint` | `kds.view` | Optional paper backup |
-| GET | `/kitchen/metrics?date=` | `kds.view` | pending, avg cook time, delayed count, per-chef stats |
+| GET | `/kitchen/kots?station=` | `kds.view` | Active board: NEW, ACCEPTED, COOKING, READY, oldest first, with items, add-ons, notes, table/token, captain, chef |
+| POST | `/kitchen/kots/{id}/status` | `kds.update_status`; captains (`orders.update`) only `SERVED` | `{to: ACCEPTED\|COOKING\|READY\|SERVED, version}`. Forward only; steps may be skipped. Items follow (COOKING → PREPARING, READY, SERVED). Every change is written to `kot_status_events` |
+| POST | `/kitchen/kots/{id}/items/{itemId}/ready` | `kds.update_status` | Item-level bump; the last live item makes the KOT READY |
+| POST | `/kitchen/kots/{id}/assign` | `kds.assign_chef` | `{chefId \| null, version}`; the chef must hold `kds.update_status` in the branch |
+| GET | `/kitchen/chefs` | `kds.view` | Who can be assigned |
+| GET | `/kitchen/metrics` | `kds.view` | Today: pending, delayed, completed, average fired→ready seconds, per chef |
+| GET | `/tokens` | public | Token display: `{businessDate, preparing[], ready[]}` for takeaway/delivery tokens |
+| POST | `/kitchen/kots/{id}/reprint` | `kds.view` | Sprint 5, with printing (WP 5.5) |
 
 ### Billing (POS)
 | Method | Path | Perm | Notes |
@@ -196,25 +206,33 @@ Values longer than MTU − 1 are read with Read Blob requests, which Chrome and 
 
 ## 5. WebSocket protocol
 
-Endpoint `wss://<hub>:7443/ws?token=<access JWT>` (or `ws://<hub>:7400/ws`). The server assigns rooms from the user's role and device kind. Clients can `subscribe` to extra rooms they're authorized for.
+Implemented in Sprint 4. Contracts: `packages/contracts/src/ws/messages.ts`. Gateway: `apps/server/src/ws/gateway.ts`.
+
+Endpoint `ws://<hub>:7400/ws` or `wss://<hub>:7443/ws`. The access token is never put in the URL (it would end up in logs): the first message must be `{type:"auth", token}`, sent again after every token refresh. Without it the server closes the socket after 5 s with code `4401`. A paired TOKEN_DISPLAY device with nobody signed in sends `token: null` and is recognised by its device cookie.
 
 ```jsonc
-// server → client envelope
-{ "type": "kitchen.kot.fired", "seq": 18233, "branchId": "…", "occurredAt": "…", "data": { /* contract */ } }
+// server → client
+{ "type": "hello", "seq": 18230, "topics": ["floor", "tokens"] }
+{ "type": "kitchen.kot.fired", "seq": 18233, "branchId": "…", "occurredAt": "…", "data": { "kot": { /* Kot */ } } }
 // client → server
-{ "type": "subscribe", "rooms": ["kds:station:<id>"] }
-{ "type": "ack", "seq": 18233 }
+{ "type": "auth", "token": "<access JWT>" }
+{ "type": "resume", "lastSeq": 18233 }
+{ "type": "ping" }
 ```
 
-| Message | Rooms | Payload |
+Every message carries the **current state** of one entity (never a diff), so clients keep the one with the highest `version`. One command's events are coalesced: firing an order sends one `ordering.order.updated`, not one per event.
+
+| Message | Topic | Payload |
 |---|---|---|
 | `floor.table.status_changed` | floor | tableId, status, orderId, version |
-| `ordering.order.updated` | floor, pos | order summary |
-| `kitchen.kot.fired` | kds:station:{id}, kds:all | full KOT with items, notes, addons |
-| `kitchen.kot.status_changed` | kds, floor, captain:{userId} | kotId, from, to, at |
-| `kitchen.kot.delayed` | kds, manager | kotId, overdueSec |
-| `billing.invoice.paid` | pos, dashboard | invoice summary |
-| `token.ready` | token-display | tokenNo |
-| `notification.created` | user:{id}, role:{code} | notification |
+| `ordering.order.updated` | floor | order summary (after any order or KOT change) |
+| `kitchen.kot.fired` | kitchen | full KOT with items, notes, add-ons |
+| `kitchen.kot.status_changed` | kitchen, floor | from, to, full KOT (captains alert on READY) |
+| `kitchen.kot.updated` | kitchen | full KOT (item bumped or cancelled, chef assigned, moved by a merge) |
+| `kitchen.kot.delayed` | kitchen | kotId, overdueSeconds; once per KOT, from a 15 s scan; not replayed |
+| `token.ready` | tokens | tokenNo, orderId |
+| `menu.changed` | floor, kitchen | none: refetch `GET /menu` (304 if unchanged) |
 
-**Gap recovery**: each message carries the event `seq`. On reconnect, the client sends `{type:"resume", lastSeq}` and the server replays from `domain_events`, or tells the client to refetch if the gap is too large.
+**Topics follow permissions**, re-checked every 60 s: `floor` with `tables.view`, `billing.create` or `floor.manage`; `kitchen` with `kds.view`; `tokens` for everyone. When the token expires or the session is revoked the server sends `unauthenticated` and only `tokens` messages flow until a fresh `auth`. `billing.invoice.paid` and `notification.created` arrive with Sprint 5.
+
+**Gap recovery**: on reconnect the client sends `{type:"resume", lastSeq}` and the server replays the latest state of every entity changed since, from `domain_events`. If more than 2,000 events were missed, or `lastSeq` is ahead of the Hub (a restored backup), it answers `{type:"resync"}` and the client refetches. A client that can't keep up (over 1 MB buffered) is disconnected with `4408` and resumes.

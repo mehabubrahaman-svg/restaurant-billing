@@ -41,6 +41,8 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 
 ## Sprint 4 — Ordering & Kitchen (2 wks)
 
+> **Status (2026-10-28)**: backend delivered: `Order` and `Kot` aggregates (118 domain tests), order commands with table coupling, move/merge, cancel with manager approval once the kitchen has an item, FireKot split by station, KDS commands, metrics and the token board, and the WebSocket gateway with permission-based topics, coalescing, resume/replay and the KOT delay watcher (91 server tests; verified on a real Hub over HTTPS/WSS). Web screens in progress.
+
 | WP | Deliverable |
 |---|---|
 | 4.1 | `Order` aggregate: open, add/update/cancel items, totals, transfer/merge tables. Commands + tests |

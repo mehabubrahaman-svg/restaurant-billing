@@ -17,6 +17,8 @@ import { authRoutes } from './routes/auth';
 import { catalogRoutes } from './routes/catalog';
 import { deviceRoutes } from './routes/devices';
 import { floorRoutes } from './routes/floor';
+import { kitchenRoutes } from './routes/kitchen';
+import { orderRoutes } from './routes/orders';
 import { healthRoutes } from './routes/health';
 import { settingsRoutes } from './routes/settings';
 import { setupRoutes } from './routes/setup';
@@ -44,6 +46,18 @@ export async function buildApp(
   });
 
   app.setErrorHandler(errorHandler);
+  // Command endpoints without a body (POST /orders/{id}/kots) are often called with a JSON
+  // content type anyway; treat an empty body as no body instead of rejecting it.
+  app.removeContentTypeParser('application/json');
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+    const text = typeof body === 'string' ? body : body.toString('utf8');
+    if (text.trim() === '') return done(null, undefined);
+    try {
+      done(null, JSON.parse(text) as unknown);
+    } catch {
+      done(Object.assign(new Error('the request body is not valid JSON'), { statusCode: 400 }), undefined);
+    }
+  });
   app.addHook('onSend', async (request, reply, payload) => {
     reply.header('x-request-id', request.id);
     return payload;
@@ -71,6 +85,8 @@ export async function buildApp(
       await api.register(catalogRoutes, { cradle });
       await api.register(floorRoutes, { cradle });
       await api.register(deviceRoutes, { cradle });
+      await api.register(orderRoutes, { cradle });
+      await api.register(kitchenRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(

@@ -11,6 +11,7 @@ The migrations are validated in CI (`pnpm db:validate`): 76 tables, all FKs reso
 | `0004_complete_delete_guards` | Delete guards on every remaining business table; draft-only deletion for PO and stock-count lines |
 | `0005_auth_support` | `system_secrets` (signing key, local CA), branch on refresh tokens |
 | `0006_catalog_floor_devices` | Menu item sort order, add-on group translations, device token hash + pairing, `pairing_codes` |
+| `0007_ordering_kitchen` | Merge link on orders; wastage flag, ready time, kitchen station and food mark on order items; token and KOT-by-order indexes |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

@@ -3,6 +3,11 @@ import {
   CatalogService,
   DeviceService,
   FloorService,
+  KitchenService,
+  OrderService,
+  type BusinessCalendar,
+  type KitchenQueries,
+  type OrderQueries,
   MenuImporter,
   RoleAdminService,
   SettingsService,
@@ -27,6 +32,11 @@ import {
   nodeTokenCodec,
   ScryptKeyDerivation,
   SqliteAuditQueries,
+  SqliteBusinessCalendar,
+  SqliteKitchenQueries,
+  SqliteKotRepository,
+  SqliteOrderQueries,
+  SqliteOrderRepository,
   SqliteCatalogRepository,
   SqliteDeviceRepository,
   SqliteFloorRepository,
@@ -77,6 +87,11 @@ export interface Cradle {
   floorService: FloorService;
   deviceService: DeviceService;
   hubNetwork: HubNetwork;
+  calendar: BusinessCalendar;
+  orderQueries: OrderQueries;
+  kitchenQueries: KitchenQueries;
+  orderService: OrderService;
+  kitchenService: KitchenService;
 }
 
 export interface ContainerOverrides {
@@ -217,6 +232,31 @@ export function buildContainer(
           clock: c.clock,
           ids: c.ids,
           randomInt: (max) => randomInt(max),
+        }),
+    ),
+    calendar: single(({ db }) => new SqliteBusinessCalendar(db)),
+    orderQueries: single(({ db }) => new SqliteOrderQueries(db)),
+    kitchenQueries: single(({ db }) => new SqliteKitchenQueries(db)),
+    orderService: single(
+      (c) =>
+        new OrderService({
+          orders: new SqliteOrderRepository(c.db, now),
+          kots: new SqliteKotRepository(c.db, now),
+          catalog: new SqliteCatalogRepository(c.db),
+          floor: new SqliteFloorRepository(c.db),
+          calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    kitchenService: single(
+      (c) =>
+        new KitchenService({
+          kots: new SqliteKotRepository(c.db, now),
+          queries: c.kitchenQueries,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
         }),
     ),
     hubNetwork: overrides.hubNetwork

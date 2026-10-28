@@ -95,7 +95,8 @@ export async function deviceRoutes(app: FastifyInstance, { cradle }: { cradle: C
         httpOnly: true,
         sameSite: 'strict',
         secure: request.protocol === 'https',
-        path: '/api',
+        // Also sent on the WebSocket upgrade (/ws), where a token display with nobody signed in is recognised by it.
+        path: '/',
         maxAge: DEVICE_COOKIE_DAYS * 86_400,
       });
       reply.status(201);

@@ -148,7 +148,7 @@ export class SqliteFloorRepository implements FloorRepository {
     const result = this.db
       .prepare(
         `UPDATE dining_tables SET floor_area_id = ?, label = ?, seats = ?, shape = ?, pos_x = ?, pos_y = ?, status = ?,
-                qr_token = ?, deleted_at = ?, updated_at = ?, version = ?
+                current_order_id = ?, qr_token = ?, deleted_at = ?, updated_at = ?, version = ?
           WHERE id = ? AND branch_id = ? AND version = ?`,
       )
       .run(
@@ -159,6 +159,7 @@ export class SqliteFloorRepository implements FloorRepository {
         r.posX,
         r.posY,
         r.status,
+        r.currentOrderId,
         r.qrToken,
         r.isActive ? null : at.toISOString(),
         at.toISOString(),

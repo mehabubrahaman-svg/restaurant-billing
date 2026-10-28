@@ -30,6 +30,22 @@ const GridY = z
   .min(0)
   .max(LAYOUT_GRID.rows - 1);
 
+/** The open order on a table, for the captain's floor view. */
+export const TableOrderSchema = z.object({
+  id: IdSchema,
+  orderNo: z.string(),
+  covers: z.number().int().nullable(),
+  /** Paise, before tax. */
+  subtotal: z.number().int(),
+  openedAt: z.string(),
+  captainId: IdSchema.nullable(),
+  captainName: z.string().nullable(),
+  itemCount: z.number().int(),
+  pendingCount: z.number().int(),
+  readyCount: z.number().int(),
+});
+export type TableOrder = z.infer<typeof TableOrderSchema>;
+
 export const DiningTableSchema = z.object({
   id: IdSchema,
   floorAreaId: IdSchema,
@@ -40,6 +56,8 @@ export const DiningTableSchema = z.object({
   posY: GridY,
   status: TableStatusSchema,
   currentOrderId: IdSchema.nullable(),
+  /** Filled on GET /floor while the table has an open order. */
+  openOrder: TableOrderSchema.nullable().default(null),
   hasQr: z.boolean(),
   isActive: z.boolean(),
   version: Version,

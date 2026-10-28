@@ -20,6 +20,7 @@ import { buildApp } from './http/app';
 import { checkAuditChain } from './jobs/audit-chain-check';
 import { scheduleDaily } from './jobs/daily';
 import { SetupCode } from './setup-code';
+import { WsGateway } from './ws/gateway';
 
 async function main() {
   const config = loadConfig();
@@ -77,6 +78,11 @@ async function main() {
       'HTTPS listening',
     );
   }
+  // Live updates on both listeners.
+  const gateway = new WsGateway(container.cradle, logger);
+  gateway.attach(app.server);
+  if (https) gateway.attach(https);
+
   // A new DHCP lease changes the Hub's address; re-issue the certificate for it.
   const addressWatch = setInterval(() => {
     try {
@@ -111,6 +117,7 @@ async function main() {
     logger.info({ signal }, 'shutting down');
     auditCheck.stop();
     clearInterval(addressWatch);
+    gateway.close();
     await mdns?.stop();
     https?.close();
     await app.close();
