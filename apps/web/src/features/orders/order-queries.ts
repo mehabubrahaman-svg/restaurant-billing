@@ -7,6 +7,7 @@ import type { FloorResponse, OrdersResponse } from '@restroos/contracts';
 export const ORDER_KEYS = {
   all: ['orders'],
   open: ['orders', 'open'],
+  billed: ['orders', 'billed'],
   detail: (id: string) => ['orders', 'detail', id] as const,
 } as const;
 
@@ -17,6 +18,11 @@ export function useOrder(id: string) {
 /** Open orders (takeaway and delivery have no table, so the floor lists them from here). */
 export function useOpenOrders() {
   return useQuery({ queryKey: ORDER_KEYS.open, queryFn: api.orders.listOpen });
+}
+
+/** Billed orders waiting for payment: the POS counter lists them next to the open ones. */
+export function useBilledOrders() {
+  return useQuery({ queryKey: ORDER_KEYS.billed, queryFn: api.orders.listBilled });
 }
 
 /** Statuses for which a table still shows its order on the floor. */
@@ -77,13 +83,18 @@ export function applyOrderSummary(client: QueryClient, summary: OrderSummary): v
     return changed ? { areas } : floor;
   });
 
-  client.setQueryData<OrdersResponse>(ORDER_KEYS.open, (list) => {
-    if (list === undefined) return list;
-    const existing = list.data.find((o) => o.id === summary.id);
-    if (existing !== undefined && existing.version > summary.version) return list;
-    const rest = list.data.filter((o) => o.id !== summary.id);
-    return { data: summary.status === 'OPEN' ? [...rest, summary] : rest };
-  });
+  for (const [key, status] of [
+    [ORDER_KEYS.open, 'OPEN'],
+    [ORDER_KEYS.billed, 'BILLED'],
+  ] as const) {
+    client.setQueryData<OrdersResponse>(key, (list) => {
+      if (list === undefined) return list;
+      const existing = list.data.find((o) => o.id === summary.id);
+      if (existing !== undefined && existing.version > summary.version) return list;
+      const rest = list.data.filter((o) => o.id !== summary.id);
+      return { data: summary.status === status ? [...rest, summary] : rest };
+    });
+  }
 
   const detail = client.getQueryData<Order>(ORDER_KEYS.detail(summary.id));
   if (detail === undefined) return;

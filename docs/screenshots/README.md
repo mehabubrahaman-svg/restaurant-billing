@@ -477,3 +477,183 @@ Files starting `real-hub-` were taken against a running Hub during verification,
 **Token display · Hindi · 768 px**
 
 ![Token display · Hindi · 768 px](sprint-4/token-display-hi-IN-768.png)
+
+## Sprint 5A — billing counter, payments, refunds, cash shifts
+
+Real-Hub shots walk through one service: a discounted bill split into food (GST) and liquor (VAT) invoices with manager approval, a split card + cash payment that opens a cash shift, a refund by line, a cancelled bill, and closing the shift with a count. The other screens are rendered against a mocked Hub in Hindi at tablet width and Bengali at desktop width.
+
+**Real Hub · Bills · Hindi · 768 px**
+
+![Real Hub · Bills · Hindi · 768 px](sprint-5a/real-hub-bills-hi-IN-768.png)
+
+**Real Hub · Coupon nope · English**
+
+![Real Hub · Coupon nope · English](sprint-5a/real-hub-coupon-nope.png)
+
+**Real Hub · Coupon welcome10 · English**
+
+![Real Hub · Coupon welcome10 · English](sprint-5a/real-hub-coupon-welcome10.png)
+
+**Real Hub · Flow approval · English**
+
+![Real Hub · Flow approval · English](sprint-5a/real-hub-flow-approval.png)
+
+**Real Hub · Flow billed · English**
+
+![Real Hub · Flow billed · English](sprint-5a/real-hub-flow-billed.png)
+
+**Real Hub · Flow cancel dialog · English**
+
+![Real Hub · Flow cancel dialog · English](sprint-5a/real-hub-flow-cancel-dialog.png)
+
+**Real Hub · Flow cancel reopened · English**
+
+![Real Hub · Flow cancel reopened · English](sprint-5a/real-hub-flow-cancel-reopened.png)
+
+**Real Hub · Flow discount dialog · English**
+
+![Real Hub · Flow discount dialog · English](sprint-5a/real-hub-flow-discount-dialog.png)
+
+**Real Hub · Flow discount preview · English**
+
+![Real Hub · Flow discount preview · English](sprint-5a/real-hub-flow-discount-preview.png)
+
+**Real Hub · Flow paid · English**
+
+![Real Hub · Flow paid · English](sprint-5a/real-hub-flow-paid.png)
+
+**Real Hub · Flow refund dialog · English**
+
+![Real Hub · Flow refund dialog · English](sprint-5a/real-hub-flow-refund-dialog.png)
+
+**Real Hub · Flow refund done · English**
+
+![Real Hub · Flow refund done · English](sprint-5a/real-hub-flow-refund-done.png)
+
+**Real Hub · Flow shift confirm · English**
+
+![Real Hub · Flow shift confirm · English](sprint-5a/real-hub-flow-shift-confirm.png)
+
+**Real Hub · Flow shift count · English**
+
+![Real Hub · Flow shift count · English](sprint-5a/real-hub-flow-shift-count.png)
+
+**Real Hub · Flow split ready · English**
+
+![Real Hub · Flow split ready · English](sprint-5a/real-hub-flow-split-ready.png)
+
+**Real Hub · Flow split shiftprompt · English**
+
+![Real Hub · Flow split shiftprompt · English](sprint-5a/real-hub-flow-split-shiftprompt.png)
+
+**Real Hub · Flow z report · English**
+
+![Real Hub · Flow z report · English](sprint-5a/real-hub-flow-z-report.png)
+
+**Real Hub · Pos t1 · Bengali · 1366 px**
+
+![Real Hub · Pos t1 · Bengali · 1366 px](sprint-5a/real-hub-pos-t1-bn-IN-1366.png)
+
+**Real Hub · Pos t1 · Hindi · 768 px**
+
+![Real Hub · Pos t1 · Hindi · 768 px](sprint-5a/real-hub-pos-t1-hi-IN-768.png)
+
+**Real Hub · Z report · Bengali · 1366 px**
+
+![Real Hub · Z report · Bengali · 1366 px](sprint-5a/real-hub-z-report-bn-IN-1366.png)
+
+**Approval · Bengali · 1366 px**
+
+![Approval · Bengali · 1366 px](sprint-5a/approval-bn-IN-1366.png)
+
+**Approval · Hindi · 768 px**
+
+![Approval · Hindi · 768 px](sprint-5a/approval-hi-IN-768.png)
+
+**Bills · Bengali · 1366 px**
+
+![Bills · Bengali · 1366 px](sprint-5a/bills-bn-IN-1366.png)
+
+**Bills · Hindi · 768 px**
+
+![Bills · Hindi · 768 px](sprint-5a/bills-hi-IN-768.png)
+
+**Discount dialog · Bengali · 1366 px**
+
+![Discount dialog · Bengali · 1366 px](sprint-5a/discount-dialog-bn-IN-1366.png)
+
+**Discount dialog · Hindi · 768 px**
+
+![Discount dialog · Hindi · 768 px](sprint-5a/discount-dialog-hi-IN-768.png)
+
+**Payment split · Bengali · 1366 px**
+
+![Payment split · Bengali · 1366 px](sprint-5a/payment-split-bn-IN-1366.png)
+
+**Payment split · Hindi · 768 px**
+
+![Payment split · Hindi · 768 px](sprint-5a/payment-split-hi-IN-768.png)
+
+**Pos liquor · Bengali · 1366 px**
+
+![Pos liquor · Bengali · 1366 px](sprint-5a/pos-liquor-bn-IN-1366.png)
+
+**Pos liquor · Hindi · 768 px**
+
+![Pos liquor · Hindi · 768 px](sprint-5a/pos-liquor-hi-IN-768.png)
+
+**Pos preview · Bengali · 1366 px**
+
+![Pos preview · Bengali · 1366 px](sprint-5a/pos-preview-bn-IN-1366.png)
+
+**Pos preview · Hindi · 768 px**
+
+![Pos preview · Hindi · 768 px](sprint-5a/pos-preview-hi-IN-768.png)
+
+**Receipt fallback · Bengali · 1366 px**
+
+![Receipt fallback · Bengali · 1366 px](sprint-5a/receipt-fallback-bn-IN-1366.png)
+
+**Receipt fallback · Hindi · 768 px**
+
+![Receipt fallback · Hindi · 768 px](sprint-5a/receipt-fallback-hi-IN-768.png)
+
+**Refund dialog · Bengali · 1366 px**
+
+![Refund dialog · Bengali · 1366 px](sprint-5a/refund-dialog-bn-IN-1366.png)
+
+**Refund dialog · Hindi · 768 px**
+
+![Refund dialog · Hindi · 768 px](sprint-5a/refund-dialog-hi-IN-768.png)
+
+**Shift count · Bengali · 1366 px**
+
+![Shift count · Bengali · 1366 px](sprint-5a/shift-count-bn-IN-1366.png)
+
+**Shift count · Hindi · 768 px**
+
+![Shift count · Hindi · 768 px](sprint-5a/shift-count-hi-IN-768.png)
+
+**Shift variance · Bengali · 1366 px**
+
+![Shift variance · Bengali · 1366 px](sprint-5a/shift-variance-bn-IN-1366.png)
+
+**Shift variance · Hindi · 768 px**
+
+![Shift variance · Hindi · 768 px](sprint-5a/shift-variance-hi-IN-768.png)
+
+**X report · Bengali · 1366 px**
+
+![X report · Bengali · 1366 px](sprint-5a/x-report-bn-IN-1366.png)
+
+**X report · Hindi · 768 px**
+
+![X report · Hindi · 768 px](sprint-5a/x-report-hi-IN-768.png)
+
+**Z report · Bengali · 1366 px**
+
+![Z report · Bengali · 1366 px](sprint-5a/z-report-bn-IN-1366.png)
+
+**Z report · Hindi · 768 px**
+
+![Z report · Hindi · 768 px](sprint-5a/z-report-hi-IN-768.png)

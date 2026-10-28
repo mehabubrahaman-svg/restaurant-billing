@@ -135,6 +135,16 @@ export async function billingRoutes(app: FastifyInstance, { cradle }: { cradle: 
     view(request, IdParams.parse(request.params).id),
   );
 
+  app.get(
+    '/invoices/:id/credit-notes',
+    { config: BILL },
+    async (request): Promise<{ data: Invoice[] }> => {
+      const { id } = IdParams.parse(request.params);
+      view(request, id); // 404 for an unknown invoice
+      return { data: queries.creditNotes(branchOf(request), id) };
+    },
+  );
+
   app.post(
     '/invoices/:id/payments',
     { config: { permission: 'billing.collect_payment' } },

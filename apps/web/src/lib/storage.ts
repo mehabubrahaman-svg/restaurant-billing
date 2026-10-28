@@ -20,6 +20,8 @@ export const STORAGE_KEYS = {
   soundMuted: 'restroos.sound-muted',
   /** The KDS station this screen shows ("all" or a station id). */
   kdsStation: 'restroos.kds-station',
+  /** The card/UPI terminal this POS used last, per method (JSON). */
+  lastTerminal: 'restroos.pos-terminal',
 } as const;
 
 export function readStorage(key: string): string | null {

@@ -8,6 +8,7 @@ import {
   Receipt,
   ScrollText,
   Settings,
+  Ticket,
   ShieldCheck,
   Users,
   UtensilsCrossed,
@@ -30,6 +31,7 @@ export interface AdminSection {
     | 'admin.tabs.branch'
     | 'admin.tabs.taxes'
     | 'admin.tabs.charges'
+    | 'admin.tabs.coupons'
     | 'admin.tabs.printers'
     | 'admin.tabs.menu'
     | 'admin.tabs.floor'
@@ -57,6 +59,7 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   { path: 'branch', icon: Settings, labelKey: 'admin.tabs.branch', permission: 'settings.manage' },
   { path: 'taxes', icon: Percent, labelKey: 'admin.tabs.taxes', permission: 'settings.manage' },
   { path: 'charges', icon: Receipt, labelKey: 'admin.tabs.charges', permission: 'settings.manage' },
+  { path: 'coupons', icon: Ticket, labelKey: 'admin.tabs.coupons', permission: 'settings.manage' },
   {
     path: 'printers',
     icon: Printer,

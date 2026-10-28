@@ -15,7 +15,11 @@ import {
   KitchenLayout,
 } from '../portals/kitchen/kitchen-layout';
 import { PortalPlaceholder } from '../portals/portal-placeholder';
-import { PosPage } from '../portals/pos/pos-page';
+import { BillsPage } from '../portals/pos/bills-page';
+import { CounterPage } from '../portals/pos/counter-page';
+import { InvoiceDetailPage } from '../portals/pos/invoice-detail-page';
+import { PosLayout } from '../portals/pos/pos-layout';
+import { ShiftPage, ShiftReportPage } from '../portals/pos/shift-page';
 import { QrMenuPage } from '../portals/qr-menu/qr-menu-page';
 import { TokenDisplayPage } from '../portals/token-display/token-display-page';
 import { AppShell } from './layout/app-shell';
@@ -39,6 +43,9 @@ const BranchSettingsPage = lazy(() =>
 );
 const ChargesPage = lazy(() =>
   import('../features/admin/charges/charges-page').then((m) => ({ default: m.ChargesPage })),
+);
+const CouponsPage = lazy(() =>
+  import('../features/admin/coupons/coupons-page').then((m) => ({ default: m.CouponsPage })),
 );
 const PrintersPage = lazy(() =>
   import('../features/admin/printers/printers-page').then((m) => ({ default: m.PrintersPage })),
@@ -120,6 +127,7 @@ function AdminGuard({
     | 'admin.tabs.branch'
     | 'admin.tabs.taxes'
     | 'admin.tabs.charges'
+    | 'admin.tabs.coupons'
     | 'admin.tabs.printers'
     | 'admin.tabs.menu'
     | 'admin.tabs.floor'
@@ -144,6 +152,7 @@ const OWN_ROUTES: ReadonlySet<Portal['id']> = new Set([
   'captain',
   'kitchen',
   'tokenDisplay',
+  'pos',
 ]);
 
 function adminRoutes(): RouteObject {
@@ -227,6 +236,7 @@ function adminRoutes(): RouteObject {
           ['branch', 'admin.tabs.branch', <BranchSettingsPage key="b" />],
           ['taxes', 'admin.tabs.taxes', <TaxesPage key="t" />],
           ['charges', 'admin.tabs.charges', <ChargesPage key="c" />],
+          ['coupons', 'admin.tabs.coupons', <CouponsPage key="cp" />],
           ['printers', 'admin.tabs.printers', <PrintersPage key="p" />],
         ] as const
       ).map(([path, labelKey, page]) => ({
@@ -263,6 +273,48 @@ function captainRoutes(): RouteObject {
       { path: 'orders/:orderId', element: <OrderPadPage /> },
     ],
   };
+}
+
+function posRoutes(): RouteObject {
+  const pos = portal('pos');
+  return {
+    path: 'pos',
+    element: (
+      <PortalGuard portal={pos}>
+        <PosLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <CounterPage /> },
+      { path: 'bills', element: <BillsPage /> },
+      { path: 'bills/:invoiceId', element: <InvoiceDetailPage /> },
+      {
+        path: 'shift',
+        element: (
+          <ShiftGuard>
+            <ShiftPage />
+          </ShiftGuard>
+        ),
+      },
+      {
+        path: 'shift/:shiftId',
+        element: (
+          <ShiftGuard>
+            <ShiftReportPage />
+          </ShiftGuard>
+        ),
+      },
+    ],
+  };
+}
+
+function ShiftGuard({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <RequirePermission permission="cash.shift_manage" name={t('pos.tabs.shift')}>
+      {children}
+    </RequirePermission>
+  );
 }
 
 function kitchenRoutes(): RouteObject {
@@ -317,11 +369,12 @@ export const routes: RouteObject[] = [
           adminRoutes(),
           captainRoutes(),
           kitchenRoutes(),
+          posRoutes(),
           ...PORTALS.filter((p) => !OWN_ROUTES.has(p.id)).map((p) => ({
             path: p.path,
             element: (
               <PortalGuard portal={p}>
-                {p.id === 'pos' ? <PosPage portal={p} /> : <PortalPlaceholder portal={p} />}
+                <PortalPlaceholder portal={p} />
               </PortalGuard>
             ),
           })),

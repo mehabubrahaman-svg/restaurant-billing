@@ -5,7 +5,20 @@ import {
   ApproveResponseSchema,
   AuditLogPageSchema,
   AuditVerifyResponseSchema,
+  BillPreviewResponseSchema,
+  CouponSchema,
+  CouponsResponseSchema,
+  PrintDocumentSchema,
+  PrintOutcomeSchema,
+  BillResponseSchema,
   BranchSettingsSchema,
+  InvoiceSchema,
+  InvoicesResponseSchema,
+  RefundResponseSchema,
+  ShiftReportSchema,
+  type BillRequest,
+  type InvoiceStatus,
+  type PaymentMethod,
   ChefsResponseSchema,
   FireKotsResponseSchema,
   KitchenMetricsSchema,
@@ -229,6 +242,43 @@ export interface CancelOrderBody {
   reason: string;
 }
 export type TransferMode = 'MOVE' | 'MERGE';
+
+/** One entry of POST /invoices/{id}/payments (split payment = several). Amounts in paise. */
+export interface NewPaymentBody {
+  method: PaymentMethod;
+  amount: number;
+  tendered?: number;
+  reference?: string;
+  cardLast4?: string;
+  terminalLabel?: string;
+}
+export type RefundMethod = Exclude<PaymentMethod, 'CREDIT' | 'AGGREGATOR'>;
+export interface RefundBody {
+  lines?: { invoiceLineId: string; quantity: number }[];
+  amount?: number;
+  method: RefundMethod;
+  reference?: string;
+  reason: string;
+}
+export interface SaveCouponBody {
+  code?: string;
+  kind?: 'PERCENT' | 'FIXED';
+  /** Basis points or paise. */
+  value?: number;
+  maxDiscount?: number | null;
+  minBill?: number;
+  validFrom?: string | null;
+  validTo?: string | null;
+  usageLimit?: number | null;
+}
+export interface CloseShiftBody {
+  version: number;
+  countedCash: number;
+  /** Rupee value of the note/coin → count. */
+  denominations?: Record<string, number>;
+  tenders: { method: PaymentMethod; terminalLabel: string; reportedAmount: number }[];
+  notes?: string;
+}
 export type KotTarget = 'ACCEPTED' | 'COOKING' | 'READY' | 'SERVED';
 
 /** Per-call extras for commands: a retry-safe key and a manager's approval. */
@@ -264,6 +314,15 @@ const TablesSchema = {
           : input;
     if (!Array.isArray(list)) throw new Error('not a table list');
     return list.map((t) => DiningTableSchema.parse(t));
+  },
+};
+
+/** GET /orders/{id}/invoices: full invoices (and credit notes) of one order. */
+const InvoicesOfOrderSchema = {
+  parse(input: unknown) {
+    const data = (input as { data?: unknown } | null)?.data;
+    if (!Array.isArray(data)) throw new Error('not an invoice list');
+    return { data: data.map((i) => InvoiceSchema.parse(i)) };
   },
 };
 
@@ -403,6 +462,8 @@ export const api = {
     open: (body: OpenOrderRequest, o?: CommandOptions) =>
       c.json('/orders', OrderSchema, { method: POST, body, ...extras(o) }),
     listOpen: () => c.json('/orders', OrdersResponseSchema, { query: { status: 'OPEN' } }),
+    /** Billed and waiting for payment (the POS counter lists these too). */
+    listBilled: () => c.json('/orders', OrdersResponseSchema, { query: { status: 'BILLED' } }),
     get: (id: string) => c.json(`/orders/${id}`, OrderSchema),
     update: (id: string, body: UpdateOrderBody, o?: CommandOptions) =>
       c.json(`/orders/${id}`, OrderSchema, { method: PATCH, body, ...extras(o) }),
@@ -421,6 +482,65 @@ export const api = {
       c.json(`/orders/${id}/kots`, FireKotsResponseSchema, { method: POST, ...extras(o) }),
     cancel: (id: string, body: CancelOrderBody, o?: CommandOptions) =>
       c.json(`/orders/${id}/cancel`, OrderSchema, { method: POST, body, ...extras(o) }),
+  },
+  billing: {
+    /** What the bill would be; nothing is saved. Two drafts when liquor is billed separately. */
+    preview: (orderId: string, body: BillRequest, signal?: AbortSignal) =>
+      c.json(`/orders/${orderId}/bill-preview`, BillPreviewResponseSchema, {
+        method: POST,
+        body,
+        ...(signal === undefined ? {} : { signal }),
+      }),
+    /** Issues the invoice(s): the order becomes BILLED. */
+    bill: (orderId: string, body: BillRequest, o?: CommandOptions) =>
+      c.json(`/orders/${orderId}/invoice`, BillResponseSchema, {
+        method: POST,
+        body,
+        ...extras(o),
+      }),
+    orderInvoices: (orderId: string) =>
+      c.json(`/orders/${orderId}/invoices`, InvoicesOfOrderSchema),
+    list: (date: string, status?: InvoiceStatus) =>
+      c.json('/invoices', InvoicesResponseSchema, { query: { date, status } }),
+    get: (id: string) => c.json(`/invoices/${id}`, InvoiceSchema),
+    pay: (id: string, payments: NewPaymentBody[], o?: CommandOptions) =>
+      c.json(`/invoices/${id}/payments`, InvoiceSchema, {
+        method: POST,
+        body: { payments },
+        ...extras(o),
+      }),
+    cancel: (id: string, body: { version: number; reason: string }, o?: CommandOptions) =>
+      c.json(`/invoices/${id}/cancel`, InvoiceSchema, { method: POST, body, ...extras(o) }),
+    refund: (id: string, body: RefundBody, o?: CommandOptions) =>
+      c.json(`/invoices/${id}/refunds`, RefundResponseSchema, { method: POST, body, ...extras(o) }),
+    /** The first print is the original; later ones say DUPLICATE (billing.reprint). */
+    print: (id: string, o?: CommandOptions) =>
+      c.json(`/invoices/${id}/print`, PrintOutcomeSchema, { method: POST, body: {}, ...extras(o) }),
+    /** The slip as blocks, for the on-screen preview and browser printing. */
+    receipt: (id: string) => c.json(`/invoices/${id}/receipt`, PrintDocumentSchema),
+  },
+  coupons: {
+    list: () => c.json('/coupons', CouponsResponseSchema),
+    create: (body: SaveCouponBody) => c.json('/coupons', CouponSchema, { method: POST, body }),
+    update: (id: string, body: SaveCouponBody & { version: number; isActive?: boolean }) =>
+      c.json(`/coupons/${id}`, CouponSchema, { method: PATCH, body }),
+  },
+  cashShifts: {
+    open: (openingFloat: number, o?: CommandOptions) =>
+      c.json('/cash-shifts', ShiftReportSchema, {
+        method: POST,
+        body: { openingFloat },
+        ...extras(o),
+      }),
+    /** The shift open on this device; 404 NOT_FOUND when there is none. */
+    current: () => c.json('/cash-shifts/current', ShiftReportSchema),
+    /** X report while open, Z report once closed. */
+    get: (id: string) => c.json(`/cash-shifts/${id}`, ShiftReportSchema),
+    close: (id: string, body: CloseShiftBody, o?: CommandOptions) =>
+      c.json(`/cash-shifts/${id}/close`, ShiftReportSchema, { method: POST, body, ...extras(o) }),
+    /** Prints the X (open) or Z (closed) report on the report printer. */
+    print: (id: string) =>
+      c.json(`/cash-shifts/${id}/print`, PrintOutcomeSchema, { method: POST, body: {} }),
   },
   kitchen: {
     /** Active KOTs (NEW → READY); all stations when `stationId` is null. */

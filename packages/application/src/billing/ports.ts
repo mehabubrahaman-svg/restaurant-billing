@@ -215,6 +215,8 @@ export interface ShiftReportView {
 export interface BillingQueries {
   invoice(branchId: string, id: string): InvoiceView | undefined;
   forOrder(branchId: string, orderId: string): InvoiceView[];
+  /** Credit notes issued against an invoice, oldest first, on any business day. */
+  creditNotes(branchId: string, invoiceId: string): InvoiceView[];
   list(branchId: string, businessDate: string, status?: string): InvoiceSummaryView[];
   summary(branchId: string, id: string): InvoiceSummaryView | undefined;
   shiftReport(branchId: string, id: string): ShiftReportView | undefined;

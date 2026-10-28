@@ -35,6 +35,17 @@ export class SqliteBillingQueries implements BillingQueries {
       .map((i) => this.view(i));
   }
 
+  creditNotes(branchId: string, invoiceId: string): InvoiceView[] {
+    return this.db
+      .prepare<[string, string], string>(
+        `SELECT id FROM invoices WHERE original_invoice_id = ? AND branch_id = ? AND kind = 'CREDIT_NOTE'
+          ORDER BY created_at, invoice_no`,
+      )
+      .pluck()
+      .all(invoiceId, branchId)
+      .map((id) => this.invoice(branchId, id)!);
+  }
+
   summary(branchId: string, id: string): InvoiceSummaryView | undefined {
     return this.list(branchId, null, undefined, id)[0];
   }

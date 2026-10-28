@@ -26,6 +26,7 @@ import { LOCALE_OPTIONS } from '../../../i18n/config';
 import { tDynamic } from '../../../lib/dynamic-t';
 import { useErrorMessage } from '../../../lib/errors';
 import { fieldErrors } from '../../../lib/form';
+import { bpToPercent, percentToBp } from '../../../lib/units';
 import { usePermission } from '../../auth/permissions';
 import { gstinProblem } from '../../setup/gstin';
 import { RECEIPT_LANGUAGES, type ReceiptLanguage } from '../../setup/setup-form';
@@ -48,6 +49,7 @@ const MESSAGES = {
   exciseLicenceNo: 'setup.errors.excise',
   receiptLanguages: 'setup.errors.receiptLanguages',
   dayStartsAt: 'branch.dayStartError',
+  discountLimitBp: 'branch.discountLimitError',
   receiptHeader: 'branch.receiptTextError',
   receiptFooter: 'branch.receiptTextError',
 } as const;
@@ -71,8 +73,10 @@ export function BranchSettingsPage() {
 
 type Draft = Omit<
   BranchSettings,
-  'id' | 'code' | 'stateCode' | 'stateName' | 'version' | 'liquorEnabled'
+  'id' | 'code' | 'stateCode' | 'stateName' | 'version' | 'liquorEnabled' | 'discountLimitBp'
 > & {
+  /** Percent as typed ("10", "12.5"); converted to basis points on save. */
+  discountLimit: string;
   address: string;
   phone: string;
   gstin: string;
@@ -94,6 +98,7 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
     exciseLicenceNo: settings.exciseLicenceNo ?? '',
     liquorInvoice: settings.liquorInvoice,
     cashRounding: settings.cashRounding,
+    discountLimit: bpToPercent(settings.discountLimitBp),
     defaultLocale: settings.defaultLocale,
     receiptLanguages: settings.receiptLanguages,
     receiptHeader: settings.receiptHeader,
@@ -121,6 +126,7 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
         receiptHeader: draft.receiptHeader,
         receiptFooter: draft.receiptFooter,
         dayStartsAt: draft.dayStartsAt,
+        discountLimitBp: percentToBp(draft.discountLimit) ?? -1,
       };
       const parsed = UpdateBranchSettingsRequestSchema.safeParse(body);
       const found: Partial<Record<keyof typeof MESSAGES, ErrorKey>> = fieldErrors(parsed, MESSAGES);
@@ -283,6 +289,20 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
                     </option>
                   ))}
                 </Select>
+              )}
+            </Field>
+            <Field
+              label={t('branch.discountLimit')}
+              hint={t('branch.discountLimitHint')}
+              error={err('discountLimitBp')}
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  inputMode="decimal"
+                  value={draft.discountLimit}
+                  onChange={(e) => set({ discountLimit: e.target.value })}
+                />
               )}
             </Field>
             <Field

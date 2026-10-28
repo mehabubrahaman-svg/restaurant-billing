@@ -1,5 +1,6 @@
 import type { FloorResponse, ServerMessage } from '@restroos/contracts';
 import type { QueryClient } from '@tanstack/react-query';
+import { applyInvoiceSummary, BILLING_KEYS } from '../billing/billing-queries';
 import { FLOOR_KEY } from '../floor/floor-queries';
 import { useKdsFlags } from '../kitchen/kds-flags';
 import { applyKot, KITCHEN_KEYS } from '../kitchen/kds-queries';
@@ -65,6 +66,9 @@ export function applyLiveMessage(client: QueryClient, message: ServerMessage): v
     case 'token.ready':
       markTokenReady(client, message.data.tokenNo);
       return;
+    case 'billing.invoice.updated':
+      applyInvoiceSummary(client, message.data.invoice);
+      return;
     case 'menu.changed':
       void client.invalidateQueries({ queryKey: MENU_KEYS.snapshot }, NO_CANCEL);
       return;
@@ -74,8 +78,13 @@ export function applyLiveMessage(client: QueryClient, message: ServerMessage): v
 /** `resync`: too much was missed to replay; refetch everything live screens show. */
 export function resyncAll(client: QueryClient): Promise<void> {
   return Promise.all(
-    [FLOOR_KEY, ORDER_KEYS.all, KITCHEN_KEYS.all, TOKENS_KEY, MENU_KEYS.snapshot].map((queryKey) =>
-      client.invalidateQueries({ queryKey }),
-    ),
+    [
+      FLOOR_KEY,
+      ORDER_KEYS.all,
+      KITCHEN_KEYS.all,
+      TOKENS_KEY,
+      MENU_KEYS.snapshot,
+      BILLING_KEYS.all,
+    ].map((queryKey) => client.invalidateQueries({ queryKey })),
   ).then(() => undefined);
 }

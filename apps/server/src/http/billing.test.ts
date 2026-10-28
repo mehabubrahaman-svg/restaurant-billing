@@ -296,6 +296,8 @@ describe('billing', () => {
       expect.objectContaining({ method: 'CASH', amount: -6300 }),
     ]);
     expect(after).toMatchObject({ status: 'PARTIALLY_REFUNDED' });
+    const notes = (await admin('GET', `/invoices/${invoice.id}/credit-notes`)).json().data;
+    expect(notes.map((n: { invoiceNo: string }) => n.invoiceNo)).toEqual(['KOL1/CN/2026-27/000001']);
 
     const x = ShiftReportSchema.parse((await cashier('GET', '/cash-shifts/current')).json());
     expect(x).toMatchObject({

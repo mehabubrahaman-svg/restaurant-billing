@@ -14,6 +14,23 @@
   }
 }
 
+/*
+ * A receipt printed from the browser (no thermal printer, or it is offline):
+ * when a .print-only copy is on the page, print just that, on 80 mm paper.
+ */
+.print-only {
+  display: none;
+}
+@media print {
+  body:has(> .print-only) > :not(.print-only) {
+    display: none !important;
+  }
+  body:has(> .print-only) > .print-only {
+    display: block;
+    width: 72mm;
+  }
+}
+
 /* KDS: a late KOT pulses its outline (wireframes §6); a new one slides in. */
 @keyframes kds-late {
   0%,
