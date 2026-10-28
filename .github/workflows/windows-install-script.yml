@@ -16,7 +16,7 @@ jobs:
       - name: Run the one-line installer
         shell: powershell
         run: |
-          $url = "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/scripts/install-windows.ps1"
+          $url = "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/scripts/install-windows.ps1"
           & ([scriptblock]::Create((Invoke-RestMethod $url))) -Branch '${{ github.ref_name }}' -Yes -NoStart
 
       - name: Start the Hub and check it answers
