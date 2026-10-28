@@ -11,6 +11,26 @@ other devices connect to it.
 | Database key protected by | The OS keychain | A key file next to the data |
 | Hindi/Bengali receipts as images | Yes (built in) | Only if Playwright's Chromium is installed |
 
+## Quickest on Windows: the one-line installer
+
+Open **PowerShell** (Start → type *PowerShell*) and paste:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/mehabubrahaman-svg/restaurant-billing/claude/nifty-shannon-ahib6j/scripts/install-windows.ps1 | iex"
+```
+
+It downloads the code and a private copy of Node.js 22 into
+`%LOCALAPPDATA%\RestroOS` (no admin rights needed for those), checks for
+Python 3 and the Visual Studio 2022 C++ Build Tools that the encrypted
+database module is compiled with, and, after asking, installs whichever is
+missing with winget (the Build Tools are about 3 GB and ask for admin). Then
+it installs and builds RestroOS, adds **RestroOS Hub** to the Desktop and the
+Start menu, and asks whether to start it. Starting opens a console window
+(the Hub; it shows the setup code) and the browser at <http://localhost:7400>.
+Run the same line again to update: the data in `%LOCALAPPDATA%\RestroOS\data`
+is kept. It is tested on Windows Server 2022 by the *Windows one-line
+installer* workflow.
+
 ## A. Install the desktop app
 
 ### 1. Get the installer

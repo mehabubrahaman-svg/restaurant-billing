@@ -34,7 +34,13 @@ Admin · Captain · Kitchen (KDS) · POS Billing · Inventory · Vendor · Accou
 
 ## Run it on a PC
 
-Install Node.js 22 and Git, then:
+On Windows, one line in PowerShell downloads, installs and starts it ([details](docs/12-install-and-run.md)):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/mehabubrahaman-svg/restaurant-billing/claude/nifty-shannon-ahib6j/scripts/install-windows.ps1 | iex"
+```
+
+Anywhere else, install Node.js 22 and Git, then:
 
 ```bash
 corepack enable
