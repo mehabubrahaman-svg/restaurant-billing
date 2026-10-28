@@ -96,25 +96,25 @@
   "user": {
     "menu": "Account menu for {name}",
     "switch": "Switch user",
-    "role": {
-      "owner": "Owner",
-      "cashier": "Cashier",
-      "captain": "Captain",
-      "chef": "Chef"
-    }
+    "account": "My account"
   },
   "login": {
     "title": "Sign in",
     "device": "{name} · {kind}",
-    "recentUsers": "Recent users on this device",
-    "otherUser": "Other",
     "chooseUser": "Choose your name to sign in",
-    "employeeCode": "Employee code",
-    "unknownCode": "No staff member with this code. Check the code or ask a manager.",
     "pinFor": "PIN for {name}",
-    "pinProgress": "{entered, number} of {length, number} digits entered",
     "backspace": "Delete last digit",
-    "submit": "Sign in"
+    "submit": "Sign in",
+    "pinEntered": "{entered, plural, =0 {No digits entered} one {# digit entered} other {# digits entered}}",
+    "method": "Sign-in method",
+    "withPin": "PIN",
+    "withPassword": "Password",
+    "whoIsThis": "Who is signing in?",
+    "username": "Username",
+    "password": "Password",
+    "signingIn": "Signing in…",
+    "chooseBranch": "Choose a branch",
+    "branchCurrent": "{code} · last used"
   },
   "access": {
     "deniedTitle": "No access",
@@ -156,5 +156,585 @@
   },
   "time": {
     "minutes": "{minutes, number} min"
+  },
+  "errors": {
+    "network": "Cannot reach the Hub. Check the Wi-Fi and try again.",
+    "invalidCredentials": "Wrong username, password or PIN.",
+    "accountLocked": "Too many wrong attempts. This account is locked until {time}.",
+    "accountLockedNoTime": "Too many wrong attempts. This account is locked for now. Ask a manager to unlock it.",
+    "accountDisabled": "This account is switched off. Ask a manager.",
+    "rateLimited": "Too many attempts. Wait a minute and try again.",
+    "versionConflict": "Someone else changed this in the meantime. Reload and try again.",
+    "forbidden": "Your role is not allowed to do this.",
+    "validation": "Some details are not valid. Check the highlighted fields.",
+    "notFound": "This item no longer exists.",
+    "sessionExpired": "Your session has ended. Sign in again.",
+    "badResponse": "The Hub sent an unexpected reply. Update the app or call support.",
+    "invalidSetupCode": "Wrong setup code. Check the code shown on the Hub’s screen.",
+    "setupAlreadyDone": "This Hub is already set up. Sign in instead.",
+    "liquorNotPermitted": "Liquor sale is not allowed in this state. Turn liquor off, or confirm the override.",
+    "approvalCancelled": "Approval was cancelled.",
+    "unknown": "Something went wrong. Try again.",
+    "stateNotAvailable": "This state is not available on this installation yet.",
+    "passwordTooWeak": "This password is too easy to guess. Use a longer one, ideally a short sentence.",
+    "pinTooWeak": "This PIN is too easy to guess. Avoid repeated digits (1111) and runs (1234, 4321).",
+    "usernameTaken": "This username is already used. Choose another.",
+    "lastAdmin": "This is the only Admin. Give someone else the Admin role first.",
+    "cannotDeactivateSelf": "You cannot deactivate your own account.",
+    "permissionUnknown": "One of the permissions is not known to the Hub. Reload and try again.",
+    "taxGroupInvalid": "This tax group is not valid. Check the rates and components.",
+    "liquorNotEnabled": "Liquor is not enabled for this branch.",
+    "withDetail": "Couldn’t complete this: {detail}"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "edit": "Edit",
+    "retry": "Try again",
+    "reload": "Reload",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "active": "Active",
+    "inactive": "Inactive",
+    "none": "None",
+    "optional": "Optional"
+  },
+  "boot": {
+    "starting": "Starting RestroOS…",
+    "hubUnreachableTitle": "Cannot reach the Hub",
+    "hubUnreachableBody": "This device could not talk to the Hub PC. Check that the Hub is on and that this device is on the restaurant Wi-Fi."
+  },
+  "approval": {
+    "title": "Manager approval needed",
+    "description": "A manager must approve: {action}",
+    "chooseManager": "Manager, tap your name",
+    "approve": "Approve"
+  },
+  "account": {
+    "signedInAs": "Signed in as {name} ({username})",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Repeat new password",
+    "passwordChanged": "Password changed.",
+    "wrongCurrent": "The current password is wrong."
+  },
+  "validation": {
+    "required": "Required.",
+    "passwordShort": "Use at least 8 characters.",
+    "passwordHint": "At least 8 characters. A short sentence is easy to remember.",
+    "passwordsDiffer": "The two entries do not match.",
+    "pinFormat": "4 to 6 digits.",
+    "pinsDiffer": "The two PINs do not match.",
+    "username": "3 to 32 lowercase letters, digits, dot, dash or underscore.",
+    "nameLength": "2 to 120 characters.",
+    "percent": "Enter a percentage such as 5 or 2.5 (up to two decimals).",
+    "amount": "Enter an amount such as 50 or 49.50.",
+    "email": "Not a valid email address.",
+    "chooseOne": "Choose at least one.",
+    "phone": "Up to 20 digits.",
+    "pinWeak": "Too easy to guess: avoid 1111, 1234 or 4321."
+  },
+  "setup": {
+    "title": "Set up RestroOS",
+    "progress": "Setup progress",
+    "stepOf": "Step {current, number} of {total, number}",
+    "language": {
+      "title": "Language",
+      "body": "Choose the language for setup. It also becomes the restaurant’s default; each person can change their own later."
+    },
+    "business": {
+      "title": "Business and branch",
+      "orgName": "Business name",
+      "orgNameHint": "The name customers know, e.g. Spice Route.",
+      "legalName": "Legal name (as on GST registration)",
+      "branchName": "Branch name",
+      "branchCode": "Branch code",
+      "branchCodeHint": "2 to 8 letters or digits, printed in bill numbers, e.g. KOL1.",
+      "state": "State or union territory",
+      "statePlaceholder": "Choose your state",
+      "gstin": "GSTIN",
+      "gstinHint": "Optional for now. 15 characters; the first two digits are the state code.",
+      "address": "Address",
+      "phone": "Phone"
+    },
+    "liquor": {
+      "title": "Liquor",
+      "body": "Does this branch sell alcohol? Liquor is billed with state VAT, not GST.",
+      "enable": "Sell liquor at this branch",
+      "enableHint": "Adds the bar menu, liquor tax and the liquor bill.",
+      "prohibitedTitle": "{state} is set up as a prohibition (dry) state",
+      "prohibitedBody": "Liquor sale is normally not allowed here, so it stays off. Turn it on only if this branch holds a valid licence.",
+      "override": "This branch holds a valid liquor licence: allow liquor anyway",
+      "vatTin": "VAT TIN",
+      "excise": "Excise licence number",
+      "advisor": "Liquor VAT and surcharge differ by state and change often. There is no default: confirm both rates with your tax advisor before entering them.",
+      "vatPercent": "VAT on liquor (%)",
+      "surchargePercent": "Surcharge (%)",
+      "separate": "Separate bill for liquor",
+      "separateHint": "Food (GST) and liquor (VAT) on two bills with their own numbers. Many states require this."
+    },
+    "receipt": {
+      "title": "Receipt languages",
+      "body": "Choose one or two languages to print on bills. Two makes a bilingual bill."
+    },
+    "admin": {
+      "title": "Owner account",
+      "body": "This account can do everything, including adding staff. Keep the password safe.",
+      "fullName": "Full name",
+      "pin": "Quick PIN",
+      "pinHint": "Optional. 4 to 6 digits for fast sign-in on shared devices.",
+      "pinConfirm": "Repeat PIN"
+    },
+    "backup": {
+      "title": "Backup passphrase",
+      "body": "Backups are encrypted with this passphrase. You need it to restore your data on a new PC.",
+      "warningTitle": "It cannot be recovered",
+      "warningBody": "Nobody, not even RestroOS support, can reset this passphrase. Write it down and keep it somewhere safe, away from the restaurant PC.",
+      "passphrase": "Backup passphrase",
+      "passphraseHint": "At least 12 characters. A short sentence works well.",
+      "confirm": "Repeat passphrase",
+      "acknowledge": "I have written the passphrase down and kept it safe"
+    },
+    "review": {
+      "title": "Review and finish",
+      "liquorOn": "On · VAT {vat}% · surcharge {surcharge}%",
+      "liquorOff": "Off",
+      "setupCode": "Setup code",
+      "setupCodeHint": "Shown on the Hub PC’s screen when it started for the first time. It proves you are at the restaurant.",
+      "submit": "Finish setup",
+      "submitting": "Setting up…"
+    },
+    "errors": {
+      "branchCode": "2 to 8 letters or digits.",
+      "state": "Choose the state.",
+      "gstinFormat": "Not a valid GSTIN: 15 characters such as 19AABCU9603R1ZX.",
+      "gstinState": "This GSTIN belongs to another state. Its first two digits must match the state code.",
+      "gstinChecksum": "The last character does not match. Check the GSTIN for typing mistakes.",
+      "prohibition": "Liquor is not allowed in this state unless you confirm the licence override.",
+      "vatTin": "5 to 20 characters.",
+      "excise": "3 to 40 characters.",
+      "vatRate": "VAT must be more than 0% and at most 100%.",
+      "receiptLanguages": "Choose one or two languages.",
+      "passphraseShort": "Use at least 12 characters.",
+      "passphrasesDiffer": "The two passphrases do not match.",
+      "acknowledge": "Please confirm you have written it down.",
+      "setupCode": "Enter the code shown on the Hub (6 to 32 characters)."
+    }
+  },
+  "regions": {
+    "NORTH": "North",
+    "EAST": "East",
+    "NORTH_EAST": "North-East",
+    "CENTRAL": "Central",
+    "WEST": "West",
+    "SOUTH": "South",
+    "ISLANDS": "Islands"
+  },
+  "states": {
+    "01": "Jammu and Kashmir",
+    "02": "Himachal Pradesh",
+    "03": "Punjab",
+    "04": "Chandigarh",
+    "05": "Uttarakhand",
+    "06": "Haryana",
+    "07": "Delhi",
+    "08": "Rajasthan",
+    "09": "Uttar Pradesh",
+    "10": "Bihar",
+    "11": "Sikkim",
+    "12": "Arunachal Pradesh",
+    "13": "Nagaland",
+    "14": "Manipur",
+    "15": "Mizoram",
+    "16": "Tripura",
+    "17": "Meghalaya",
+    "18": "Assam",
+    "19": "West Bengal",
+    "20": "Jharkhand",
+    "21": "Odisha",
+    "22": "Chhattisgarh",
+    "23": "Madhya Pradesh",
+    "24": "Gujarat",
+    "26": "Dadra and Nagar Haveli and Daman and Diu",
+    "27": "Maharashtra",
+    "29": "Karnataka",
+    "30": "Goa",
+    "31": "Lakshadweep",
+    "32": "Kerala",
+    "33": "Tamil Nadu",
+    "34": "Puducherry",
+    "35": "Andaman and Nicobar Islands",
+    "36": "Telangana",
+    "37": "Andhra Pradesh",
+    "38": "Ladakh"
+  },
+  "admin": {
+    "label": "Admin sections",
+    "tabs": {
+      "overview": "Overview",
+      "users": "Staff",
+      "roles": "Roles",
+      "branch": "Branch",
+      "taxes": "Taxes",
+      "charges": "Charges",
+      "printers": "Printers",
+      "audit": "Audit log"
+    }
+  },
+  "users": {
+    "title": "Staff",
+    "description": "Who can sign in, what they can do, and their PINs.",
+    "add": "Add staff",
+    "editTitle": "Edit {name}",
+    "filter": "Show",
+    "all": "All",
+    "empty": "No staff to show.",
+    "name": "Name",
+    "roles": "Roles",
+    "status": "Status",
+    "lastLogin": "Last sign-in",
+    "actions": "Actions",
+    "never": "Never",
+    "locked": "Locked",
+    "email": "Email",
+    "language": "Language",
+    "languageHint": "The app switches to it when this person signs in.",
+    "languageDevice": "Same as the device",
+    "usernameFixed": "Usernames cannot be changed.",
+    "saved": "{name} saved.",
+    "accountActions": "Account",
+    "resetPassword": "Reset password",
+    "resetPin": "Reset PIN",
+    "newPin": "New PIN",
+    "unlock": "Unlock",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "done": {
+      "password": "Password reset.",
+      "pin": "PIN reset.",
+      "unlock": "Account unlocked.",
+      "deactivate": "Account deactivated. This person can no longer sign in.",
+      "reactivate": "Account reactivated."
+    }
+  },
+  "roleNames": {
+    "ADMIN": "Admin",
+    "MANAGER": "Manager",
+    "CASHIER": "Cashier",
+    "CAPTAIN": "Captain",
+    "KITCHEN": "Kitchen staff",
+    "INVENTORY": "Store keeper",
+    "ACCOUNTANT": "Accountant"
+  },
+  "roles": {
+    "title": "Roles",
+    "description": "A role is a set of permissions. Give each person one or more roles.",
+    "add": "New role",
+    "locked": "Fixed",
+    "builtIn": "Built-in",
+    "userCount": "{count, plural, =0 {No staff} one {# person} other {# people}}",
+    "permissionCount": "{count, plural, one {# permission} other {# permissions}}",
+    "view": "View permissions",
+    "editPermissions": "Edit permissions",
+    "backToRoles": "All roles",
+    "editorDescription": "{count, plural, =0 {No permissions selected.} one {# permission selected.} other {# permissions selected.}}",
+    "adminLocked": "The Admin role always has every permission and cannot be changed, so the owner can never be locked out.",
+    "selectedOf": "{count, number} of {total, number}",
+    "selectAll": "All of {module}",
+    "name": "Role name",
+    "code": "Role code",
+    "codeHint": "Capital letters, digits and _, e.g. HEAD_CHEF.",
+    "codeFixed": "Codes cannot be changed.",
+    "codeError": "Start with a capital letter; 2 to 32 capital letters, digits or _.",
+    "saved": "Role {name} saved."
+  },
+  "permissionModules": {
+    "admin": "Administration",
+    "orders": "Tables and orders",
+    "kitchen": "Kitchen",
+    "billing": "Billing",
+    "crm": "Customers",
+    "inventory": "Stock",
+    "purchase": "Purchase",
+    "accounts": "Accounts",
+    "reports": "Reports",
+    "sync": "Cloud sync"
+  },
+  "permissionNames": {
+    "dashboard": {
+      "view": "View owner dashboard"
+    },
+    "users": {
+      "manage": "Manage staff accounts"
+    },
+    "roles": {
+      "manage": "Edit roles and permissions"
+    },
+    "settings": {
+      "manage": "Change restaurant, tax and printer settings"
+    },
+    "floor": {
+      "manage": "Edit floor plan and tables"
+    },
+    "menu": {
+      "manage": "Edit menu, prices and recipes",
+      "toggle_availability": "Mark items out of stock (86)"
+    },
+    "audit": {
+      "view": "View audit log"
+    },
+    "backup": {
+      "manage": "Run and restore backups"
+    },
+    "tables": {
+      "view": "View floor plan",
+      "update_status": "Mark tables free, reserved or cleaning"
+    },
+    "orders": {
+      "create": "Take orders",
+      "update": "Change items before sending to kitchen",
+      "fire_kot": "Send KOT to kitchen",
+      "item_cancel": "Cancel an item already sent",
+      "cancel": "Cancel a whole order",
+      "transfer_table": "Move or merge tables"
+    },
+    "reservations": {
+      "manage": "Manage reservations"
+    },
+    "kds": {
+      "view": "View kitchen display",
+      "update_status": "Accept, cook and mark KOTs ready",
+      "assign_chef": "Assign KOTs to chefs"
+    },
+    "billing": {
+      "create": "Make bills",
+      "collect_payment": "Take payments",
+      "discount": "Give discounts within the role limit",
+      "discount_override": "Approve discounts above the limit",
+      "complimentary": "Mark items or bills complimentary",
+      "reprint": "Reprint bills",
+      "cancel": "Cancel bills",
+      "refund": "Approve refunds and credit notes",
+      "credit_sale": "Bill to credit customers"
+    },
+    "cash": {
+      "shift_manage": "Open and close cash shifts"
+    },
+    "customers": {
+      "view": "View customers",
+      "manage": "Add and edit customers"
+    },
+    "loyalty": {
+      "adjust": "Adjust loyalty points"
+    },
+    "inventory": {
+      "view": "View stock",
+      "manage_items": "Add and edit stock items",
+      "adjust": "Record wastage and adjustments",
+      "count": "Record stock counts"
+    },
+    "vendors": {
+      "view": "View vendors",
+      "manage": "Add and edit vendors"
+    },
+    "po": {
+      "create": "Create purchase orders",
+      "approve": "Approve purchase orders"
+    },
+    "grn": {
+      "post": "Receive goods (GRN)"
+    },
+    "vendor_payments": {
+      "create": "Record vendor payments"
+    },
+    "accounts": {
+      "view": "View ledgers",
+      "journal": "Post journal entries"
+    },
+    "expenses": {
+      "manage": "Record expenses"
+    },
+    "reports": {
+      "sales": "Sales and tax reports",
+      "inventory": "Stock reports",
+      "financial": "Profit and loss, balance sheet",
+      "export": "Export PDF, Excel and CSV"
+    },
+    "sync": {
+      "manage": "Set up cloud sync"
+    }
+  },
+  "branch": {
+    "title": "Branch settings",
+    "description": "Details printed on bills, registrations, and how bills are rounded.",
+    "business": "Business details",
+    "stateFixed": "The state and branch code cannot be changed after setup.",
+    "registrations": "Tax registrations",
+    "liquorBill": "Liquor bill",
+    "liquorSame": "Same bill as food",
+    "liquorSeparate": "Separate liquor bill",
+    "billing": "Billing",
+    "rounding": "Round bill totals",
+    "roundingHint": "The difference shows on the bill as “Round off”.",
+    "roundingNone": "No rounding",
+    "roundingHalf": "To the nearest ₹0.50",
+    "roundingRupee": "To the nearest ₹1",
+    "dayStart": "Business day starts at",
+    "dayStartHint": "Sales after midnight but before this time count for the previous day.",
+    "dayStartError": "Enter a time such as 05:00.",
+    "languagesAndReceipt": "Language and receipt",
+    "defaultLanguage": "Default language",
+    "defaultLanguageHint": "For devices and staff that have not chosen one.",
+    "receiptHeader": "Receipt header",
+    "receiptHeaderHint": "Printed at the top of every bill, e.g. FSSAI licence number.",
+    "receiptFooter": "Receipt footer",
+    "receiptFooterHint": "Printed at the bottom, e.g. “Thank you! Visit again.”",
+    "receiptTextError": "Up to 500 characters.",
+    "saved": "Branch settings saved."
+  },
+  "taxes": {
+    "title": "Taxes",
+    "description": "Tax groups are attached to menu items. GST for food; state VAT for liquor.",
+    "add": "New tax group",
+    "editTitle": "Edit {name}",
+    "empty": "No tax groups yet.",
+    "name": "Name",
+    "nameHint": "As staff will see it, e.g. GST 5% (restaurant).",
+    "type": "Tax type",
+    "types": {
+      "GST": "GST",
+      "VAT": "VAT (liquor)",
+      "NONE": "No tax"
+    },
+    "category": "GST category",
+    "categories": {
+      "TAXABLE": "Taxable",
+      "NIL_RATED": "Nil rated",
+      "EXEMPT": "Exempt",
+      "NON_GST": "Outside GST"
+    },
+    "series": "Bill series",
+    "seriesHint": "Which bill numbers items with this tax go on.",
+    "seriesInv": "INV · food bill",
+    "seriesLiq": "LIQ · liquor bill",
+    "inclusive": "Prices include tax",
+    "inclusiveHint": "Menu prices already contain this tax; the bill shows it inside the price.",
+    "inclusiveBadge": "Tax inclusive",
+    "gstRate": "GST rate (%)",
+    "gstRateHint": "Total GST, e.g. 5. CGST and SGST are half each; IGST is the full rate.",
+    "gstPreview": "Within the state: CGST {half}% + SGST {half}%. Other states: IGST {full}%.",
+    "advanced": "Advanced: edit each component",
+    "components": "Components",
+    "componentCode": "Component",
+    "ratePercent": "Rate (%)",
+    "appliesTo": "Applies",
+    "scopes": {
+      "ALWAYS": "Always",
+      "INTRA_STATE": "Within the state",
+      "INTER_STATE": "Other states"
+    },
+    "addComponent": "Add component",
+    "removeComponent": "Remove component",
+    "surcharge": "Surcharge",
+    "componentRate": "{code} {rate}%",
+    "componentRateScoped": "{code} {rate}% ({scope})",
+    "withinState": "within the state",
+    "interState": "other states",
+    "noTax": "No tax",
+    "saved": "{name} saved.",
+    "errors": {
+      "gstOdd": "This rate cannot be split equally into CGST and SGST. Use the advanced editor.",
+      "components": "Add 1 to 6 components, each with a rate up to 100%."
+    }
+  },
+  "orderTypes": {
+    "DINE_IN": "Dine-in",
+    "TAKEAWAY": "Takeaway",
+    "DELIVERY": "Delivery",
+    "QR_SELF": "QR self-order",
+    "KIOSK": "Kiosk"
+  },
+  "charges": {
+    "title": "Service and other charges",
+    "description": "Charges added to bills, such as a service charge or packing charge.",
+    "add": "New charge",
+    "empty": "No charges yet.",
+    "name": "Name",
+    "nameHint": "Printed on the bill, e.g. Service charge.",
+    "value": "Amount",
+    "percentValue": "{rate}%",
+    "kind": "Charged as",
+    "percent": "Percentage of bill",
+    "fixed": "Fixed amount",
+    "amount": "Amount (₹)",
+    "orderTypes": "Order types",
+    "taxGroup": "Tax on this charge",
+    "taxGroupHint": "Service charge usually carries the same GST as food.",
+    "optional": "Customer may refuse",
+    "optionalHint": "The cashier can remove it from a bill. Service charge must be optional.",
+    "optionalBadge": "Optional",
+    "saved": "{name} saved."
+  },
+  "printers": {
+    "title": "Printers",
+    "description": "Bill and KOT printers. Printing itself arrives in a later update.",
+    "add": "Add printer",
+    "empty": "No printers yet.",
+    "name": "Name",
+    "nameHint": "Where it is, e.g. Counter bill printer.",
+    "purpose": "Used for",
+    "purposes": {
+      "BILL": "Bills",
+      "KOT": "KOT (kitchen)",
+      "REPORT": "Reports",
+      "LABEL": "Labels"
+    },
+    "connection": "Connection",
+    "connections": {
+      "NETWORK": "Network (LAN)",
+      "USB": "USB",
+      "BLUETOOTH": "Bluetooth",
+      "BLE": "Bluetooth LE",
+      "SYSTEM": "Windows/Linux printer"
+    },
+    "address": "Address",
+    "addressHint": "IP address and port for network printers (e.g. 192.168.1.50:9100), or the device name.",
+    "paper": "Paper width",
+    "width": "{mm, number} mm",
+    "test": "Print test page",
+    "testQueued": "Test page queued for {name}.",
+    "saved": "{name} saved."
+  },
+  "audit": {
+    "title": "Audit log",
+    "description": "Every change and sensitive action, who did it and who approved it. Entries cannot be edited or deleted.",
+    "verify": "Verify integrity",
+    "verifying": "Checking…",
+    "verifyOk": "The audit log is intact",
+    "verifyOkBody": "{rows, plural, one {# entry} other {# entries}} checked at {time}. None has been altered or removed.",
+    "verifyBroken": "The audit log has been tampered with",
+    "verifyBrokenBody": "The chain breaks at entry {id}. Entries from here on may have been altered or deleted. Back up the database now and contact support.",
+    "action": "Action",
+    "entity": "Record",
+    "from": "From",
+    "to": "To",
+    "apply": "Filter",
+    "clear": "Clear",
+    "empty": "No entries match.",
+    "time": "Time",
+    "actor": "By",
+    "approver": "Approved by",
+    "reason": "Reason",
+    "changes": "Changes",
+    "system": "System",
+    "noDiff": "No field changes recorded.",
+    "field": "Field",
+    "before": "Before",
+    "after": "After",
+    "more": "Load more"
   }
 }

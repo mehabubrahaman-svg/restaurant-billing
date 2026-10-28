@@ -1,9 +1,11 @@
+import { Spinner } from '@restroos/ui';
 import { motion } from 'motion/react';
+import { Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { ConnectionPill } from '../../features/connection/connection-pill';
 import { FULL_SCREEN_PORTAL_PATH, useDeviceStore } from '../../stores/device-store';
-import { useSessionStore } from '../../stores/session-store';
+import { useAuthStore } from '../../features/auth/auth-store';
 import { NavLinks } from './nav-links';
 import { TopBar } from './top-bar';
 
@@ -16,7 +18,12 @@ export function AppShell() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const kind = useDeviceStore((s) => s.kind);
-  const user = useSessionStore((s) => s.user);
+  const status = useAuthStore((s) => s.status);
+
+  // Every staff screen needs a session; remember where the user was going.
+  if (status !== 'authenticated') {
+    return <Navigate to="/login" replace state={{ from: pathname }} />;
+  }
 
   const devicePath = FULL_SCREEN_PORTAL_PATH[kind];
   if (devicePath !== undefined) {
@@ -32,8 +39,6 @@ export function AppShell() {
       </div>
     );
   }
-
-  if (user === null) return <Navigate to="/login" replace />;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -52,7 +57,7 @@ export function AppShell() {
           <NavLinks variant="side" />
         </nav>
         <motion.main
-          key={pathname}
+          key={pathname.split('/')[1]}
           id="main"
           tabIndex={-1}
           initial={{ opacity: 0 }}
@@ -60,7 +65,9 @@ export function AppShell() {
           transition={{ duration: 0.15 }}
           className="min-w-0 flex-1 p-4 pb-24 md:p-6"
         >
-          <Outlet />
+          <Suspense fallback={<Spinner label={t('common.loading')} />}>
+            <Outlet />
+          </Suspense>
         </motion.main>
       </div>
       <nav

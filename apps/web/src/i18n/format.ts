@@ -50,3 +50,24 @@ export function formatNumber(
 ): string {
   return formatter(intlLocale(locale, digits), options).format(value);
 }
+
+const dateCache = new Map<string, Intl.DateTimeFormat>();
+
+/** Date and time in the user's language and digits, e.g. "28 Oct 2026, 2:41 pm". */
+export function formatDateTime(
+  iso: string,
+  locale: string,
+  digits: DigitStyle = 'latin',
+  options: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' },
+): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const tag = intlLocale(locale, digits);
+  const key = `${tag}|${JSON.stringify(options)}`;
+  let df = dateCache.get(key);
+  if (df === undefined) {
+    df = new Intl.DateTimeFormat(tag, options);
+    dateCache.set(key, df);
+  }
+  return df.format(date);
+}

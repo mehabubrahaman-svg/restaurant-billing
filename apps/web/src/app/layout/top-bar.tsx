@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ConnectionPill } from '../../features/connection/connection-pill';
 import { LanguageSwitcher } from '../../i18n/language-switcher';
+import { useSession } from '../../features/auth/auth-store';
 import { useHomePath } from '../use-home-path';
 import { UserMenu } from './user-menu';
 
@@ -10,6 +11,7 @@ import { UserMenu } from './user-menu';
 export function TopBar() {
   const { t } = useTranslation();
   const home = useHomePath();
+  const session = useSession();
 
   return (
     <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-surface px-3 py-2 md:px-4">
@@ -23,13 +25,13 @@ export function TopBar() {
         <span className="max-sm:sr-only">{t('app.name')}</span>
       </Link>
 
-      {/* Branch switcher arrives with multi-branch support; for now it only shows the branch. */}
+      {/* The signed-in branch. People with several branches switch at sign-in. */}
       <p
         className="hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm lg:flex"
         title={t('app.branchLabel')}
       >
         <MapPin aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
-        <span>{t('app.branch')}</span>
+        <span>{session?.branch.name ?? t('app.branch')}</span>
       </p>
 
       <div className="ms-auto flex flex-wrap items-center justify-end gap-2">

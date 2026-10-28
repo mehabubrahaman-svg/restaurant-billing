@@ -1,5 +1,6 @@
 import { ArrowRight, Button, cn, Delete } from '@restroos/ui';
 import { motion } from 'motion/react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormat } from '../../i18n/use-format';
 
@@ -12,6 +13,10 @@ interface PinPadProps {
   readonly onDigit: (digit: string) => void;
   readonly onBackspace: () => void;
   readonly onSubmit: () => void;
+  /** Accessible name of the → key. */
+  readonly submitLabel?: string;
+  /** Also accept digits, Backspace and Enter from a physical keyboard or USB keypad. */
+  readonly listenToKeyboard?: boolean;
 }
 
 /** Wireframes §3: dots, then a 3×4 pad of 64 px keys ending in ⌫ 0 →. */
@@ -22,10 +27,32 @@ export function PinPad({
   onDigit,
   onBackspace,
   onSubmit,
+  submitLabel,
+  listenToKeyboard = false,
 }: PinPadProps) {
   const { t } = useTranslation();
   const format = useFormat();
   const key = 'h-16 text-2xl font-semibold tabular-nums';
+
+  // Latest handlers without re-subscribing on every keystroke.
+  const handlers = useRef({ onDigit, onBackspace, onSubmit });
+  useEffect(() => {
+    handlers.current = { onDigit, onBackspace, onSubmit };
+  });
+  useEffect(() => {
+    if (!listenToKeyboard) return;
+    function onKey(event: KeyboardEvent) {
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      if (/^\d$/.test(event.key)) handlers.current.onDigit(event.key);
+      else if (event.key === 'Backspace') handlers.current.onBackspace();
+      else if (event.key === 'Enter') handlers.current.onSubmit();
+      else return;
+      event.preventDefault();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [listenToKeyboard]);
 
   return (
     <div className="flex flex-col items-center gap-5">
@@ -43,7 +70,7 @@ export function PinPad({
         ))}
       </div>
       <p className="sr-only" aria-live="polite">
-        {t('login.pinProgress', { entered, length })}
+        {t('login.pinEntered', { entered })}
       </p>
       <div className="grid w-full max-w-72 grid-cols-3 gap-3">
         {DIGITS.map((d) => (
@@ -67,9 +94,9 @@ export function PinPad({
           className={key}
           onClick={onSubmit}
           disabled={!canSubmit}
-          aria-label={t('login.submit')}
+          aria-label={submitLabel ?? t('login.submit')}
         >
-          <ArrowRight aria-hidden="true" className="size-7!" />
+          <ArrowRight aria-hidden="true" className="size-7! rtl:rotate-180" />
         </Button>
       </div>
     </div>

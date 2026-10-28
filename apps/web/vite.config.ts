@@ -2,8 +2,11 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type ProxyOptions } from 'vite';
 
-/** The Hub's Fastify server (apps/server). In production it serves this SPA itself. */
-const HUB_ORIGIN = 'http://localhost:7400';
+/**
+ * The Hub's Fastify server (apps/server). In production it serves this SPA
+ * itself. Override for a second, throw-away Hub: RESTRO_HUB_ORIGIN=http://localhost:7401.
+ */
+const HUB_ORIGIN = process.env['RESTRO_HUB_ORIGIN'] ?? 'http://localhost:7400';
 
 const proxy: Record<string, ProxyOptions> = {
   '/api': { target: HUB_ORIGIN },

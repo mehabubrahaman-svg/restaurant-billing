@@ -18,7 +18,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 
 ## Sprint 2 — Identity & setup (2 wks)
 
-> **Status (2026-10-28)**: backend delivered and tested (WP 2.1–2.5 server side, 54 server tests). Web screens are in progress. Decisions made: hand-written SQL repositories instead of Drizzle (ADR 0010); sign-in bookkeeping doesn't bump the user's edit version; refresh cookie is not `Secure` until LAN TLS pairing (Sprint 3), with a config switch `RESTRO_SECURE_COOKIES`.
+> **Status (2026-10-28)**: delivered. Backend: 54 server tests. Web: login (password + PIN pad), setup wizard, permission-aware UI, manager-approval dialog, staff/roles/branch/taxes/charges/printers/audit screens, change password, all in English/Hindi/Bengali (108 web + 28 UI tests), verified against a real Hub. Open: the admin tab strip scrolls sideways at 768 px; Hindi/Bengali text awaits native-speaker review. Decisions made: hand-written SQL repositories instead of Drizzle (ADR 0010); sign-in bookkeeping doesn't bump the user's edit version; refresh cookie is not `Secure` until LAN TLS pairing (Sprint 3), with a config switch `RESTRO_SECURE_COOKIES`.
 
 | WP | Deliverable |
 |---|---|

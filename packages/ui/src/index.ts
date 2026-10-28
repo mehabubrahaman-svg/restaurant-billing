@@ -1,4 +1,13 @@
 export { cn } from './lib/cn';
+export { Alert, type AlertProps, type AlertTone } from './components/alert';
+export { Checkbox, type CheckboxProps } from './components/checkbox';
+export { Dialog, type DialogProps } from './components/dialog';
+export { Field, type FieldControlProps, type FieldProps } from './components/field';
+export { Select } from './components/select';
+export { Spinner } from './components/spinner';
+export { Switch, type SwitchProps } from './components/switch';
+export { Table, TBody, Td, Th, THead, Tr } from './components/table';
+export { Textarea } from './components/textarea';
 export * from './icons';
 export { Badge, badgeVariants, type BadgeProps } from './components/badge';
 export { Button, buttonVariants, type ButtonProps } from './components/button';

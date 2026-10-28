@@ -1,18 +1,94 @@
-import { useEffect } from 'react';
-import { Outlet } from 'react-router';
+import { Button, Spinner, Store } from '@restroos/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Suspense, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { api } from '../api/endpoints';
+import { ApprovalDialog } from '../features/approval/approval-dialog';
+import { useAuthStore } from '../features/auth/auth-store';
 import { useConnectionMonitor } from '../features/connection/use-connection-monitor';
 import { applyTheme, effectiveTheme, useThemeStore } from '../features/theme/theme-store';
+import { Toaster } from '../features/toast/toaster';
 import { useDeviceStore } from '../stores/device-store';
 
-/** Wraps every route, public ones included: connection polling and theme. */
+export const SETUP_STATUS_KEY = ['setup', 'status'] as const;
+
+function Splash({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="grid min-h-dvh place-items-center p-6 text-center">
+      <div className="flex max-w-md flex-col items-center gap-4">
+        <span className="grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
+          <Store aria-hidden="true" className="size-7" />
+        </span>
+        {children}
+      </div>
+    </main>
+  );
+}
+
+/**
+ * Wraps the staff app: connection polling, theme, approval dialog, toasts, and
+ * the start-up order: (1) an un-set-up Hub goes to /setup; (2) the session is
+ * restored from the refresh cookie; (3) only then do routes render.
+ */
 export function RootLayout() {
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
   useConnectionMonitor();
   const preference = useThemeStore((s) => s.preference);
   const kind = useDeviceStore((s) => s.kind);
+  const authStatus = useAuthStore((s) => s.status);
 
   useEffect(() => {
     applyTheme(effectiveTheme(preference, kind));
   }, [preference, kind]);
 
-  return <Outlet />;
+  // Concurrent calls (StrictMode runs effects twice) share one refresh request.
+  useEffect(() => {
+    void useAuthStore.getState().restore();
+  }, []);
+
+  const setup = useQuery({
+    queryKey: SETUP_STATUS_KEY,
+    queryFn: api.setup.status,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: 1,
+  });
+
+  if (setup.isError) {
+    return (
+      <Splash>
+        <h1 className="text-xl font-bold">{t('boot.hubUnreachableTitle')}</h1>
+        <p className="text-muted-foreground">{t('boot.hubUnreachableBody')}</p>
+        <Button onClick={() => void setup.refetch()} disabled={setup.isFetching}>
+          {t('common.retry')}
+        </Button>
+      </Splash>
+    );
+  }
+  if (setup.isPending || (authStatus === 'restoring' && !setup.data.needsSetup)) {
+    return (
+      <Splash>
+        <Spinner label={t('boot.starting')} />
+      </Splash>
+    );
+  }
+  if (setup.data.needsSetup && pathname !== '/setup') return <Navigate to="/setup" replace />;
+  if (!setup.data.needsSetup && pathname === '/setup') return <Navigate to="/login" replace />;
+
+  return (
+    <>
+      <Suspense
+        fallback={
+          <Splash>
+            <Spinner label={t('common.loading')} />
+          </Splash>
+        }
+      >
+        <Outlet />
+      </Suspense>
+      <ApprovalDialog />
+      <Toaster />
+    </>
+  );
 }

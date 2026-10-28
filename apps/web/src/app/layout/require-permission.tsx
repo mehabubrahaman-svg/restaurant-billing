@@ -1,23 +1,32 @@
 import { ShieldAlert } from '@restroos/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSessionStore } from '../../stores/session-store';
-import { canOpenPortal, type Portal } from '../portals';
+import { usePermission, type PermissionRequirement } from '../../features/auth/permissions';
 import { StatusPage } from './status-page';
 
 /**
- * Hides a portal from users without its permission. This is a UX guard only:
- * the Hub enforces the same permissions on every API call.
+ * Shows a "no access" page instead of `children` for users without the
+ * permission. UX only: the Hub enforces the same permission on every call.
  */
-export function RequirePermission({ portal, children }: { portal: Portal; children: ReactNode }) {
+export function RequirePermission({
+  permission,
+  name,
+  children,
+}: {
+  /** Any of these; `null` means open to every signed-in user. */
+  permission: PermissionRequirement | null;
+  /** What the user tried to open, for the message. */
+  name: string;
+  children: ReactNode;
+}) {
   const { t } = useTranslation();
-  const user = useSessionStore((s) => s.user);
-  if (canOpenPortal(user, portal)) return children;
+  const allowed = usePermission(permission ?? []);
+  if (permission === null || allowed) return children;
   return (
     <StatusPage
       icon={ShieldAlert}
       title={t('access.deniedTitle')}
-      body={t('access.deniedBody', { portal: t(portal.titleKey) })}
+      body={t('access.deniedBody', { portal: name })}
     />
   );
 }

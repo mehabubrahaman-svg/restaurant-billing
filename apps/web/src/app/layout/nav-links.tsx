@@ -1,7 +1,7 @@
 import { cn } from '@restroos/ui';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
-import { useSessionStore } from '../../stores/session-store';
+import { useSession } from '../../features/auth/auth-store';
 import { navPortals } from '../portals';
 
 /**
@@ -11,11 +11,11 @@ import { navPortals } from '../portals';
  */
 export function NavLinks({ variant }: { variant: 'side' | 'bar' }) {
   const { t } = useTranslation();
-  const user = useSessionStore((s) => s.user);
+  const session = useSession();
 
   return (
     <ul className={cn('flex', variant === 'bar' ? 'flex-row' : 'flex-col gap-1')}>
-      {navPortals(user).map((p) => {
+      {navPortals(session).map((p) => {
         const Icon = p.icon;
         return (
           <li key={p.id} className={cn(variant === 'bar' && 'min-w-18 flex-1')}>

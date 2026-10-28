@@ -1,20 +1,27 @@
 import { useCallback, useState } from 'react';
 
-export const PIN_LENGTH = 4;
+/** PINs are 4 to 6 digits (contracts PinSchema). */
+export const PIN_MIN = 4;
+export const PIN_MAX = 6;
 
 /** Digit-by-digit PIN state shared by the on-screen pad and the physical keyboard. */
-export function usePinEntry(length = PIN_LENGTH) {
+export function usePinEntry() {
   const [pin, setPin] = useState('');
 
-  const press = useCallback(
-    (digit: string) => {
-      if (!/^\d$/.test(digit)) return;
-      setPin((p) => (p.length < length ? p + digit : p));
-    },
-    [length],
-  );
+  const press = useCallback((digit: string) => {
+    if (!/^\d$/.test(digit)) return;
+    setPin((p) => (p.length < PIN_MAX ? p + digit : p));
+  }, []);
   const backspace = useCallback(() => setPin((p) => p.slice(0, -1)), []);
   const clear = useCallback(() => setPin(''), []);
 
-  return { pin, length, complete: pin.length === length, press, backspace, clear };
+  return {
+    pin,
+    /** Dots to draw: four, growing to six as digits are typed. */
+    length: Math.max(PIN_MIN, pin.length),
+    complete: pin.length >= PIN_MIN,
+    press,
+    backspace,
+    clear,
+  };
 }
