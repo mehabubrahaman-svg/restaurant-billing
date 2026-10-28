@@ -10,3 +10,7 @@ coverage/
 .env.*
 !.env.example
 data/
+# Desktop app build output (apps/desktop/build holds the icons)
+apps/desktop/server-bundle/
+apps/desktop/stage/
+apps/desktop/release/

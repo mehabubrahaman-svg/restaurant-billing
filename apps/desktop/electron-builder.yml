@@ -1,0 +1,46 @@
+# Installers for the Hub PC (docs/09 WP 5.9). Run through `pnpm package`
+# (scripts/package.mjs), which stages a flat npm install first: pnpm's
+# symlinked node_modules don't package well.
+appId: app.restroos.hub
+productName: RestroOS Hub
+copyright: Copyright © RestroOS
+directories:
+  output: ../release
+  buildResources: build
+# Plain files, no asar: the server runs in a utility process and loads the
+# native SQLite module and its ES modules straight from disk.
+asar: false
+files:
+  - dist/**
+  - server-bundle/**
+  - '!server-bundle/*.map'
+  - package.json
+extraResources:
+  - { from: resources/web, to: web }
+  - { from: resources/migrations, to: migrations }
+  - { from: resources/fonts, to: fonts }
+  - { from: build/icons, to: icons }
+npmRebuild: true
+win:
+  target: [nsis]
+  icon: build/icons/icon.png
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: true
+  runAfterFinish: true
+  createDesktopShortcut: true
+  shortcutName: RestroOS Hub
+linux:
+  target: [AppImage, deb]
+  category: Office
+  icon: build/icons
+  executableName: restroos-hub
+  synopsis: Restaurant POS server for the local network
+deb:
+  # safeStorage seals the database key with the desktop keyring.
+  depends: [libsecret-1-0]
+# The update feed (electron-updater). Pilot builds go to the beta channel.
+publish:
+  provider: generic
+  url: https://updates.restroos.app/hub

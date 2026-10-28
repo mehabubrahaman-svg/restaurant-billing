@@ -3,3 +3,6 @@ dist
 coverage
 database/migrations/*.sql
 docs
+apps/desktop/server-bundle
+apps/desktop/stage
+apps/desktop/release

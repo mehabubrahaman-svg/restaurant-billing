@@ -19,6 +19,7 @@ import { join } from 'node:path';
 import pino from 'pino';
 import { loadConfig, type ServerConfig } from './config';
 import { buildContainer } from './container';
+import { desktopBridge } from './desktop-bridge';
 import { buildApp } from './http/app';
 import { checkAuditChain } from './jobs/audit-chain-check';
 import { scheduleDaily } from './jobs/daily';
@@ -154,6 +155,12 @@ async function main() {
     process.exit(exitCode);
   };
   process.once('SIGINT', () => void shutdown('SIGINT'));
+  // Inside the desktop app: stop when it asks (Windows has no SIGTERM), and say when ready.
+  const desktop = desktopBridge();
+  desktop?.onMessage((message) => {
+    if (message.type === 'shutdown') void shutdown('desktop');
+  });
+  desktop?.send({ type: 'ready', httpPort: config.port, httpsPort: config.httpsPort });
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
 }
 

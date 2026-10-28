@@ -25,7 +25,18 @@ const layer = (files, forbidden, message) => ({
 });
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', '**/node_modules/**', 'docs/**', '**/*.config.*'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/node_modules/**',
+      'docs/**',
+      '**/*.config.*',
+      'apps/desktop/server-bundle/**',
+      'apps/desktop/stage/**',
+      'apps/desktop/release/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -1,0 +1,23 @@
+{
+  "name": "@restroos/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RestroOS Hub: the desktop app that runs the restaurant's server",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "tsup && pnpm --filter @restroos/server exec tsup --config tsup.desktop.config.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "electron .",
+    "package": "pnpm build && node scripts/package.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3-multiple-ciphers": "13.0.3",
+    "electron-updater": "6.8.10"
+  },
+  "devDependencies": {
+    "electron": "44.7.2",
+    "electron-builder": "26.17.0",
+    "tsup": "9.0.0"
+  }
+}

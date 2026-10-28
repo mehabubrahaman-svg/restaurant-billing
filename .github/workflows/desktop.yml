@@ -1,0 +1,66 @@
+name: Desktop installers
+
+# Builds the Hub installers (docs/09 WP 5.9) on the OS they are for. Run it
+# by hand from the Actions tab, or push a tag such as hub-v0.1.0.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['hub-v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Package (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the web app
+        run: pnpm --filter @restroos/web build
+
+      - name: Build the installers
+        run: pnpm --filter @restroos/desktop package
+
+      # The packaged app must really start the Hub: this catches a native
+      # module that wasn't rebuilt for Electron, or a missing resource.
+      - name: Smoke test the AppImage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb
+          app=$(ls apps/desktop/release/*.AppImage | head -1)
+          chmod +x "$app"
+          export RESTRO_DATA_DIR="$RUNNER_TEMP/hub-data"
+          xvfb-run -a "$app" --appimage-extract-and-run --no-sandbox --hidden > "$RUNNER_TEMP/hub.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:7400/api/v1/health; then exit 0; fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/hub.log"; ls -R "$HOME/.config/RestroOS Hub/logs" && cat "$HOME/.config/RestroOS Hub/logs/hub.log"
+          exit 1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: restroos-hub-${{ runner.os }}
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/latest*.yml
+          if-no-files-found: error

@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Checks don't run Electron; the desktop workflow downloads it when packaging.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

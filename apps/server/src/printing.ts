@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import type { Logger } from 'pino';
+import { desktopBridge } from './desktop-bridge';
 
 /** Where the bundled Noto fonts are: RESTRO_FONTS_DIR, else the web app's @fontsource packages. */
 export function findFontsDir(configured: string | undefined): string | null {
@@ -31,8 +32,33 @@ export function rasterRenderer(
   logger: Logger,
 ): RasterRenderer | null {
   if (options.mode === 'off' || !options.fontsDir) return null;
-  const executor = options.executor ?? playwrightExecutor(logger);
+  const executor = options.executor ?? desktopExecutor() ?? playwrightExecutor(logger);
   return executor ? new ChromiumRasterRenderer(executor, fontsourceFiles(options.fontsDir)) : null;
+}
+
+/** Inside the desktop app: its offscreen Chromium window renders the slip. */
+function desktopExecutor(): ScriptExecutor | undefined {
+  const bridge = desktopBridge();
+  if (!bridge) return undefined;
+  let next = 1;
+  const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  bridge.onMessage((message) => {
+    if (message.type !== 'raster-result') return;
+    const call = pending.get(message.id);
+    pending.delete(message.id);
+    if (message.error !== undefined) call?.reject(new Error(message.error));
+    else call?.resolve(message.result);
+  });
+  return (script) =>
+    new Promise((resolve, reject) => {
+      const id = next++;
+      pending.set(id, { resolve, reject });
+      bridge.send({ type: 'raster', id, script });
+      setTimeout(() => {
+        if (pending.delete(id))
+          reject(new Error('the desktop app did not render the slip in time'));
+      }, 15_000).unref();
+    });
 }
 
 function playwrightExecutor(logger: Logger): ScriptExecutor | undefined {

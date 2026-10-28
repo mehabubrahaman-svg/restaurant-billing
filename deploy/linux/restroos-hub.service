@@ -1,0 +1,39 @@
+# RestroOS Hub as a headless Linux service (no desktop app), for a Hub PC
+# that runs without a screen. Install:
+#   sudo useradd --system --home /var/lib/restroos restroos
+#   sudo install -d -o restroos /var/lib/restroos /opt/restroos
+#   copy apps/server/dist, apps/web/dist, database/migrations and node_modules to /opt/restroos
+#   sudo install -m 600 -o restroos hub.env /etc/restroos/hub.env   (see below)
+#   sudo cp restroos-hub.service /etc/systemd/system/ && sudo systemctl enable --now restroos-hub
+#
+# /etc/restroos/hub.env:
+#   RESTRO_DATA_DIR=/var/lib/restroos
+#   RESTRO_DB_KEY_FILE=/etc/restroos/db.key      # 32+ random characters, mode 600
+#   RESTRO_WEB_DIST=/opt/restroos/web
+#   RESTRO_MIGRATIONS_DIR=/opt/restroos/migrations
+#   RESTRO_HOST=0.0.0.0
+#   RESTRO_BACKUP_COPY_DIR=/mnt/backup-usb        # optional second copy
+
+[Unit]
+Description=RestroOS Hub (restaurant POS server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=restroos
+EnvironmentFile=/etc/restroos/hub.env
+Environment=NODE_ENV=production
+WorkingDirectory=/opt/restroos
+ExecStart=/usr/bin/node /opt/restroos/dist/main.js
+# Exit 75 means "restart me" (a backup restore was staged); crashes restart too.
+Restart=always
+RestartSec=2
+# Give the Hub time to finish requests and checkpoint the database.
+TimeoutStopSec=20
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
