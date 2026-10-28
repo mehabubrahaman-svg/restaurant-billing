@@ -45,3 +45,7 @@ export * from './reporting/csv';
 export * from './backup/backup-service';
 export type * from './backup/ports';
 export * from './backup/retention';
+export * from './inventory/inventory-service';
+export * from './inventory/inventory-projector';
+export type * from './inventory/ports';
+export { addDays, StockLedger, type MovementContext } from './inventory/stock-ledger';

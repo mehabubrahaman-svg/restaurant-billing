@@ -61,6 +61,14 @@ export const ERROR_STATUS = {
   BACKUP_UNAVAILABLE: 422,
   /** The passphrase does not open this backup, or the file is not a RestroOS backup. */
   BACKUP_UNREADABLE: 422,
+  /** Another inventory item (or menu item) already uses this SKU. */
+  SKU_TAKEN: 409,
+  /** The dish (or this size of it) already has a recipe: edit that one. */
+  RECIPE_EXISTS: 409,
+  /** Opening stock is entered once, before the item's first movement; use an adjustment or a count. */
+  STOCK_ALREADY_MOVED: 409,
+  /** The unit measures something else (kg for an item kept in pieces). */
+  UNIT_MISMATCH: 422,
   /** No active printer for this purpose is set up. */
   NO_PRINTER: 409,
   /** The printer didn't answer (off, out of paper, wrong address). */

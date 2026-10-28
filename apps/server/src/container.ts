@@ -4,6 +4,8 @@ import {
   CatalogService,
   CouponService,
   CustomerService,
+  InventoryProjector,
+  InventoryService,
   PrintService,
   SalesChannelService,
   type RasterRenderer,
@@ -50,6 +52,10 @@ import {
   SqliteBackupRepository,
   SqliteCouponRepository,
   SqliteCustomerRepository,
+  SqliteInventoryQueries,
+  SqliteInventoryRepository,
+  SqliteMenuLookup,
+  SqliteProjectionLog,
   SqliteInvoiceRepository,
   SqliteShiftRepository,
   SqliteSalesChannelRepository,
@@ -125,6 +131,8 @@ export interface Cradle {
   salesChannelService: SalesChannelService;
   customerService: CustomerService;
   backupService: BackupService;
+  inventoryService: InventoryService;
+  inventoryProjector: InventoryProjector;
 }
 
 export interface ContainerOverrides {
@@ -422,6 +430,34 @@ export function buildContainer(
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
+        }),
+    ),
+    inventoryService: single(
+      (c) =>
+        new InventoryService({
+          inventory: new SqliteInventoryRepository(c.db),
+          queries: new SqliteInventoryQueries(c.db),
+          menu: new SqliteMenuLookup(c.db),
+          calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    inventoryProjector: single(
+      (c) =>
+        new InventoryProjector({
+          log: new SqliteProjectionLog(c.db),
+          inventory: new SqliteInventoryRepository(c.db),
+          calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+          onError: (error, event) =>
+            c.logger.error(
+              { err: error, seq: event.seq, eventType: event.type },
+              'stock not moved for this event; skipped',
+            ),
         }),
     ),
     hubNetwork: overrides.hubNetwork

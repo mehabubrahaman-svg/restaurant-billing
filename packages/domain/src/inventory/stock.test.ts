@@ -3,6 +3,8 @@ import {
   allocateFefo,
   consumptionFor,
   costPerBase,
+  portionCost,
+  shareBp,
   stockLevel,
   stockValue,
   weightedAverageCost,
@@ -75,5 +77,16 @@ describe('stock arithmetic', () => {
     expect(stockLevel(1_000, 1_000, 10_000)).toBe('LOW');
     expect(stockLevel(5_000, 1_000, 10_000)).toBe('OK');
     expect(stockLevel(12_000, 1_000, 10_000)).toBe('OVER');
+  });
+
+  it('costs one portion of a recipe ingredient and expresses shares in basis points', () => {
+    // 1 kg chicken (10% trim) for 4 portions at ₹240/kg: 275 g a portion = ₹66
+    expect(
+      portionCost({ inventoryItemId: 'c', qtyMilli: 1_000_000, wastageBp: 1_000 }, 4, 24_000),
+    ).toBe(6_600);
+    // ₹66 of a ₹320 dish is 20.625% food cost, 2062 bp rounded half-even
+    expect(shareBp(6_600, 32_000)).toBe(2_062);
+    expect(shareBp(-500, 20_000)).toBe(-250);
+    expect(shareBp(1, 0)).toBeNull();
   });
 });

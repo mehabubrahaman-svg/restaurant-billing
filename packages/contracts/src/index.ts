@@ -7,6 +7,7 @@ export * from './http/common';
 export * from './http/customers';
 export * from './http/devices';
 export * from './http/floor';
+export * from './http/inventory';
 export * from './http/health';
 export * from './http/kitchen';
 export * from './http/printing';

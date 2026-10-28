@@ -75,7 +75,7 @@ describe('backups', () => {
 
     s.database.db.close();
     const replaced = applyPendingRestore(s.database.path, new Date());
-    expect(replaced).toMatch(/restore\/replaced-.*\.db$/);
+    expect(replaced).toMatch(/restore[\\/]replaced-.*\.db$/);
     expect(existsSync(staged)).toBe(false);
     const live = openDatabase({ path: s.database.path, key: s.database.key });
     expect(live.prepare('SELECT count(*) FROM customers').pluck().get()).toBe(0);

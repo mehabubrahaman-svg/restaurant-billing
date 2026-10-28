@@ -134,7 +134,7 @@ export type MenuItem = z.infer<typeof MenuItemSchema>;
 export const MenuItemsResponseSchema = z.object({ data: z.array(MenuItemSchema) });
 export type MenuItemsResponse = z.infer<typeof MenuItemsResponseSchema>;
 
-const SkuSchema = z
+export const SkuSchema = z
   .string()
   .trim()
   .toUpperCase()

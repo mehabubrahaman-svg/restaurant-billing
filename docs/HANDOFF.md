@@ -18,6 +18,12 @@ templates exist (`packages/domain/src/identity/`).
 - `database/migrations/0010_inventory.sql`: `inventory_items.name_translations`,
   `stock_counts.notes`, `projection_checkpoints` (seeded at the current
   `domain_events` seq so old orders aren't consumed), two indexes.
+- Steps 1–5 below (backend): contracts `packages/contracts/src/http/inventory.ts`;
+  `packages/application/src/inventory/` (`InventoryService`, `StockLedger`
+  shared by every stock change, `InventoryProjector`); SQLite repository,
+  queries and `SqliteProjectionLog`; routes `apps/server/src/http/routes/inventory.ts`,
+  projector wired in `app.ts` (subscribed to `KotFired` and
+  `OrderItemCancelled`, catches up at start); tests `apps/server/src/http/inventory.test.ts`.
 
 ## Phase 2: the plan for what's left
 

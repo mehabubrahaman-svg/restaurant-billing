@@ -145,3 +145,21 @@ export function stockLevel(
   if (maxMilli !== null && maxMilli > 0 && qtyMilli > maxMilli) return 'OVER';
   return 'OK';
 }
+
+/** One portion's cost of a recipe ingredient: qty × (1 + trim loss) ÷ portions per batch, at a cost per 1000 base units. */
+export function portionCost(line: RecipeLine, yieldPortions: number, costPerBase: number): number {
+  return toSafeNumber(
+    divideRounded(
+      BigInt(line.qtyMilli) * BigInt(10_000 + line.wastageBp) * BigInt(costPerBase),
+      BigInt(yieldPortions) * 10_000n * MILLI_PER_BASE_THOUSAND,
+      'HALF_EVEN',
+    ),
+    'portion cost',
+  );
+}
+
+/** `part` as basis points of `whole` (food cost %, variance %); null when `whole` is 0. */
+export function shareBp(part: number, whole: number): number | null {
+  if (whole === 0) return null;
+  return toSafeNumber(divideRounded(BigInt(part) * 10_000n, BigInt(whole), 'HALF_EVEN'), 'share');
+}

@@ -1,6 +1,7 @@
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
+import { INVENTORY_EVENT_TYPES } from '@restroos/application';
 import { API_PREFIX } from '@restroos/contracts';
 import type { AwilixContainer } from 'awilix';
 import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify';
@@ -20,6 +21,7 @@ import { catalogRoutes } from './routes/catalog';
 import { customerRoutes } from './routes/customers';
 import { deviceRoutes } from './routes/devices';
 import { floorRoutes } from './routes/floor';
+import { inventoryRoutes } from './routes/inventory';
 import { kitchenRoutes } from './routes/kitchen';
 import { orderRoutes } from './routes/orders';
 import { printingRoutes } from './routes/printing';
@@ -78,6 +80,15 @@ export async function buildApp(
     allowList: ['127.0.0.1', '::1'],
   });
 
+  // Fired dishes take their ingredients from stock once the KOT has committed;
+  // catching up at start covers anything fired while the Hub was down.
+  const { inventoryProjector, eventBus } = container.cradle;
+  const stopProjecting = INVENTORY_EVENT_TYPES.map((type) =>
+    eventBus.subscribe(type, () => void inventoryProjector.catchUp()),
+  );
+  inventoryProjector.catchUp();
+  app.addHook('onClose', async () => stopProjecting.forEach((stop) => stop()));
+
   await app.register(
     async (api) => {
       const { cradle } = container;
@@ -100,6 +111,7 @@ export async function buildApp(
       await api.register(customerRoutes, { cradle });
       await api.register(reportRoutes, { cradle });
       await api.register(backupRoutes, { cradle });
+      await api.register(inventoryRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(
