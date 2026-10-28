@@ -39,8 +39,8 @@ The recommended **Electron + React + Node.js + SQLite + LAN server** stack is ad
 | Frontend | **React 19 + Vite + TailwindCSS 4 + shadcn/ui + Framer Motion** | Requested stack; shadcn gives accessible primitives we own. |
 | Client state | **TanStack Query** (server state) + **Zustand** (UI/cart state) | Clear split: cache vs. local interaction state. |
 | Offline on clients | **PWA** (Workbox) + IndexedDB queue for the captain app | A tablet that briefly loses Wi-Fi keeps taking orders and replays them. |
-| Native tablet shell | **Capacitor** wrapper around the same React build (Android + iPadOS), optional per device | Needed for full Bluetooth on tablets (iPad browsers have no Bluetooth access at all). See §6. |
-| Bluetooth | Hub: BLE GATT server via a small per-OS bridge (Linux BlueZ D-Bus, Windows WinRT `GattServiceProvider`). Clients: Web Bluetooth (Chrome on Android/desktop) or Capacitor BLE plugin | Discovery, pairing, Wi-Fi-down fallback channel, and peripherals. See §6. |
+| Android tablet app | **Capacitor** Android wrapper around the same React build (Phase 1.5) | Captain and KDS tablets are **Android**. Chrome covers Phase 1. The app adds reliable background Bluetooth reconnection for the Wi-Fi fallback and kiosk lock for KDS screens. See §6. |
+| Bluetooth | Hub: BLE GATT server via a small per-OS bridge (Linux BlueZ D-Bus, Windows WinRT `GattServiceProvider`). Clients: Web Bluetooth in Chrome on Android (Phase 1), Capacitor BLE plugin in the Android app (Phase 1.5) | Discovery, pairing, Wi-Fi-down fallback channel, and peripherals. See §6. |
 | Internationalisation | **i18next / react-i18next** (ICU messages), `Intl` for numbers/dates, bundled Noto Sans Devanagari + Bengali fonts | English, Hindi, Bengali at launch. See §5.8. |
 | Auth | **JWT access token (15 min) + rotating refresh token (12 h shift)**, **bcrypt** (cost 12), PIN quick-switch | Requested; refresh-token families detect token theft. |
 | Printing | ESC/POS via `node-thermal-printer` (network/USB) + OS print spooler fallback | Covers thermal, POS, and USB printers. |
@@ -265,13 +265,13 @@ The device then trusts the local CA, registers as a `device` (`CAPTAIN`, `KDS`, 
 ### 6.2 What Bluetooth is used for
 | Use | How | Works on |
 |---|---|---|
-| **Discovery & pairing** | BLE advertisement + GATT read (§6.1) | Android (Chrome or native shell), iPad/iPhone (native shell), Windows/Linux clients (Chrome) |
-| **Fallback link when Wi-Fi fails** | A BLE GATT "command channel" between a tablet and the Hub. It carries the same JSON commands (with idempotency keys) and event deltas as the WebSocket, chunked. The menu is already cached on the device, so only small messages travel. Captains can keep firing KOTs and KDS screens keep receiving them. | Native shell (Android/iPad) and Chrome on Android |
+| **Discovery & pairing** | BLE advertisement + GATT read (§6.1) | Android tablets (Chrome in Phase 1, Android app later), Windows/Linux clients (Chrome) |
+| **Fallback link when Wi-Fi fails** | A BLE GATT "command channel" between a tablet and the Hub. It carries the same JSON commands (with idempotency keys) and event deltas as the WebSocket, chunked. The menu is already cached on the device, so only small messages travel. Captains can keep firing KOTs and KDS screens keep receiving them. | Android app (Phase 1.5) |
 | **Peripherals on the Hub** | Bluetooth Classic (SPP) printers via the OS serial port; BLE printers, scanners, scales and guest pagers via BLE | Hub (Windows/Linux) |
 | **Peripherals on tablets** | A captain tablet with its own BT receipt printer (pay-at-table) or a BT barcode scanner (`printers.device_id`, `peripherals.device_id`) | Native shell; Chrome on Android for BLE devices |
 
 ### 6.3 Honest limits (designed around, not hidden)
-- **iPad/iPhone browsers have no Bluetooth API.** Tablets that need Bluetooth run the **Capacitor native shell**: the same React app, installed as an app. Browser-only devices still work fully over Wi-Fi.
+- **Android is the tablet platform.** In Phase 1, tablets run the web app in Chrome, which supports Web Bluetooth for pairing and peripherals but asks the user to tap before each connection. The Wi-Fi fallback has to switch over automatically, so it ships in the **Android app** (Phase 1.5). The app is installed from a signed APK or the restaurant's device-management tool, so no Play Store listing is needed to start. iPads and iPhones still work fully over Wi-Fi (their browsers have no Bluetooth), but get no Bluetooth features.
 - **BLE is slow and short-range** (tens of KB/s, roughly 10–30 m indoors). The fallback channel is for orders and kitchen status, not for reports, images or bulk sync, and the UI shows a "Bluetooth mode" banner. A busy floor may need a second BLE adapter on the Hub, or an extra BLE relay near the dining area.
 - **One adapter handles a limited number of simultaneous BLE links.** The Hub gives priority to KDS screens and the active captains. The Sprint 1 spike measures the real limit on the target hardware.
 - **Windows Hub** needs Windows 10 2004+ and a BLE adapter that supports the peripheral role. The setup wizard checks this. Linux uses BlueZ.
@@ -299,7 +299,8 @@ Bluetooth support is built in Phase 1 (discovery + peripherals) and Phase 1.5 (W
 | 5 | Aggregators | **Manual channel entry in Phase 1, automated via middleware + cloud relay in Phase 5** | §5.10, ADR 0007 |
 | 6 | UI languages | **English, Hindi, Bengali** | §5.8, ADR 0008 |
 
-### Still open
-1. **Liquor billing**: is "VAT too" about state VAT on liquor (assumed above)? Bars are the main place VAT still applies in India.
-2. **Wave 1 boundaries**: I put the North-East states in wave 1 with the East, and Madhya Pradesh and Chhattisgarh in wave 2. Is that right?
-3. **Bluetooth tablets**: will captains and the kitchen use Android tablets or iPads? This decides whether the native shell is needed in Phase 1.
+| 7 | "VAT" meaning | **State VAT on alcoholic liquor** (confirmed) | §5.7 |
+| 8 | Rollout waves | **Wave 1: North, East, North-East. Wave 2: West, South, Central (MP, Chhattisgarh), islands** (confirmed) | §5.11 |
+| 9 | Tablet platform | **Android** for captains and kitchen. Chrome in Phase 1, Android app in Phase 1.5 | §6, ADR 0006 |
+
+There are no open questions. Phase 1 can start.

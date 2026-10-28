@@ -12,7 +12,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 | 1.4 | `apps/server` bootstrap: Fastify, awilix DI, config, pino logging, problem+json errors, `/health`, idempotency-key store, rate limit | Integration test harness with in-memory encrypted DB |
 | 1.5 | `apps/web` shell + `packages/ui`: Vite, Tailwind 4, shadcn, theme tokens (light/dark/high-contrast), layout, connection pill, router per portal | Storybook for core widgets |
 | 1.6 | i18n foundation: i18next + ICU, `en-IN`/`hi-IN`/`bn-IN` catalogues, bundled Noto fonts, lint rule banning hard-coded UI strings, pseudo-locale for testing | Every screen renders in all 3 locales without overflow at 768 px |
-| 1.7 | **Bluetooth spike** (time-boxed 4 days): BLE GATT server on Linux (BlueZ) and Windows (WinRT bridge); Android Chrome + Capacitor iPad clients; measure throughput, latency, max concurrent links | Go/no-go report feeding Phase 1.5 |
+| 1.7 | **Bluetooth spike** (time-boxed 4 days): BLE GATT server on Linux (BlueZ) and Windows (WinRT bridge); clients: Chrome on the pilot's Android tablets + a Capacitor Android prototype; measure throughput, latency, max concurrent links, reconnect time | Go/no-go report feeding Phase 1.5 |
 
 ## Sprint 2 — Identity & setup (2 wks)
 
@@ -73,7 +73,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 | Risk | Mitigation |
 |---|---|
 | Printer driver diversity | Abstract `PrinterPort`, start with ESC/POS over TCP 9100 (most common), keep a certified-printer list |
-| Bluetooth limits on real hardware (iPad browsers, Windows peripheral role, link count) | Spike in Sprint 1 (WP 1.7); Wi-Fi remains the primary path; native shell for iPads |
+| Bluetooth limits on real hardware (Android tablet models, Windows peripheral role, link count) | Spike in Sprint 1 (WP 1.7) on the pilot's actual tablets; Wi-Fi remains the primary path |
 | Liquor tax/billing rules differ per state and change | State packs are data; each state's pack is reviewed with a tax advisor before its launch |
 | SQLite native module + Electron ABI | Use `electron-rebuild` in CI and prebuilt binaries for win-x64 / linux-x64 |
 | Hub PC failure mid-service | Hourly backups + Phase 6 standby Hub; Phase 1 documents a manual restore in < 10 min |

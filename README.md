@@ -7,7 +7,7 @@ Offline-first, LAN-based restaurant POS and back office for Indian restaurants, 
 > **Status: Phase 0 — Planning.** This repository currently contains the architecture, database schema, and design documents. Application code begins in Phase 1 once these are reviewed.
 
 ## Stack
-Electron · Node.js (Fastify) · SQLite (SQLCipher, WAL) · Drizzle · React + TypeScript · TailwindCSS · shadcn/ui · Framer Motion · TanStack Query · Zustand · WebSockets · Bluetooth LE · i18next · Capacitor (optional tablet shell) · pnpm/Turborepo
+Electron · Node.js (Fastify) · SQLite (SQLCipher, WAL) · Drizzle · React + TypeScript · TailwindCSS · shadcn/ui · Framer Motion · TanStack Query · Zustand · WebSockets · Bluetooth LE · i18next · Capacitor (Android tablet app) · pnpm/Turborepo
 
 ## Documentation
 
