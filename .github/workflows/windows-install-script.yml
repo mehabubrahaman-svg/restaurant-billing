@@ -1,0 +1,40 @@
+name: Windows one-line installer
+
+# Runs scripts/install-windows.ps1 the way a user does (the one-liner that
+# downloads it from GitHub), then starts the Hub and checks it answers.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - name: Run the one-line installer
+        shell: powershell
+        run: |
+          $url = "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/scripts/install-windows.ps1"
+          & ([scriptblock]::Create((Invoke-RestMethod $url))) -Branch '${{ github.ref_name }}' -Yes -NoStart
+
+      - name: Start the Hub and check it answers
+        shell: powershell
+        run: |
+          $dir = Join-Path $env:LOCALAPPDATA 'RestroOS'
+          if (-not (Test-Path (Join-Path $dir 'Start RestroOS.cmd'))) { throw 'launcher missing' }
+          $env:Path = (Join-Path $dir 'node') + ';' + $env:Path
+          $hub = Start-Process node -ArgumentList 'scripts\run-hub.mjs','--data',(Join-Path $dir 'data') `
+            -WorkingDirectory (Join-Path $dir 'app') -PassThru -RedirectStandardOutput hub.log -RedirectStandardError hub.err
+          for ($i = 0; $i -lt 30; $i++) {
+            Start-Sleep 2
+            try {
+              $health = Invoke-RestMethod http://127.0.0.1:7400/api/v1/health
+              $page = Invoke-WebRequest http://127.0.0.1:7400/ -UseBasicParsing
+              Write-Host "health: $($health.status), schema $($health.database.schemaVersion); web page: $($page.StatusCode)"
+              Get-Content hub.log | Select-String 'setup code'
+              Stop-Process $hub.Id; exit 0
+            } catch { }
+          }
+          Get-Content hub.log, hub.err; exit 1
