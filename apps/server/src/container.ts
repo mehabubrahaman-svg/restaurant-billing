@@ -9,6 +9,7 @@ import {
   type RasterRenderer,
   ShiftService,
   type BillingQueries,
+  type ReportQueries,
   DeviceService,
   FloorService,
   KitchenService,
@@ -42,6 +43,7 @@ import {
   ScryptKeyDerivation,
   SqliteAuditQueries,
   SqliteBillingQueries,
+  SqliteReportQueries,
   SqliteCouponRepository,
   SqliteCustomerRepository,
   SqliteInvoiceRepository,
@@ -111,6 +113,7 @@ export interface Cradle {
   orderService: OrderService;
   kitchenService: KitchenService;
   billingQueries: BillingQueries;
+  reportQueries: ReportQueries;
   billingService: BillingService;
   couponService: CouponService;
   shiftService: ShiftService;
@@ -306,6 +309,7 @@ export function buildContainer(
           clock: c.clock,
         }),
     ),
+    reportQueries: single((c) => new SqliteReportQueries(c.db, c.calendar)),
     billingQueries: single(
       (c) =>
         new SqliteBillingQueries(

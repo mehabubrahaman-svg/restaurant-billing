@@ -1,5 +1,6 @@
 import type { InvoiceView, ShiftReportView } from '../billing/ports';
 import type { KotView } from '../ordering/ports';
+import type { DayEndReportView } from '../reporting/ports';
 import type { BranchSettingsRecord } from '../settings/ports';
 import type { PrintBlock, PrintDocument } from './document';
 import { formatPaise, formatRate, label, type ReceiptLanguage } from './labels';
@@ -270,6 +271,82 @@ export function shiftSlip(report: ShiftReportView, ctx: SlipContext): PrintDocum
       bold: true,
     });
   }
+  return { blocks, cut: true };
+}
+
+/** The day-end summary on a receipt printer: what the owner signs off at closing. */
+export function dayEndSlip(report: DayEndReportView, ctx: SlipContext): PrintDocument {
+  const row = (left: string, paise: number, bold = false): PrintBlock => ({
+    kind: 'row',
+    left,
+    right: formatPaise(paise),
+    ...(bold && { bold }),
+  });
+  const blocks: PrintBlock[] = [
+    { kind: 'text', text: 'DAY-END REPORT', align: 'center', bold: true, size: 2 },
+    { kind: 'text', text: `${ctx.organizationName} - ${ctx.branch.name}`, align: 'center' },
+    { kind: 'row', left: `Business date ${report.businessDate}`, right: '' },
+    { kind: 'row', left: `Printed ${when(ctx.printedAt, ctx.timeZone)}`, right: '' },
+    { kind: 'rule' },
+    { kind: 'row', left: 'Bills', right: String(report.sales.invoiceCount) },
+    { kind: 'row', left: 'Covers', right: String(report.orders.covers) },
+    row('Gross', report.sales.gross),
+    row('Discounts', -report.sales.discounts),
+    row('Charges', report.sales.charges),
+    row('Tax', report.sales.tax),
+    row('Round-off', report.sales.roundOff),
+    row('Total', report.sales.total, true),
+    row('Credit notes', -report.refunds.amount),
+    row('Net sales', report.sales.net, true),
+    { kind: 'rule' },
+    { kind: 'row', left: 'Tax', right: 'Taxable / Tax', bold: true },
+  ];
+  for (const t of report.taxes) {
+    blocks.push({
+      kind: 'row',
+      left: `${t.code} ${formatRate(t.rateBp)}`,
+      right: `${formatPaise(t.taxable)} / ${formatPaise(t.tax)}`,
+    });
+  }
+  if (report.liquor.invoiceCount > 0) {
+    blocks.push(row(`Liquor bills (${report.liquor.invoiceCount})`, report.liquor.total));
+  }
+  blocks.push({ kind: 'rule' }, { kind: 'row', left: 'Payments', right: '', bold: true });
+  for (const p of report.payments) blocks.push(row(`${p.method} (${p.count})`, p.amount));
+  if (report.channels.some((c) => c.orders > 0)) {
+    blocks.push(
+      { kind: 'rule' },
+      { kind: 'row', left: 'Channel', right: 'Sales / Net', bold: true },
+    );
+    for (const c of report.channels.filter((c) => c.orders > 0)) {
+      blocks.push({
+        kind: 'row',
+        left: `${c.name} (${c.orders})`,
+        right: `${formatPaise(c.sales)} / ${formatPaise(c.netRevenue)}`,
+      });
+    }
+  }
+  const x = report.cancellations;
+  blocks.push(
+    { kind: 'rule' },
+    row(`Cancelled bills (${x.invoices})`, x.invoiceValue),
+    row(`Voided items (${x.voidedItems})`, x.voidedValue),
+    row('Wastage', x.wastageValue),
+  );
+  for (const sh of report.shifts) {
+    blocks.push({
+      kind: 'row',
+      left: `Cash ${sh.openedBy ?? ''} ${sh.status === 'OPEN' ? '(open)' : ''}`.trim(),
+      right:
+        sh.variance === null
+          ? formatPaise(sh.expectedCash)
+          : `${formatPaise(sh.expectedCash)} / ${formatPaise(sh.variance)}`,
+    });
+  }
+  if (report.orders.open > 0) {
+    blocks.push({ kind: 'text', text: `${report.orders.open} order(s) still open`, bold: true });
+  }
+  blocks.push({ kind: 'feed', lines: 2 }, { kind: 'text', text: 'Signature ______________' });
   return { blocks, cut: true };
 }
 

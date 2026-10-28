@@ -9,6 +9,7 @@ export * from './http/floor';
 export * from './http/health';
 export * from './http/kitchen';
 export * from './http/printing';
+export * from './http/reports';
 export * from './http/ordering';
 export * from './http/problem';
 export * from './http/settings';

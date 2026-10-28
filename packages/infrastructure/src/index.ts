@@ -56,6 +56,7 @@ export { SqliteBillingQueries } from './billing/sqlite-billing-queries';
 export { SqliteCouponRepository } from './billing/sqlite-coupon-repository';
 export { SqliteInvoiceRepository } from './billing/sqlite-invoice-repository';
 export { SqliteShiftRepository } from './billing/sqlite-shift-repository';
+export { SqliteReportQueries } from './reporting/sqlite-report-queries';
 export { ascii, escPos, twoColumns, wrap } from './printing/escpos';
 export { hubPrinterTransport } from './printing/transports';
 export {

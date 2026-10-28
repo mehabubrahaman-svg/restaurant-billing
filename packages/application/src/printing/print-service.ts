@@ -8,7 +8,15 @@ import type { BranchSettingsRecord, PrinterRecord, SettingsRepository } from '..
 import { columnsFor, dotsFor, needsRaster, type PrintDocument } from './document';
 import type { ReceiptLanguage } from './labels';
 import type { EscPosEncoder, PrinterTransport, RasterRenderer } from './ports';
-import { invoiceSlip, kotSlip, shiftSlip, testSlip, type SlipContext } from './templates';
+import type { DayEndReportView } from '../reporting/ports';
+import {
+  dayEndSlip,
+  invoiceSlip,
+  kotSlip,
+  shiftSlip,
+  testSlip,
+  type SlipContext,
+} from './templates';
 
 export interface PrintServiceDeps {
   readonly settings: SettingsRepository;
@@ -120,6 +128,15 @@ export class PrintService {
     if (!report) throw new DomainError('NOT_FOUND', 'shift not found');
     const printer = this.pick(ctx.branchId, ['REPORT', 'BILL'], options.printerId);
     return this.send(printer, shiftSlip(report, await this.slipContext(ctx.branchId)));
+  }
+
+  async printDayEnd(
+    report: DayEndReportView,
+    options: { printerId?: string | undefined },
+    ctx: CommandContext,
+  ): Promise<PrintOutcome> {
+    const printer = this.pick(ctx.branchId, ['REPORT', 'BILL'], options.printerId);
+    return this.send(printer, dayEndSlip(report, await this.slipContext(ctx.branchId)));
   }
 
   async testPage(printerId: string, branchId: string): Promise<PrintOutcome> {

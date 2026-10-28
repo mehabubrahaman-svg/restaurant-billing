@@ -183,6 +183,11 @@ describe('printing', () => {
     const jobs = await printer.waitForJobs(2);
     expect(jobs[0]).toContain('RestroOS test print');
     expect(jobs[1]).toContain('X REPORT');
+
+    expect((await admin('POST', '/reports/day-end/print', {})).statusCode).toBe(200);
+    const dayEnd = (await printer.waitForJobs(3))[2]!;
+    expect(dayEnd).toContain('DAY-END REPORT');
+    expect(dayEnd).toContain('Business date 2026-10-28');
     void ADMIN;
   });
 });
