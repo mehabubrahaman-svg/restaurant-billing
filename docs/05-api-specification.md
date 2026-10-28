@@ -98,12 +98,13 @@ Implemented in Sprint 3 (live order summaries arrive with orders in Sprint 4). C
 Implemented in Sprint 3. Contracts: `packages/contracts/src/http/catalog.ts`.
 
 ### Orders (Captain + POS)
-Implemented in Sprint 4 (aggregator entry and customers arrive in Sprint 5). Contracts: `packages/contracts/src/http/ordering.ts`.
+Implemented in Sprint 4; aggregator entry in Sprint 5. Contracts: `packages/contracts/src/http/ordering.ts`.
 
 | Method | Path | Perm | Body / Notes |
 |---|---|---|---|
 | POST | `/orders` | `orders.create` | `{orderType: DINE_IN\|TAKEAWAY\|DELIVERY, tableId?, covers?, notes?}` → Order. Dine-in needs a free or reserved table (`409 TABLE_NOT_FREE`) and sets it OCCUPIED. Takeaway/delivery get a `tokenNo`. `orderNo` and `tokenNo` restart each business day |
-| POST | `/orders/aggregator` | `orders.create` | Sprint 5 (WP 5.5b): manual Swiggy/Zomato entry `{salesChannelId, externalOrderId, externalOtp?, items[]}`, rejecting duplicate `(channel, externalOrderId)` |
+| POST | `/orders/aggregator` | `orders.create` | Manual Swiggy/Zomato entry `{salesChannelId, externalOrderId, externalOtp?, items[]}` → `{order, kots}`: a DELIVERY order with a token, priced with the channel's markup and fired at once. A repeated `(channel, externalOrderId)` → `409 DUPLICATE_EXTERNAL_ORDER`. Its bill has no GST when the channel's `gstPaidByOperator` is set (CGST Act s.9(5)) |
+| GET/POST/PATCH | `/sales-channels` | read: `settings.manage`, `orders.create` or `billing.create`; write: `settings.manage` | `{code, name, kind: AGGREGATOR\|OWN_ONLINE, commissionBp, priceMarkupBp, gstPaidByOperator, isActive}`. The DIRECT channel is made at setup |
 | GET | `/orders?status=OPEN` | `tables.view`, `billing.create` or `kds.view` | Summaries: subtotal, item / pending / ready counts, table, captain |
 | GET | `/orders/{id}` | same | Order + items (name, price and tax group frozen at order time) + KOT summaries |
 | PATCH | `/orders/{id}` | `orders.update` | `{version, covers?, notes?}` |
@@ -113,7 +114,6 @@ Implemented in Sprint 4 (aggregator entry and customers arrive in Sprint 5). Con
 | POST | `/orders/{id}/items/{itemId}/cancel` | `orders.update`; `orders.item_cancel` or a manager's approval once the kitchen has it | `{version, reason?, isWastage}`. A PENDING item is just removed. A sent item needs a reason; without the permission → `403 APPROVAL_REQUIRED` (`permission: orders.item_cancel`), retry with `X-Approver-Token`. The item is struck through on its KOT; a KOT left empty is cancelled |
 | POST | `/orders/{id}/cancel` | `orders.update`; `orders.cancel` or approval once anything was sent | `{version, reason}`. Cancels open KOTs and frees the table |
 | POST | `/tables/{id}/transfer` | `orders.transfer_table` | `{targetTableId, mode: MOVE\|MERGE}`. MOVE needs a free target; MERGE moves every item and KOT into the target table's open order (covers add up) and closes this one as merged |
-| POST | `/orders/{id}/customer` | `customers.manage` | Sprint 5 (WP 5.6) |
 
 Idempotency-Key works on POST and PATCH. Refusals the client fixes by retrying the same request (401, 403, 429) are not stored, so an approval retry can reuse the key.
 
@@ -129,7 +129,7 @@ Implemented in Sprint 4. Contracts: `packages/contracts/src/http/kitchen.ts`.
 | GET | `/kitchen/chefs` | `kds.view` | Who can be assigned |
 | GET | `/kitchen/metrics` | `kds.view` | Today: pending, delayed, completed, average fired→ready seconds, per chef |
 | GET | `/tokens` | public | Token display: `{businessDate, preparing[], ready[]}` for takeaway/delivery tokens |
-| POST | `/kitchen/kots/{id}/reprint` | `kds.view` | Sprint 5, with printing (WP 5.5) |
+| POST | `/kitchen/kots/{id}/reprint` | `kds.view` or `orders.fire_kot` | `{printerId?}` → print outcome; prints REPRINT on the slip |
 
 ### Billing (POS)
 Implemented in Sprint 5 (printing in 5B). Contracts: `packages/contracts/src/http/billing.ts`. Tax engine: `packages/domain/src/billing/tax-engine.ts`.
@@ -138,13 +138,16 @@ Implemented in Sprint 5 (printing in 5B). Contracts: `packages/contracts/src/htt
 |---|---|---|---|
 | POST | `/orders/{id}/bill-preview` | `billing.create` | Body as below. Computes the bill(s) without saving: lines, discounts, charges, CGST/SGST (or VAT) per rate, round-off, total |
 | POST | `/orders/{id}/invoice` | `billing.create` (+ approvals below) | `{discount?:{kind: PERCENT\|FIXED, value, reason?}, couponCode?, complimentary?:{reason}, removeChargeRuleIds?, customer?:{name?, taxId?}}` → **one or two** invoices (a separate `LIQ` invoice when the branch bills liquor separately). Every item must have been sent (`409 ORDER_HAS_UNSENT_ITEMS`). Order → BILLED, table → BILLING. A discount above the branch limit (`discountLimitBp`, default 10%) needs `billing.discount_override`, complimentary needs `billing.complimentary`, otherwise `403 APPROVAL_REQUIRED` with the permission; `422 COUPON_INVALID` |
-| GET | `/orders/{id}/invoices` | `billing.create` | The order's invoices |
+| GET | `/orders/{id}/invoices` | `billing.create` | The order's tax invoices (not credit notes) |
+| GET | `/invoices/{id}/credit-notes` | `billing.create` | Credit notes issued against the invoice, on any business day |
 | GET | `/invoices?date=&status=` | `billing.create` | Summaries; today's business date by default |
 | GET | `/invoices/{id}` | `billing.create` | Lines, taxes, discounts, charges, payments |
 | POST | `/invoices/{id}/payments` | `billing.collect_payment` | `{payments:[{method: CASH\|CARD\|UPI\|WALLET\|CREDIT\|AGGREGATOR, amount, tendered?, reference?, cardLast4?, terminalLabel?}]}`. Card/UPI are taken on the standalone terminal and the approval code / RRN keyed in. Split payment = several entries (`409 OVERPAYMENT` beyond the balance). Cash needs an open shift on this counter (`409 SHIFT_NOT_OPEN`). CREDIT needs `billing.credit_sale` and a customer name. All of an order's invoices settled → order PAID, table CLEANING |
 | POST | `/invoices/{id}/cancel` | `billing.cancel` or approval | `{version, reason}`. Cancels the bill and its INV/LIQ sibling; the number stays used. Payments taken in the current shift are reversed; older ones need a refund. The order reopens |
 | POST | `/invoices/{id}/refunds` | `billing.refund` or approval | `{lines?:[{invoiceLineId, quantity}] \| amount?, method, reference?, reason}` → `{creditNote, invoice}`. The credit note (`CN` series) reverses tax in proportion; refunding everything left also returns charges and round-off. Paid out at once as a negative payment |
-| POST | `/invoices/{id}/print` | `billing.create` / `billing.reprint` | Sprint 5B |
+| POST | `/invoices/{id}/print` | `billing.create`; a reprint needs `billing.reprint` or approval | `{printerId?}` → `{printerId, mode: TEXT\|RASTER, bytes}`. The first print is the original, later ones say DUPLICATE. `409 NO_PRINTER`, `503 PRINTER_OFFLINE` |
+| GET | `/invoices/{id}/receipt` | `billing.create` | The receipt as a `PrintDocument`, for an on-screen preview or browser printing when no printer answers |
+| POST | `/cash-shifts/{id}/print` | `cash.shift_manage` | X or Z report on the REPORT (else BILL) printer |
 | POST | `/cash-shifts` | `cash.shift_manage` | `{openingFloat}`; one open shift per paired device (or per user on an unpaired browser), `409 SHIFT_ALREADY_OPEN` |
 | GET | `/cash-shifts/current`, `/cash-shifts/{id}` | `cash.shift_manage` | X report while open, Z report once closed: expected cash, sales, refunds, per-method and per-terminal tenders |
 | POST | `/cash-shifts/{id}/close` | `cash.shift_manage` | `{version, countedCash, denominations?, tenders:[{method, terminalLabel, reportedAmount}], notes?}` → Z report with variances (stored in `shift_tender_counts`) |
@@ -152,17 +155,46 @@ Implemented in Sprint 5 (printing in 5B). Contracts: `packages/contracts/src/htt
 
 Invoice numbers are gapless per branch, series and financial year (`KOL1/2026-27/000123`, `KOL1/LIQ/…`, `KOL1/CN/…`), taken from `document_sequences` inside the invoice's transaction. Restaurant service is supplied where the restaurant is, so bills always carry CGST + SGST (IGST is supported by the engine). Tax is per line with banker's rounding, bill discounts are spread over lines before tax, and the total is rounded to the branch's cash rounding (`roundOff`).
 
+### Printing
+Implemented in Sprint 5B. Contracts: `packages/contracts/src/http/printing.ts`; templates in `packages/application/src/printing/templates.ts`.
+
+Slips are built as a `PrintDocument` (text, rows, rules, QR, cut) and sent as ESC/POS: **text mode** for English, **raster mode** (an image drawn by Chromium with the Noto fonts) when the receipt languages include Hindi or Bengali. The printer is chosen by purpose (BILL, KOT per kitchen station, REPORT), over TCP 9100, a device file or the OS spooler (`lp`). Fired KOTs print at their station's printer automatically. A Bluetooth LE printer is driven by the tablet it is paired with (`409 PRINTER_ON_DEVICE`). `POST /printers/{id}/test` prints a test page.
+
 ### Customers
-`GET /customers?phone=` · `POST /customers` · `GET /customers/{id}` (history, favourites, LTV, points) · `POST /customers/{id}/loyalty-adjustments` [`loyalty.adjust`]
+Implemented in Sprint 5B (WP 5.6). Contracts: `packages/contracts/src/http/customers.ts`.
+
+`GET /customers?q=` (phone or name) [`customers.view`, `customers.manage` or `billing.create`] · `GET /customers/{id}` (visits, lifetime value, recent bills) · `POST /customers` · `PATCH /customers/{id}` [`customers.manage`]. Indian mobile numbers are stored as `+91XXXXXXXXXX`. Giving `customer.phone` on a bill finds or creates the customer; a visit and the amount are added when the order is paid, and a refund lowers the lifetime value. Loyalty points are Phase 2.
 
 ### Reports (Phase 1 subset)
-`GET /reports/day-end?date=` (sales, tax, payment-mode split, cash summary) · `GET /reports/dashboard` · `GET /reports/{name}/export?format=pdf|xlsx|csv`
+Implemented in Sprint 5B (WP 5.7). Contracts: `packages/contracts/src/http/reports.ts`.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/reports/day-end?date=` | `reports.sales` | One business day (today by default): orders and covers by type; sales (gross, discounts, charges, taxable, tax, round-off, total, net of credit notes, average bill); tax per code and rate; liquor bills and VAT; payments per method; refunds; cancelled bills, items voided after the KOT, wastage; discounts by kind; per sales channel orders, sales, commission (on the food value) and net revenue; cash shifts with expected/counted/variance; top items; bills per hour; KOT count, average cook time, late KOTs |
+| POST | `/reports/day-end/print?date=` | `reports.sales` | The day-end slip on the REPORT (else BILL) printer |
+| GET | `/reports/day-end.csv?date=` | `reports.export` | The same as one CSV of labelled sections |
+| GET | `/reports/sales-register.csv?from=&to=` | `reports.export` | Every invoice and credit note in the range (up to 366 days) with CGST, SGST, IGST, VAT per row; credit notes negative. For the accountant's GSTR-1 and VAT returns |
+| GET | `/reports/dashboard` | `reports.sales` | Net sales, bills, covers and average bill for today, the month and the financial year (from 1 April); the last 14 days; today's payment mix; the month's top items; kitchen pending/late/average; open orders and tables |
+
+CSV files start with a byte-order mark and use CRLF so Excel shows Hindi and Bengali text; amounts are rupees with two decimals; text that a spreadsheet would run as a formula is prefixed with `'`. PDF and XLSX exports wait until an owner asks for them (each would add a dependency).
 
 ### Public QR ordering (no auth, rate-limited)
 `GET /public/qr/{qrToken}/menu` · `POST /public/qr/{qrToken}/orders` → order in `PENDING_APPROVAL`, captain notified to confirm.
 
 ### Admin / platform
-`GET /audit-logs?entityType=&entityId=&actorId=` [`audit.view`] · `POST /backups` · `GET /backups` · `POST /backups/{id}/restore` [`backup.manage`] · `GET /health` (no auth: db, disk, printer, sync status)
+`GET /audit-logs?entityType=&entityId=&actorId=` [`audit.view`] · `GET /health` (no auth: db, disk, printer, sync status)
+
+**Backups** [`backup.manage`], implemented in Sprint 5B (WP 5.8), contracts `packages/contracts/src/http/backups.ts`:
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/backups` | `{data, backupDir, copyDir}`: each backup's file, size, kind (SCHEDULED, MANUAL, PRE_MIGRATION, PRE_RESTORE, IMPORTED), status (AVAILABLE, PRUNED, MISSING), schema version, second copy |
+| POST | `/backups` | A backup now (201) |
+| GET | `/backups/{id}/download` | The `.rbak` file |
+| POST | `/backups/import` | Body: the `.rbak` file as `application/octet-stream`; header `X-Backup-Passphrase`. Checked (checksum, passphrase, integrity) before it is listed. `422 BACKUP_UNREADABLE` / `BACKUP_UNAVAILABLE` |
+| POST | `/backups/{id}/restore` | `{confirm: "RESTORE", passphrase?}` → `202 {backup, restarting: true}`. Verifies the file, takes a PRE_RESTORE backup, stages the decrypted copy and restarts the Hub, which swaps it in before opening the database. Clients see the socket drop and resync. A passphrase is needed only for a backup made with a different one |
+
+A `.rbak` file is a one-line header (format, time, kind, scrypt parameters and salt, schema version, organisation, SHA-256) followed by a SQLCipher database (AES-256, per-page HMAC) keyed with the key derived from the owner's backup passphrase. It never opens with the Hub's own database key, and opens on any PC with the passphrase. Backups run hourly when something changed, are kept 7 hourly / 30 daily / 12 monthly (10 of each other kind), and are copied to `RESTRO_BACKUP_COPY_DIR` (USB drive / NAS) when set.
 
 ## 3. Phase 2–6 endpoint groups (outline)
 

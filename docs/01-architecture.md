@@ -172,14 +172,14 @@ SQLite has a single writer, which is an advantage here: `BEGIN IMMEDIATE` takes 
 - **Manager override**: sensitive actions (refund, void after KOT, discount above limit) accept an `X-Approver-Token` obtained by a manager entering their PIN on the same device. Both actor and approver are written to `audit_logs`.
 - **Audit**: hash-chained (`hash = SHA256(prev_hash || canonical_json(row))`). A nightly job verifies the chain and raises a CRITICAL notification on mismatch.
 - **Soft delete**: DB triggers physically block `DELETE` on business tables (see schema §13).
-- **At rest**: SQLCipher (AES-256). The key is derived from a machine-bound secret stored in the OS keychain (Windows DPAPI / libsecret). Backups are encrypted with AES-256-GCM using a separate backup passphrase.
+- **At rest**: SQLCipher (AES-256). The key is random, made on first run, and sealed with the OS keychain (Windows DPAPI / libsecret) by the desktop app. Backups are SQLCipher copies re-keyed with a key derived (scrypt) from a separate backup passphrase, so they open on another PC with the passphrase alone.
 - **In transit**: TLS on LAN with a local CA. Rate limiting and lockout after 5 failed logins.
 - **Tokens**: access JWT (EdDSA, 15 min) in memory; refresh token is opaque, hashed in DB, rotated on use, and reuse revokes the family.
 
 ### 5.5 Backups
-- Hot backup using the SQLite Online Backup API every hour + at end-of-day, retained 7 hourly / 30 daily / 12 monthly.
-- Copy to a secondary target (USB drive / NAS path / cloud bucket when online).
-- One-click restore with integrity check and a `PRE_MIGRATION` backup before every schema migration.
+- Hot backup (`VACUUM INTO`, a consistent copy while the Hub runs) every hour when something changed, retained 7 hourly / 30 daily / 12 monthly.
+- Copy to a secondary target (USB drive / NAS path); a cloud bucket when online comes with sync (Phase 6).
+- One-click restore with checksum and integrity check, a `PRE_RESTORE` backup first, and a `PRE_MIGRATION` backup before every schema migration. The Hub restarts to swap the database in. Format and API: docs/05 §2 Admin / platform.
 
 ### 5.6 Synchronization (designed now, built in Phase 6)
 
