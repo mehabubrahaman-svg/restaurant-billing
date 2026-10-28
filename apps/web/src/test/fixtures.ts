@@ -1,4 +1,4 @@
-import type { IndianState } from '@restroos/contracts';
+import type { Device, IndianState } from '@restroos/contracts';
 import { initialForm, type SetupForm } from '../features/setup/setup-form';
 
 export const STATES: IndianState[] = [
@@ -55,3 +55,19 @@ export const VALID: SetupForm = {
   backupAcknowledged: true,
   setupCode: 'WIZARD01',
 };
+
+export const DEVICE_ID = '55555555-5555-4555-8555-555555555555';
+
+export function makeDevice(overrides: Partial<Device> = {}): Device {
+  return {
+    id: DEVICE_ID,
+    name: 'Captain tab 1',
+    kind: 'CAPTAIN',
+    platform: 'ANDROID',
+    lastSeenAt: '2026-10-28T08:00:00.000Z',
+    pairedAt: '2026-10-20T06:30:00.000Z',
+    isActive: true,
+    version: 1,
+    ...overrides,
+  };
+}

@@ -70,6 +70,8 @@ export interface RefreshTokenStore {
   revokeFamily(familyId: string, at: Date): number;
   /** Ends every session of the user, optionally keeping one (the caller's own). */
   revokeAllForUser(userId: string, at: Date, exceptFamilyId?: string): number;
+  /** Ends every session that was started or refreshed on the device. */
+  revokeAllForDevice(deviceId: string, at: Date): number;
   /** True while the session has an unrevoked, unexpired token. */
   isFamilyActive(familyId: string, now: Date): boolean;
 }

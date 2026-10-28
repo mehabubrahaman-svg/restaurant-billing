@@ -22,6 +22,8 @@ export const DevicePlatformSchema = z.enum([
 /** Public facts about this Hub, for pairing screens and discovery. No auth. */
 export const HubInfoSchema = z.object({
   name: z.string(),
+  /** The restaurant (organisation) name for pairing screens and printed QR cards; null before setup. */
+  restaurantName: z.string().nullable(),
   version: z.string(),
   needsSetup: z.boolean(),
   /** LAN addresses devices can use, e.g. http://192.168.1.20:7400 and https://192.168.1.20:7443. */

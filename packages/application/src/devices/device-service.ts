@@ -1,5 +1,5 @@
 import { DomainError } from '@restroos/domain';
-import type { TokenCodec } from '../identity/ports';
+import type { RefreshTokenStore, TokenCodec } from '../identity/ports';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, UnitOfWork } from '../ports/unit-of-work';
@@ -20,6 +20,8 @@ const TOUCH_EVERY_MS = 60 * 1000;
 export interface DeviceServiceDeps {
   readonly devices: DeviceRepository;
   readonly tokens: TokenCodec;
+  /** Unpairing a device also signs out everyone on it. */
+  readonly refreshTokens: RefreshTokenStore;
   readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
   readonly ids: IdGenerator;
@@ -194,6 +196,9 @@ export class DeviceService {
       }
       const unpairing = current.isActive && !next.isActive;
       this.d.devices.updateDevice(next, unpairing ? null : undefined, this.d.clock.now());
+      const sessionsEnded = unpairing
+        ? this.d.refreshTokens.revokeAllForDevice(id, this.d.clock.now())
+        : 0;
       scope.recordEvents([
         recordChanged(
           unpairing ? 'DeviceUnpaired' : 'DeviceChanged',
@@ -209,7 +214,12 @@ export class DeviceService {
         entityType: 'Device',
         entityId: id,
         before: { name: current.name, kind: current.kind, isActive: current.isActive },
-        after: { name: next.name, kind: next.kind, isActive: next.isActive },
+        after: {
+          name: next.name,
+          kind: next.kind,
+          isActive: next.isActive,
+          ...(unpairing && { sessionsEnded }),
+        },
       });
       return next;
     });

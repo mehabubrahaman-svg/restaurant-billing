@@ -6,6 +6,7 @@ import { i18n } from '../../i18n';
 import { useDeviceStore } from '../../stores/device-store';
 import { BASE_ROUTES, json, mockHub } from '../../test/mock-hub';
 import { renderApp } from '../../test/render-app';
+import { makeDevice } from '../../test/fixtures';
 import { makeSession } from '../../test/session';
 
 /** Restore succeeds with a session holding exactly these permissions. */
@@ -68,12 +69,28 @@ describe('AppShell', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/setup'));
   });
 
-  it('runs a KDS full screen, without navigation', async () => {
-    hubWithSession(['kds.view']);
-    useDeviceStore.setState({ kind: 'KDS' });
+  it('asks the Hub which device this is, and runs a KDS full screen without navigation', async () => {
+    mockHub({
+      ...BASE_ROUTES,
+      'POST /auth/refresh': () => json(makeSession({ permissions: ['kds.view'] })),
+      'GET /devices/me': () => json(makeDevice({ kind: 'KDS', name: 'Tandoor screen' })),
+    });
     const { router } = renderApp('/pos');
     await waitFor(() => expect(router.state.location.pathname).toBe('/kitchen'));
     expect(screen.queryByRole('navigation')).toBeNull();
+    expect(useDeviceStore.getState()).toMatchObject({
+      kind: 'KDS',
+      name: 'Tandoor screen',
+      status: 'paired',
+    });
+  });
+
+  it('treats a device the Hub does not know as unpaired', async () => {
+    useDeviceStore.setState({ kind: 'KDS' });
+    hubWithSession(['billing.create']);
+    renderApp('/pos');
+    await screen.findByRole('heading', { level: 1, name: 'Billing counter' });
+    expect(useDeviceStore.getState()).toMatchObject({ kind: 'POS', status: 'unpaired' });
   });
 
   it('shows offline with the queued count when the browser goes offline', async () => {

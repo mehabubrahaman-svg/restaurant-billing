@@ -56,6 +56,7 @@ describe('hub discovery', () => {
     );
     expect(info).toMatchObject({
       needsSetup: true,
+      restaurantName: null,
       mdnsHost: 'restro.local',
       urls: {
         http: [`http://${TEST_LAN_IP}:7400`],
@@ -165,10 +166,19 @@ describe('device pairing', () => {
     );
   });
 
-  it('unpairing a device cuts it off at once', async () => {
+  it('unpairing a device cuts it off at once and signs out whoever is on it', async () => {
     const { newCode, pair, fromTablet, admin } = await pairingServer();
     const { res, cookie } = await pair((await newCode()).code);
     const device = PairDeviceResponseSchema.parse(res.json()).device;
+    const deviceCookie = `restro_dt=${cookie!.value}`;
+    const signIn = await fromTablet(
+      'POST',
+      '/auth/login',
+      { username: ADMIN.username, password: ADMIN.password },
+      { cookie: deviceCookie },
+    );
+    const refreshCookie = `restro_rt=${signIn.cookies.find((c) => c.name === 'restro_rt')!.value}`;
+    const accessToken = signIn.json().accessToken as string;
     const off = await admin('PATCH', `/devices/${device.id}`, {
       version: device.version,
       isActive: false,
@@ -186,10 +196,25 @@ describe('device pairing', () => {
         })
       ).json().code,
     ).toBe('DEVICE_MUST_REPAIR');
+
+    const refresh = await fromTablet(
+      'POST',
+      '/auth/refresh',
+      {},
+      {
+        cookie: `${deviceCookie}; ${refreshCookie}`,
+      },
+    );
+    expect(refresh.statusCode).toBe(401);
+    const meAsUser = await fromTablet('GET', '/auth/me', undefined, {
+      authorization: `Bearer ${accessToken}`,
+    });
+    expect(meAsUser.statusCode).toBe(401);
   });
 
   it('only admins with settings.manage can create codes', async () => {
     const { fromTablet } = await pairingServer();
+    expect((await fromTablet('GET', '/hub/info')).json().restaurantName).toBe('Spice Route');
     expect(
       (await fromTablet('POST', '/devices/pairing-codes', { name: 'Rogue', kind: 'POS' }))
         .statusCode,

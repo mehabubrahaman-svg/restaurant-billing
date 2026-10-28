@@ -17,6 +17,7 @@ export class SqliteRefreshTokenStore implements RefreshTokenStore {
   private readonly revokeFamilyRows;
   private readonly revokeUserRows;
   private readonly familyActive;
+  private readonly revokeDeviceRows;
 
   constructor(db: SqliteDatabase) {
     this.byHash = db.prepare<[string], Row>(
@@ -33,6 +34,11 @@ export class SqliteRefreshTokenStore implements RefreshTokenStore {
     );
     this.revokeFamilyRows = db.prepare(
       'UPDATE refresh_tokens SET revoked_at = ? WHERE family_id = ? AND revoked_at IS NULL',
+    );
+    this.revokeDeviceRows = db.prepare(
+      `UPDATE refresh_tokens SET revoked_at = ?
+        WHERE revoked_at IS NULL
+          AND family_id IN (SELECT family_id FROM refresh_tokens WHERE device_id = ?)`,
     );
     this.revokeUserRows = db.prepare(
       `UPDATE refresh_tokens SET revoked_at = ?
@@ -78,6 +84,10 @@ export class SqliteRefreshTokenStore implements RefreshTokenStore {
 
   revokeAllForUser(userId: string, at: Date, exceptFamilyId?: string): number {
     return this.revokeUserRows.run(at.toISOString(), userId, exceptFamilyId ?? null).changes;
+  }
+
+  revokeAllForDevice(deviceId: string, at: Date): number {
+    return this.revokeDeviceRows.run(at.toISOString(), deviceId).changes;
   }
 
   isFamilyActive(familyId: string, now: Date): boolean {

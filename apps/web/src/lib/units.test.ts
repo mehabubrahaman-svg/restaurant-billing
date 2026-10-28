@@ -27,6 +27,13 @@ describe('rupees ↔ paise', () => {
     expect(paiseToRupees(4950)).toBe('49.50');
   });
 
+  it('accepts a rupee sign and Indic digits', () => {
+    expect(rupeesToPaise('₹ 249.50')).toBe(24950);
+    expect(rupeesToPaise('₹1,00,000')).toBe(10_000_000);
+    expect(rupeesToPaise('२४९.५०')).toBe(24950);
+    expect(rupeesToPaise('৩২০')).toBe(32000);
+  });
+
   it('rejects negatives and junk', () => {
     expect(rupeesToPaise('-1')).toBeNull();
     expect(rupeesToPaise('1.234')).toBeNull();

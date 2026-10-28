@@ -1,11 +1,32 @@
 import {
+  API_PREFIX,
+  AddonGroupSchema,
+  AddonGroupsResponseSchema,
   ApproveResponseSchema,
   AuditLogPageSchema,
   AuditVerifyResponseSchema,
   BranchSettingsSchema,
+  CategoriesResponseSchema,
+  CategorySchema,
+  DeviceSchema,
+  DevicesResponseSchema,
+  DiningTableSchema,
+  FloorAreaSchema,
+  FloorResponseSchema,
+  HubInfoSchema,
+  KitchenStationSchema,
+  KitchenStationsResponseSchema,
   ChargeRuleSchema,
   ChargeRulesResponseSchema,
+  MenuImportResponseSchema,
+  MenuItemSchema,
+  MenuItemsResponseSchema,
+  MenuSnapshotSchema,
   MeResponseSchema,
+  PairDeviceResponseSchema,
+  PairingCodeResponseSchema,
+  PeripheralSchema,
+  PeripheralsResponseSchema,
   PermissionsResponseSchema,
   PinUsersResponseSchema,
   PrinterSchema,
@@ -15,12 +36,15 @@ import {
   SessionResponseSchema,
   SetupResponseSchema,
   SetupStatusResponseSchema,
+  TableQrResponseSchema,
   TaxGroupSchema,
   TaxGroupsResponseSchema,
   UserSchema,
   UsersResponseSchema,
   type ApproveRequest,
   type CreateUserRequest,
+  type DeviceKind,
+  type Peripheral,
   type LoginRequest,
   type PinLoginRequest,
   type SetupRequest,
@@ -72,6 +96,98 @@ export interface SavePrinterBody {
   version?: number;
 }
 
+/** `{ hi?, bn? }`: customer-facing names in the other launch languages. */
+export interface TranslationsBody {
+  hi?: string;
+  bn?: string;
+}
+export type FoodType = 'VEG' | 'NON_VEG' | 'EGG' | 'VEGAN' | 'NA';
+export interface SaveStationBody {
+  name?: string;
+  isActive?: boolean;
+  version?: number;
+}
+export interface SaveCategoryBody {
+  name?: string;
+  nameTranslations?: TranslationsBody;
+  parentId?: string | null;
+  color?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+  version?: number;
+}
+export interface SaveAddonGroupBody {
+  name?: string;
+  nameTranslations?: TranslationsBody;
+  minSelect?: number;
+  maxSelect?: number;
+  /** The full list: addons left out are retired. */
+  addons?: { id?: string; name: string; nameTranslations: TranslationsBody; price: number }[];
+  isActive?: boolean;
+  version?: number;
+}
+export interface SaveMenuItemBody {
+  sku?: string;
+  name?: string;
+  shortName?: string | null;
+  nameTranslations?: TranslationsBody;
+  description?: string | null;
+  descriptionTranslations?: TranslationsBody;
+  categoryId?: string;
+  foodType?: FoodType;
+  basePrice?: number;
+  taxGroupId?: string | null;
+  hsnSacCode?: string | null;
+  kitchenStationId?: string | null;
+  prepTimeSec?: number | null;
+  sortOrder?: number;
+  /** The full list: variants left out are retired. */
+  variants?: { id?: string; name: string; nameTranslations: TranslationsBody; price: number }[];
+  addonGroupIds?: string[];
+  isActive?: boolean;
+  version?: number;
+}
+export type TableShape = 'SQUARE' | 'ROUND' | 'RECT' | 'BOOTH';
+export type ManualTableStatus = 'AVAILABLE' | 'RESERVED' | 'CLEANING' | 'BLOCKED';
+export interface SaveFloorAreaBody {
+  name?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  version?: number;
+}
+export interface SaveTableBody {
+  floorAreaId?: string;
+  label?: string;
+  seats?: number;
+  shape?: TableShape;
+  posX?: number;
+  posY?: number;
+  isActive?: boolean;
+  version?: number;
+}
+export interface LayoutMove {
+  id: string;
+  posX: number;
+  posY: number;
+  version: number;
+}
+export type DevicePlatform = 'WINDOWS' | 'LINUX' | 'ANDROID' | 'IOS' | 'IPADOS' | 'OTHER';
+export interface UpdateDeviceBody {
+  version: number;
+  name?: string;
+  kind?: DeviceKind;
+  isActive?: boolean;
+}
+export interface SavePeripheralBody {
+  name?: string;
+  kind?: Peripheral['kind'];
+  connection?: Peripheral['connection'];
+  deviceId?: string | null;
+  address?: string | null;
+  isActive?: boolean;
+  version?: number;
+}
+
 /** AuditLogQuery's filter fields (its `limit` is a coerced input, typed `unknown`). */
 export interface AuditFilter {
   entityType?: string;
@@ -84,6 +200,29 @@ export interface AuditFilter {
 
 const POST = 'POST' as const;
 const PATCH = 'PATCH' as const;
+const PUT = 'PUT' as const;
+
+/** Where the browser downloads the Hub's local CA certificate (public, PEM). */
+export const HUB_CA_CERT_URL = `${API_PREFIX}/hub/ca.crt`;
+
+/**
+ * PUT /floor/layout answers with the updated tables. Accept either a bare
+ * array or `{ data: [...] }` / `{ tables: [...] }`, since the contract only says "returns the
+ * updated tables".
+ */
+const TablesSchema = {
+  parse(input: unknown) {
+    const list = Array.isArray(input)
+      ? input
+      : typeof input === 'object' && input !== null && 'tables' in input
+        ? (input as { tables: unknown }).tables
+        : typeof input === 'object' && input !== null && 'data' in input
+          ? (input as { data: unknown }).data
+          : input;
+    if (!Array.isArray(list)) throw new Error('not a table list');
+    return list.map((t) => DiningTableSchema.parse(t));
+  },
+};
 
 export const api = {
   setup: {
@@ -160,5 +299,74 @@ export const api = {
     list: (query: AuditFilter & { cursor?: string; limit?: number }) =>
       c.json('/audit-logs', AuditLogPageSchema, { query: { ...query, limit: query.limit ?? 50 } }),
     verify: () => c.json('/audit-logs/verify', AuditVerifyResponseSchema, { method: POST }),
+  },
+  menu: {
+    stations: () => c.json('/kitchen-stations', KitchenStationsResponseSchema),
+    createStation: (body: SaveStationBody) =>
+      c.json('/kitchen-stations', KitchenStationSchema, { method: POST, body }),
+    updateStation: (id: string, body: SaveStationBody) =>
+      c.json(`/kitchen-stations/${id}`, KitchenStationSchema, { method: PATCH, body }),
+    categories: () => c.json('/categories', CategoriesResponseSchema),
+    createCategory: (body: SaveCategoryBody) =>
+      c.json('/categories', CategorySchema, { method: POST, body }),
+    updateCategory: (id: string, body: SaveCategoryBody) =>
+      c.json(`/categories/${id}`, CategorySchema, { method: PATCH, body }),
+    addonGroups: () => c.json('/addon-groups', AddonGroupsResponseSchema),
+    createAddonGroup: (body: SaveAddonGroupBody) =>
+      c.json('/addon-groups', AddonGroupSchema, { method: POST, body }),
+    updateAddonGroup: (id: string, body: SaveAddonGroupBody) =>
+      c.json(`/addon-groups/${id}`, AddonGroupSchema, { method: PATCH, body }),
+    items: () =>
+      c.json('/menu-items', MenuItemsResponseSchema, { query: { includeInactive: true } }),
+    createItem: (body: SaveMenuItemBody) =>
+      c.json('/menu-items', MenuItemSchema, { method: POST, body }),
+    updateItem: (id: string, body: SaveMenuItemBody) =>
+      c.json(`/menu-items/${id}`, MenuItemSchema, { method: PATCH, body }),
+    setAvailability: (id: string, isAvailable: boolean) =>
+      c.void(`/menu-items/${id}/availability`, { method: POST, body: { isAvailable } }),
+    /** Active menu for ordering devices; `null` when our copy (by ETag) is current. */
+    snapshot: (etag: string | null) => c.cached('/menu', MenuSnapshotSchema, etag),
+    import: (csv: string, dryRun: boolean) =>
+      c.json('/menu/import', MenuImportResponseSchema, { method: POST, body: { csv, dryRun } }),
+  },
+  floor: {
+    get: () => c.json('/floor', FloorResponseSchema),
+    createArea: (body: SaveFloorAreaBody) =>
+      c.json('/floor-areas', FloorAreaSchema, { method: POST, body }),
+    updateArea: (id: string, body: SaveFloorAreaBody) =>
+      c.json(`/floor-areas/${id}`, FloorAreaSchema, { method: PATCH, body }),
+    createTable: (body: SaveTableBody) =>
+      c.json('/tables', DiningTableSchema, { method: POST, body }),
+    updateTable: (id: string, body: SaveTableBody) =>
+      c.json(`/tables/${id}`, DiningTableSchema, { method: PATCH, body }),
+    saveLayout: (tables: LayoutMove[]) =>
+      c.json('/floor/layout', TablesSchema, { method: PUT, body: { tables } }),
+    setStatus: (id: string, status: ManualTableStatus, version: number) =>
+      c.json(`/tables/${id}/status`, DiningTableSchema, {
+        method: POST,
+        body: { status, version },
+      }),
+    qr: (id: string) => c.json(`/tables/${id}/qr`, TableQrResponseSchema),
+    rotateQr: (id: string) => c.json(`/tables/${id}/qr`, TableQrResponseSchema, { method: POST }),
+  },
+  hub: {
+    info: () => c.json('/hub/info', HubInfoSchema, { auth: false }),
+  },
+  devices: {
+    me: () => c.json('/devices/me', DeviceSchema, { auth: false }),
+    pair: (body: { code: string; fingerprint: string; platform?: DevicePlatform }) =>
+      c.json('/devices/pair', PairDeviceResponseSchema, { method: POST, body, auth: false }),
+    createPairingCode: (body: { name: string; kind: DeviceKind }) =>
+      c.json('/devices/pairing-codes', PairingCodeResponseSchema, { method: POST, body }),
+    list: () => c.json('/devices', DevicesResponseSchema),
+    update: (id: string, body: UpdateDeviceBody) =>
+      c.json(`/devices/${id}`, DeviceSchema, { method: PATCH, body }),
+  },
+  peripherals: {
+    list: () => c.json('/peripherals', PeripheralsResponseSchema),
+    create: (body: SavePeripheralBody) =>
+      c.json('/peripherals', PeripheralSchema, { method: POST, body }),
+    update: (id: string, body: SavePeripheralBody) =>
+      c.json(`/peripherals/${id}`, PeripheralSchema, { method: PATCH, body }),
   },
 };

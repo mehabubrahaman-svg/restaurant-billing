@@ -42,10 +42,14 @@ export function toDevice(d: DeviceRecord): Device {
 /** WP 3.4: discovery, pairing, the device registry and peripherals. */
 export async function deviceRoutes(app: FastifyInstance, { cradle }: { cradle: Cradle }) {
   const { deviceService: devices, hubNetwork, config, setupService } = cradle;
+  const restaurantName = cradle.db
+    .prepare<[], string>('SELECT name FROM organizations ORDER BY created_at LIMIT 1')
+    .pluck();
 
   // ---- discovery (public) ----------------------------------------------------------
   app.get('/hub/info', { config: { public: true } }, async (): Promise<HubInfo> => ({
     name: 'RestroOS Hub',
+    restaurantName: restaurantName.get() ?? null,
     version: config.version,
     needsSetup: setupService.needsSetup(),
     urls: hubUrls(hubNetwork),

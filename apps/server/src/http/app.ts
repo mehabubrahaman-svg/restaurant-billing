@@ -84,9 +84,14 @@ export async function buildApp(
 
   // The Hub serves the web app itself, so every device just opens https://<hub>:7400.
   if (config.webDist && existsSync(join(config.webDist, 'index.html'))) {
-    await app.register(fastifyStatic, { root: config.webDist, wildcard: false });
+    // wildcard: files are looked up per request, so a rebuilt web app is served without a restart.
+    await app.register(fastifyStatic, { root: config.webDist, wildcard: true });
     app.setNotFoundHandler((request, reply) => {
-      const wantsPage = request.method === 'GET' && !request.url.startsWith('/api/');
+      // A missing hashed asset must be a 404, not index.html, or the browser runs HTML as a script.
+      const wantsPage =
+        request.method === 'GET' &&
+        !request.url.startsWith('/api/') &&
+        !request.url.startsWith('/assets/');
       if (wantsPage) return reply.sendFile('index.html'); // client-side routing
       return sendProblem(
         reply,

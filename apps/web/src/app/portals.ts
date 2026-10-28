@@ -62,13 +62,16 @@ export const ADMIN_PERMISSIONS = [
   'roles.manage',
   'settings.manage',
   'audit.view',
+  'menu.manage',
+  'floor.manage',
 ] as const;
 
 /** Order here is nav order. */
 export const PORTALS: readonly Portal[] = [
   portal('admin', '/admin', LayoutDashboard, ADMIN_PERMISSIONS),
   portal('captain', '/captain', UtensilsCrossed, 'tables.view'),
-  portal('kitchen', '/kitchen', ChefHat, 'kds.view'),
+  // The kitchen's "Out of stock" list is also for people who mark items 86 without a KDS.
+  portal('kitchen', '/kitchen', ChefHat, ['kds.view', 'menu.toggle_availability', 'menu.manage']),
   portal('pos', '/pos', CreditCard, 'billing.create'),
   portal('inventory', '/inventory', Package, 'inventory.view'),
   portal('purchase', '/purchase', Truck, 'vendors.view'),

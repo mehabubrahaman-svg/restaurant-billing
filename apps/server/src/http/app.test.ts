@@ -1,6 +1,6 @@
 import { HealthResponseSchema, ProblemDetailsSchema } from '@restroos/contracts';
 import { DomainError } from '@restroos/domain';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -195,6 +195,15 @@ describe('serving the web app', () => {
       const api = await server.app.inject({ method: 'GET', url: '/api/v1/nope' });
       expect(api.statusCode).toBe(404);
       expect(api.json()).toMatchObject({ code: 'NOT_FOUND' });
+
+      // A rebuilt web app is served without restarting the Hub; a stale asset is a 404, not HTML.
+      mkdirSync(join(webDir, 'assets'));
+      writeFileSync(join(webDir, 'assets', 'index-new.js'), 'console.log(1)');
+      const fresh = await server.app.inject({ method: 'GET', url: '/assets/index-new.js' });
+      expect(fresh.statusCode).toBe(200);
+      expect(fresh.headers['content-type']).toContain('javascript');
+      const gone = await server.app.inject({ method: 'GET', url: '/assets/index-old.js' });
+      expect(gone.statusCode).toBe(404);
     } finally {
       rmSync(webDir, { recursive: true, force: true });
     }

@@ -31,6 +31,18 @@ const CODE_KEYS = {
   PERMISSION_UNKNOWN: 'errors.permissionUnknown',
   TAX_GROUP_INVALID: 'errors.taxGroupInvalid',
   LIQUOR_NOT_ENABLED: 'errors.liquorNotEnabled',
+  SKU_TAKEN: 'errors.skuTaken',
+  CATEGORY_HAS_ITEMS: 'errors.categoryHasItems',
+  ADDON_GROUP_INVALID: 'errors.addonGroupInvalid',
+  TAX_GROUP_NOT_FOUND: 'errors.taxGroupNotFound',
+  STATION_NOT_FOUND: 'errors.stationNotFound',
+  TABLE_LABEL_TAKEN: 'errors.tableLabelTaken',
+  TABLE_IN_USE: 'errors.tableInUse',
+  AREA_HAS_TABLES: 'errors.areaHasTables',
+  INVALID_STATE_TRANSITION: 'errors.invalidStateTransition',
+  DEVICE_NOT_PAIRED: 'errors.deviceNotPaired',
+  PAIRING_CODE_INVALID: 'errors.pairingCodeInvalid',
+  DEVICE_MUST_REPAIR: 'errors.deviceMustRepair',
   INTERNAL_ERROR: 'errors.unknown',
 } as const;
 

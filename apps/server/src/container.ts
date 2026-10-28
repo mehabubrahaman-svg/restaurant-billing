@@ -212,6 +212,7 @@ export function buildContainer(
         new DeviceService({
           devices: new SqliteDeviceRepository(c.db),
           tokens: nodeTokenCodec,
+          refreshTokens: c.refreshTokens,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,

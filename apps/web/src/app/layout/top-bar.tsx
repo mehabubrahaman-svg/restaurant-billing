@@ -14,7 +14,7 @@ export function TopBar() {
   const session = useSession();
 
   return (
-    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-surface px-3 py-2 md:px-4">
+    <header className="sticky top-0 z-20 flex print:hidden flex-wrap items-center gap-x-3 gap-y-2 border-b bg-surface px-3 py-2 md:px-4">
       <Link
         to={home}
         className="flex min-h-touch items-center gap-2 rounded-lg pe-1 text-lg font-bold"

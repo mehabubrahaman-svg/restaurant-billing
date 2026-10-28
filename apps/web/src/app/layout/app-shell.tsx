@@ -27,7 +27,10 @@ export function AppShell() {
 
   const devicePath = FULL_SCREEN_PORTAL_PATH[kind];
   if (devicePath !== undefined) {
-    if (pathname !== devicePath) return <Navigate to={devicePath} replace />;
+    // The device's own portal and its sub-pages (e.g. /kitchen/availability).
+    if (pathname !== devicePath && !pathname.startsWith(`${devicePath}/`)) {
+      return <Navigate to={devicePath} replace />;
+    }
     return (
       <div className="relative min-h-dvh">
         <div className="fixed end-3 top-3 z-20">
@@ -44,7 +47,7 @@ export function AppShell() {
     <div className="flex min-h-dvh flex-col">
       <a
         href="#main"
-        className="sr-only z-50 rounded-lg bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
+        className="sr-only z-50 rounded-lg print:hidden bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
       >
         {t('app.skipToContent')}
       </a>
@@ -52,7 +55,7 @@ export function AppShell() {
       <div className="flex min-h-0 flex-1">
         <nav
           aria-label={t('nav.label')}
-          className="sticky top-16 hidden max-h-[calc(100dvh-4rem)] shrink-0 overflow-y-auto border-e bg-surface p-2 md:block md:w-24 lg:w-60"
+          className="sticky top-16 hidden max-h-[calc(100dvh-4rem)] print:hidden shrink-0 overflow-y-auto border-e bg-surface p-2 md:block md:w-24 lg:w-60"
         >
           <NavLinks variant="side" />
         </nav>
@@ -63,7 +66,7 @@ export function AppShell() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.15 }}
-          className="min-w-0 flex-1 p-4 pb-24 md:p-6"
+          className="min-w-0 flex-1 p-4 pb-24 md:p-6 print:p-0"
         >
           <Suspense fallback={<Spinner label={t('common.loading')} />}>
             <Outlet />
@@ -72,7 +75,7 @@ export function AppShell() {
       </div>
       <nav
         aria-label={t('nav.label')}
-        className="fixed inset-x-0 bottom-0 z-20 overflow-x-auto border-t bg-surface px-1 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 overflow-x-auto print:hidden border-t bg-surface px-1 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <NavLinks variant="bar" />
       </nav>

@@ -1,13 +1,15 @@
 import type { SessionResponse } from '@restroos/contracts';
-import { Alert, Card, SegmentedControl, Store } from '@restroos/ui';
+import { Alert, Button, Card, Link as LinkIcon, SegmentedControl, Store } from '@restroos/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
+import { isApiError } from '../../api/client';
 import { api } from '../../api/endpoints';
 import { homePath } from '../../app/portals';
 import { LanguageSwitcher } from '../../i18n/language-switcher';
 import { useErrorMessage } from '../../lib/errors';
+import { retryUnlessClientError } from '../../lib/query';
 import { useDeviceStore } from '../../stores/device-store';
 import { ConnectionPill } from '../connection/connection-pill';
 import { useAuthStore } from './auth-store';
@@ -32,10 +34,18 @@ export function LoginPage() {
   const status = useAuthStore((s) => s.status);
   const { login, pinLogin, switchBranch } = useAuthStore.getState();
 
-  const pinUsers = useQuery({ queryKey: ['auth', 'pin-users'], queryFn: api.auth.pinUsers });
+  const pinUsers = useQuery({
+    queryKey: ['auth', 'pin-users'],
+    queryFn: api.auth.pinUsers,
+    retry: retryUnlessClientError,
+  });
+  // PIN sign-in only works on devices paired with the Hub (and on the Hub itself).
+  const [pinRefused, setPinRefused] = useState(false);
+  const notPaired = pinRefused || isApiError(pinUsers.error, 'DEVICE_NOT_PAIRED');
   const [chosenMode, setMode] = useState<Mode | null>(null);
-  const mode: Mode =
-    chosenMode ?? (pinUsers.isError || pinUsers.data?.data.length === 0 ? 'password' : 'pin');
+  const mode: Mode = notPaired
+    ? 'password'
+    : (chosenMode ?? (pinUsers.isError || pinUsers.data?.data.length === 0 ? 'password' : 'pin'));
 
   // True from submit until we navigate away, so the redirect below does not
   // fire before the branch picker gets a chance to show.
@@ -61,6 +71,13 @@ export function LoginPage() {
       if (session.branches.length > 1) setBranchChoice(session);
       else void navigate(target(session), { replace: true });
     } catch (e) {
+      if (isApiError(e, 'DEVICE_NOT_PAIRED')) {
+        setPinRefused(true);
+        setError(null);
+        onFail?.();
+        setInFlight(false);
+        return;
+      }
       setError(errorMessage(e));
       onFail?.();
       setInFlight(false);
@@ -82,7 +99,14 @@ export function LoginPage() {
             <Store aria-hidden="true" className="size-6" />
           </span>
           <h1 className="text-2xl font-bold">{t('app.name')}</h1>
-          <p className="text-muted-foreground">{t('login.device', { name: device, kind })}</p>
+          <p className="text-muted-foreground">
+            {device === null
+              ? t('login.unpairedDevice')
+              : t('login.device', {
+                  name: device,
+                  kind: t(`devices.kinds.${kind === 'SERVER' ? 'POS' : kind}`),
+                })}
+          </p>
           <ConnectionPill className="mt-2" />
         </header>
 
@@ -94,19 +118,32 @@ export function LoginPage() {
           />
         ) : (
           <>
+            {notPaired && (
+              <Alert tone="info" title={t('login.notPairedTitle')} className="w-full">
+                <p>{t('login.notPairedBody')}</p>
+                <Button variant="outline" size="sm" className="mt-2" asChild>
+                  <Link to="/pair">
+                    <LinkIcon aria-hidden="true" />
+                    {t('login.pairDevice')}
+                  </Link>
+                </Button>
+              </Alert>
+            )}
             <div className="flex w-full flex-wrap items-center justify-between gap-3">
-              <SegmentedControl<Mode>
-                aria-label={t('login.method')}
-                value={mode}
-                onValueChange={(m) => {
-                  setMode(m);
-                  setError(null);
-                }}
-                options={[
-                  { value: 'pin', label: t('login.withPin') },
-                  { value: 'password', label: t('login.withPassword') },
-                ]}
-              />
+              {!notPaired && (
+                <SegmentedControl<Mode>
+                  aria-label={t('login.method')}
+                  value={mode}
+                  onValueChange={(m) => {
+                    setMode(m);
+                    setError(null);
+                  }}
+                  options={[
+                    { value: 'pin', label: t('login.withPin') },
+                    { value: 'password', label: t('login.withPassword') },
+                  ]}
+                />
+              )}
               <LanguageSwitcher />
             </div>
             {error !== null && (

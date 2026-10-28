@@ -55,6 +55,8 @@ export interface RequestOptions {
   readonly auth?: boolean;
   /** A manager's one-time approval token (see withApproval). */
   readonly approverToken?: string;
+  /** Conditional GET: the ETag of the copy we already hold. */
+  readonly ifNoneMatch?: string;
   readonly signal?: AbortSignal;
 }
 
@@ -105,6 +107,31 @@ export class ApiClient {
     }
   }
 
+  /**
+   * Conditional GET. Sends `If-None-Match` when we hold a copy; a 304 comes
+   * back as `null` (keep using the cached copy), anything else as the new
+   * body with its ETag.
+   */
+  async cached<T>(
+    path: string,
+    schema: Schema<T>,
+    etag: string | null,
+    options: RequestOptions = {},
+  ): Promise<{ data: T; etag: string | null } | null> {
+    const response = await this.send(path, {
+      ...options,
+      ...(etag === null ? {} : { ifNoneMatch: etag }),
+    });
+    if (response.status === 304) return null;
+    let body: unknown;
+    try {
+      body = await response.json();
+      return { data: schema.parse(body), etag: response.headers.get('etag') };
+    } catch {
+      throw new ApiError(response.status, 'BAD_RESPONSE', null);
+    }
+  }
+
   /** Request whose response body is ignored (204, 202). */
   async void(path: string, options: RequestOptions = {}): Promise<void> {
     await this.send(path, options);
@@ -123,7 +150,9 @@ export class ApiClient {
       if (outcome === 'invalid') throw error;
       response = await this.fetchOnce(path, options, auth);
     }
-    if (!response.ok) throw await toApiError(response);
+    if (!response.ok && !(response.status === 304 && options.ifNoneMatch !== undefined)) {
+      throw await toApiError(response);
+    }
     return response;
   }
 
@@ -133,6 +162,7 @@ export class ApiClient {
     const token = auth ? (this.bridge?.accessToken() ?? null) : null;
     if (token !== null) headers['authorization'] = `Bearer ${token}`;
     if (options.approverToken !== undefined) headers[APPROVER_HEADER] = options.approverToken;
+    if (options.ifNoneMatch !== undefined) headers['if-none-match'] = options.ifNoneMatch;
 
     const init: RequestInit = {
       method: options.method ?? 'GET',

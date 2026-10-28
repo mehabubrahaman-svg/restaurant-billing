@@ -1,4 +1,5 @@
 import {
+  Ban,
   BellRing,
   Check,
   CheckCheck,
@@ -15,8 +16,8 @@ import {
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/cn';
 
-/** Dining table states (wireframes §1). */
-export type TableState = 'available' | 'occupied' | 'billing' | 'reserved' | 'cleaning';
+/** Dining table states (wireframes §1), plus `blocked`: taken out of use by a manager. */
+export type TableState = 'available' | 'occupied' | 'billing' | 'reserved' | 'cleaning' | 'blocked';
 /** KOT lifecycle (NEW → ACCEPTED → COOKING → READY → SERVED), plus the KDS delay flag. */
 export type KotState = 'new' | 'accepted' | 'cooking' | 'ready' | 'served' | 'delayed';
 export type ChipState = TableState | KotState;
@@ -41,6 +42,7 @@ export const CHIP_LOOKS: Readonly<Record<ChipState, ChipLook>> = {
   billing: { tone: 'billing', icon: IndianRupee },
   reserved: { tone: 'reserved', icon: Clock },
   cleaning: { tone: 'cleaning', icon: Sparkles },
+  blocked: { tone: 'danger', icon: Ban },
   new: { tone: 'occupied', icon: BellRing },
   accepted: { tone: 'billing', icon: Check },
   cooking: { tone: 'reserved', icon: Flame },
@@ -49,7 +51,8 @@ export const CHIP_LOOKS: Readonly<Record<ChipState, ChipLook>> = {
   delayed: { tone: 'danger', icon: TriangleAlert, iconClassName: 'motion-safe:animate-pulse' },
 };
 
-const TONE_CLASSES: Record<StateTone, string> = {
+/** Border, soft fill and text colour for each tone; for tiles that show a state without a chip. */
+export const STATE_TONE_CLASSES: Readonly<Record<StateTone, string>> = {
   available: 'border-state-available bg-state-available-soft text-state-available-fg',
   occupied: 'border-state-occupied bg-state-occupied-soft text-state-occupied-fg',
   billing: 'border-state-billing bg-state-billing-soft text-state-billing-fg',
@@ -85,7 +88,7 @@ export function StateChip({
         'inline-flex max-w-full items-center gap-1.5 rounded-md border font-medium leading-tight',
         'transition-colors duration-200',
         size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm',
-        TONE_CLASSES[look.tone],
+        STATE_TONE_CLASSES[look.tone],
         className,
       )}
       {...props}

@@ -2,6 +2,7 @@ import {
   cn,
   Spinner,
   LayoutDashboard,
+  MonitorSmartphone,
   Percent,
   Printer,
   Receipt,
@@ -9,6 +10,8 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  UtensilsCrossed,
+  LayoutGrid,
   type LucideIcon,
 } from '@restroos/ui';
 import { Suspense } from 'react';
@@ -28,6 +31,9 @@ export interface AdminSection {
     | 'admin.tabs.taxes'
     | 'admin.tabs.charges'
     | 'admin.tabs.printers'
+    | 'admin.tabs.menu'
+    | 'admin.tabs.floor'
+    | 'admin.tabs.devices'
     | 'admin.tabs.audit';
   readonly permission: PermissionRequirement;
 }
@@ -39,6 +45,8 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     labelKey: 'admin.tabs.overview',
     permission: 'dashboard.view',
   },
+  { path: 'menu', icon: UtensilsCrossed, labelKey: 'admin.tabs.menu', permission: 'menu.manage' },
+  { path: 'floor', icon: LayoutGrid, labelKey: 'admin.tabs.floor', permission: 'floor.manage' },
   { path: 'users', icon: Users, labelKey: 'admin.tabs.users', permission: 'users.manage' },
   {
     path: 'roles',
@@ -55,6 +63,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     labelKey: 'admin.tabs.printers',
     permission: 'settings.manage',
   },
+  {
+    path: 'devices',
+    icon: MonitorSmartphone,
+    labelKey: 'admin.tabs.devices',
+    permission: 'settings.manage',
+  },
   { path: 'audit', icon: ScrollText, labelKey: 'admin.tabs.audit', permission: 'audit.view' },
 ];
 
@@ -66,7 +80,7 @@ export function AdminLayout() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
-      <nav aria-label={t('admin.label')} className="-mx-1 overflow-x-auto px-1">
+      <nav aria-label={t('admin.label')} className="-mx-1 overflow-x-auto px-1 print:hidden">
         <ul className="flex min-w-max gap-1 border-b">
           {sections.map((s) => {
             const Icon = s.icon;

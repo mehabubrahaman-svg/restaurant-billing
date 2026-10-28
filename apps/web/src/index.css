@@ -1,2 +1,15 @@
 @import 'tailwindcss';
 @import '@restroos/ui/styles.css';
+
+/* QR sheets and other printouts: A4, no app chrome (elements carry print:hidden). */
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  html,
+  body {
+    background: #fff;
+    color: #000;
+  }
+}

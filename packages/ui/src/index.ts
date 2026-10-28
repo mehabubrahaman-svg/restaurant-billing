@@ -2,6 +2,7 @@ export { cn } from './lib/cn';
 export { Alert, type AlertProps, type AlertTone } from './components/alert';
 export { Checkbox, type CheckboxProps } from './components/checkbox';
 export { Dialog, type DialogProps } from './components/dialog';
+export { FoodMark, type FoodMarkProps, type FoodMarkType } from './components/food-mark';
 export { Field, type FieldControlProps, type FieldProps } from './components/field';
 export { Select } from './components/select';
 export { Spinner } from './components/spinner';
@@ -27,6 +28,7 @@ export {
 } from './components/segmented-control';
 export {
   CHIP_LOOKS,
+  STATE_TONE_CLASSES,
   StateChip,
   type ChipState,
   type KotState,

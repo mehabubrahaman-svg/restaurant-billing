@@ -5,6 +5,13 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 import { AdminLayout } from '../features/admin/admin-layout';
 import type { PermissionRequirement } from '../features/auth/permissions';
 import { LoginPage } from '../features/auth/login-page';
+import { AvailabilityPage } from '../features/menu/availability-page';
+import { CaptainPage } from '../portals/captain/captain-page';
+import {
+  AVAILABILITY_PERMISSIONS,
+  KitchenHome,
+  KitchenLayout,
+} from '../portals/kitchen/kitchen-layout';
 import { PortalPlaceholder } from '../portals/portal-placeholder';
 import { PosPage } from '../portals/pos/pos-page';
 import { QrMenuPage } from '../portals/qr-menu/qr-menu-page';
@@ -45,6 +52,36 @@ const TaxesPage = lazy(() =>
 const UsersPage = lazy(() =>
   import('../features/admin/users/users-page').then((m) => ({ default: m.UsersPage })),
 );
+const MenuLayout = lazy(() =>
+  import('../features/menu/menu-layout').then((m) => ({ default: m.MenuLayout })),
+);
+const MenuPage = lazy(() =>
+  import('../features/menu/menu-page').then((m) => ({ default: m.MenuPage })),
+);
+const ItemEditorPage = lazy(() =>
+  import('../features/menu/item-editor-page').then((m) => ({ default: m.ItemEditorPage })),
+);
+const AddonGroupsPage = lazy(() =>
+  import('../features/menu/addon-groups-page').then((m) => ({ default: m.AddonGroupsPage })),
+);
+const StationsPage = lazy(() =>
+  import('../features/menu/stations-page').then((m) => ({ default: m.StationsPage })),
+);
+const ImportPage = lazy(() =>
+  import('../features/menu/import-page').then((m) => ({ default: m.ImportPage })),
+);
+const FloorEditorPage = lazy(() =>
+  import('../features/floor/floor-editor-page').then((m) => ({ default: m.FloorEditorPage })),
+);
+const QrPrintPage = lazy(() =>
+  import('../features/floor/qr-print-page').then((m) => ({ default: m.QrPrintPage })),
+);
+const DevicesPage = lazy(() =>
+  import('../features/devices/devices-page').then((m) => ({ default: m.DevicesPage })),
+);
+const PairPage = lazy(() =>
+  import('../features/devices/pair-page').then((m) => ({ default: m.PairPage })),
+);
 const SetupWizard = lazy(() =>
   import('../features/setup/setup-wizard').then((m) => ({ default: m.SetupWizard })),
 );
@@ -81,6 +118,9 @@ function AdminGuard({
     | 'admin.tabs.taxes'
     | 'admin.tabs.charges'
     | 'admin.tabs.printers'
+    | 'admin.tabs.menu'
+    | 'admin.tabs.floor'
+    | 'admin.tabs.devices'
     | 'admin.tabs.audit';
   children: ReactNode;
 }) {
@@ -137,8 +177,41 @@ function adminRoutes(): RouteObject {
           </AdminGuard>
         ),
       },
+      {
+        path: 'menu',
+        element: (
+          <AdminGuard permission="menu.manage" labelKey="admin.tabs.menu">
+            <MenuLayout />
+          </AdminGuard>
+        ),
+        children: [
+          { index: true, element: <MenuPage /> },
+          { path: 'items/new', element: <ItemEditorPage /> },
+          { path: 'items/:itemId', element: <ItemEditorPage /> },
+          { path: 'addons', element: <AddonGroupsPage /> },
+          { path: 'stations', element: <StationsPage /> },
+          { path: 'import', element: <ImportPage /> },
+        ],
+      },
+      {
+        path: 'floor',
+        element: (
+          <AdminGuard permission="floor.manage" labelKey="admin.tabs.floor">
+            <FloorEditorPage />
+          </AdminGuard>
+        ),
+      },
+      {
+        path: 'floor/print',
+        element: (
+          <AdminGuard permission="floor.manage" labelKey="admin.tabs.floor">
+            <QrPrintPage />
+          </AdminGuard>
+        ),
+      },
       ...(
         [
+          ['devices', 'admin.tabs.devices', <DevicesPage key="d" />],
           ['branch', 'admin.tabs.branch', <BranchSettingsPage key="b" />],
           ['taxes', 'admin.tabs.taxes', <TaxesPage key="t" />],
           ['charges', 'admin.tabs.charges', <ChargesPage key="c" />],
@@ -164,6 +237,38 @@ function adminRoutes(): RouteObject {
   };
 }
 
+function kitchenRoutes(): RouteObject {
+  const kitchen = portal('kitchen');
+  return {
+    path: 'kitchen',
+    element: (
+      <PortalGuard portal={kitchen}>
+        <KitchenLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <KitchenHome portal={kitchen} /> },
+      {
+        path: 'availability',
+        element: (
+          <AvailabilityGuard>
+            <AvailabilityPage />
+          </AvailabilityGuard>
+        ),
+      },
+    ],
+  };
+}
+
+function AvailabilityGuard({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <RequirePermission permission={AVAILABILITY_PERMISSIONS} name={t('availability.title')}>
+      {children}
+    </RequirePermission>
+  );
+}
+
 export const routes: RouteObject[] = [
   // Guest QR ordering is public and phone-first: no setup gate, no staff shell.
   { path: '/qr/:token', element: <QrMenuPage /> },
@@ -172,20 +277,31 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/setup', element: <SetupWizard /> },
       { path: '/login', element: <LoginPage /> },
+      // Public: a new tablet opens this from the admin's pairing QR.
+      { path: '/pair', element: <PairPage /> },
       {
         path: '/',
         element: <AppShell />,
         children: [
           { index: true, element: <HomeRedirect /> },
           adminRoutes(),
-          ...PORTALS.filter((p) => p.id !== 'qrMenu' && p.id !== 'admin').map((p) => ({
-            path: p.path,
-            element: (
-              <PortalGuard portal={p}>
-                {p.id === 'pos' ? <PosPage portal={p} /> : <PortalPlaceholder portal={p} />}
-              </PortalGuard>
-            ),
-          })),
+          kitchenRoutes(),
+          ...PORTALS.filter((p) => p.id !== 'qrMenu' && p.id !== 'admin' && p.id !== 'kitchen').map(
+            (p) => ({
+              path: p.path,
+              element: (
+                <PortalGuard portal={p}>
+                  {p.id === 'pos' ? (
+                    <PosPage portal={p} />
+                  ) : p.id === 'captain' ? (
+                    <CaptainPage portal={p} />
+                  ) : (
+                    <PortalPlaceholder portal={p} />
+                  )}
+                </PortalGuard>
+              ),
+            }),
+          ),
           { path: 'account', element: <AccountPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],

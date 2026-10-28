@@ -9,6 +9,7 @@ import { useAuthStore } from '../features/auth/auth-store';
 import { useConnectionMonitor } from '../features/connection/use-connection-monitor';
 import { applyTheme, effectiveTheme, useThemeStore } from '../features/theme/theme-store';
 import { Toaster } from '../features/toast/toaster';
+import { DEVICE_ME_KEY, fetchThisDevice } from '../features/devices/this-device';
 import { useDeviceStore } from '../stores/device-store';
 
 export const SETUP_STATUS_KEY = ['setup', 'status'] as const;
@@ -48,6 +49,13 @@ export function RootLayout() {
     void useAuthStore.getState().restore();
   }, []);
 
+  const device = useQuery({
+    queryKey: DEVICE_ME_KEY,
+    queryFn: fetchThisDevice,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
+
   const setup = useQuery({
     queryKey: SETUP_STATUS_KEY,
     queryFn: api.setup.status,
@@ -66,7 +74,11 @@ export function RootLayout() {
       </Splash>
     );
   }
-  if (setup.isPending || (authStatus === 'restoring' && !setup.data.needsSetup)) {
+  if (
+    setup.isPending ||
+    device.isPending ||
+    (authStatus === 'restoring' && !setup.data.needsSetup)
+  ) {
     return (
       <Splash>
         <Spinner label={t('boot.starting')} />

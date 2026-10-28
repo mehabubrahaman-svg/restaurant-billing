@@ -12,7 +12,9 @@
         try {
           var root = document.documentElement;
           var theme = localStorage.getItem('restroos.theme');
-          var kind = localStorage.getItem('restroos.device-kind');
+          var kind =
+            localStorage.getItem('restroos.device-kind-override') ||
+            localStorage.getItem('restroos.device-kind');
           if (!theme && kind === 'KDS') theme = 'dark';
           if (theme && theme !== 'system') root.dataset.theme = theme;
           var locale = localStorage.getItem('restroos.locale');

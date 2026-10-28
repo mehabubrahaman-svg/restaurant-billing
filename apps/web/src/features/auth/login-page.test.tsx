@@ -108,4 +108,33 @@ describe('LoginPage', () => {
     );
     expect(switchCall).toBeDefined();
   });
+
+  it('without a paired device: hides the PIN pad and offers password sign-in and pairing', async () => {
+    mockHub({
+      ...BASE_ROUTES,
+      'GET /auth/pin-users': () => problem(403, 'DEVICE_NOT_PAIRED'),
+      'GET /devices/me': () => problem(403, 'DEVICE_NOT_PAIRED'),
+    });
+    renderApp('/login');
+    expect(await screen.findByText('PIN sign-in is off on this device')).toBeInTheDocument();
+    expect(screen.getByText('This device is not paired with the Hub')).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'PIN' })).toBeNull();
+    expect(screen.getByLabelText('Username')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Pair this device' })).toHaveAttribute('href', '/pair');
+    expect(screen.getByText(/Admin → Devices/)).toBeInTheDocument();
+  });
+
+  it('falls back to password when the Hub refuses a PIN sign-in from an unpaired device', async () => {
+    mockHub({
+      ...BASE_ROUTES,
+      'GET /auth/pin-users': () => json(PIN_USERS),
+      'POST /auth/pin-login': () => problem(403, 'DEVICE_NOT_PAIRED'),
+    });
+    renderApp('/login');
+    fireEvent.click(await screen.findByRole('button', { name: 'Asha Sen' }));
+    for (const d of ['2', '5', '8', '0']) fireEvent.click(key(d));
+    fireEvent.click(key('Sign in'));
+    expect(await screen.findByText('PIN sign-in is off on this device')).toBeInTheDocument();
+    expect(screen.getByLabelText('Username')).toBeInTheDocument();
+  });
 });
