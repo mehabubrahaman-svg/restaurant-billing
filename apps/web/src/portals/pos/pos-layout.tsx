@@ -1,5 +1,5 @@
 import { Money } from '@restroos/domain';
-import { Badge, Button, CreditCard, HandCoins, ReceiptText, Wallet } from '@restroos/ui';
+import { Badge, Bike, Button, CreditCard, HandCoins, ReceiptText, Wallet } from '@restroos/ui';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet } from 'react-router';
 import { TabLinks, type TabLink } from '../../components/tab-links';
@@ -13,8 +13,10 @@ import { ShiftPromptDialog } from './open-shift-dialog';
 export function PosLayout() {
   const { t } = useTranslation();
   const canShift = usePermission('cash.shift_manage');
+  const canDeliver = usePermission('orders.create');
   const tabs: TabLink[] = [
     { to: '/pos', end: true, label: t('pos.tabs.counter'), icon: CreditCard },
+    ...(canDeliver ? [{ to: '/pos/delivery', label: t('pos.tabs.delivery'), icon: Bike }] : []),
     { to: '/pos/bills', label: t('pos.tabs.bills'), icon: ReceiptText },
     ...(canShift ? [{ to: '/pos/shift', label: t('pos.tabs.shift'), icon: Wallet }] : []),
   ];

@@ -657,3 +657,191 @@ Real-Hub shots walk through one service: a discounted bill split into food (GST)
 **Z report · Hindi · 768 px**
 
 ![Z report · Hindi · 768 px](sprint-5a/z-report-hi-IN-768.png)
+
+## Sprint 5B — reports, backups, delivery, customers, printing
+
+Real-Hub shots were taken on the Sprint 5 Hub: the owner's dashboard and day-end report, creating Swiggy and keying in a delivery order (and its duplicate check), a customer found by phone at billing, backup, download and import with a wrong and then the right passphrase, a KOT reprint, a printer that is off, and what the cashier, kitchen and manager each see. Restore and the reconnect overlay are rendered against a mocked Hub, with the other screens, in Hindi at tablet width and Bengali at desktop width.
+
+**Real Hub · Backup import wrong · English · 1366 px**
+
+![Real Hub · Backup import wrong · English · 1366 px](sprint-5b/real-hub-backup-import-wrong.png)
+
+**Real Hub · Backup imported · English · 1366 px**
+
+![Real Hub · Backup imported · English · 1366 px](sprint-5b/real-hub-backup-imported.png)
+
+**Real Hub · Backup restore dialog · English · 1366 px**
+
+![Real Hub · Backup restore dialog · English · 1366 px](sprint-5b/real-hub-backup-restore-dialog.png)
+
+**Real Hub · Backups · English · 1366 px**
+
+![Real Hub · Backups · English · 1366 px](sprint-5b/real-hub-backups.png)
+
+**Real Hub · Channel dialog · English · 1366 px**
+
+![Real Hub · Channel dialog · English · 1366 px](sprint-5b/real-hub-channel-dialog.png)
+
+**Real Hub · Channels · English · 1366 px**
+
+![Real Hub · Channels · English · 1366 px](sprint-5b/real-hub-channels.png)
+
+**Real Hub · Customer detail · English · 1366 px**
+
+![Real Hub · Customer detail · English · 1366 px](sprint-5b/real-hub-customer-detail.png)
+
+**Real Hub · Customer dialog filled · English · 1366 px**
+
+![Real Hub · Customer dialog filled · English · 1366 px](sprint-5b/real-hub-customer-dialog-filled.png)
+
+**Real Hub · Customer dialog lookup · English · 1366 px**
+
+![Real Hub · Customer dialog lookup · English · 1366 px](sprint-5b/real-hub-customer-dialog-lookup.png)
+
+**Real Hub · Customers · English · 1366 px**
+
+![Real Hub · Customers · English · 1366 px](sprint-5b/real-hub-customers.png)
+
+**Real Hub · Dashboard · English · 1366 px**
+
+![Real Hub · Dashboard · English · 1366 px](sprint-5b/real-hub-dashboard.png)
+
+**Real Hub · Day end print noprinter · English · 1366 px**
+
+![Real Hub · Day end print noprinter · English · 1366 px](sprint-5b/real-hub-day-end-print-noprinter.png)
+
+**Real Hub · Day end · English · 1366 px**
+
+![Real Hub · Day end · English · 1366 px](sprint-5b/real-hub-day-end.png)
+
+**Real Hub · Delivery billed · English · 1366 px**
+
+![Real Hub · Delivery billed · English · 1366 px](sprint-5b/real-hub-delivery-billed.png)
+
+**Real Hub · Delivery duplicate · English · 1366 px**
+
+![Real Hub · Delivery duplicate · English · 1366 px](sprint-5b/real-hub-delivery-duplicate.png)
+
+**Real Hub · Delivery filled · English · 1366 px**
+
+![Real Hub · Delivery filled · English · 1366 px](sprint-5b/real-hub-delivery-filled.png)
+
+**Real Hub · Delivery sent · English · 1366 px**
+
+![Real Hub · Delivery sent · English · 1366 px](sprint-5b/real-hub-delivery-sent.png)
+
+**Real Hub · Kds reprint · English · 1366 px**
+
+![Real Hub · Kds reprint · English · 1366 px](sprint-5b/real-hub-kds-reprint.png)
+
+**Real Hub · Perm bose · English · 1366 px**
+
+![Real Hub · Perm bose · English · 1366 px](sprint-5b/real-hub-perm-bose.png)
+
+**Real Hub · Perm meera · English · 1366 px**
+
+![Real Hub · Perm meera · English · 1366 px](sprint-5b/real-hub-perm-meera.png)
+
+**Real Hub · Perm mou · English · 1366 px**
+
+![Real Hub · Perm mou · English · 1366 px](sprint-5b/real-hub-perm-mou.png)
+
+**Real Hub · Printers test offline · English · 1366 px**
+
+![Real Hub · Printers test offline · English · 1366 px](sprint-5b/real-hub-printers-test-offline.png)
+
+**Backup import · Bengali · 1366 px**
+
+![Backup import · Bengali · 1366 px](sprint-5b/backup-import-bn-IN-1366.png)
+
+**Backup import · Hindi · 768 px**
+
+![Backup import · Hindi · 768 px](sprint-5b/backup-import-hi-IN-768.png)
+
+**Backup restore dialog · Bengali · 1366 px**
+
+![Backup restore dialog · Bengali · 1366 px](sprint-5b/backup-restore-dialog-bn-IN-1366.png)
+
+**Backup restore dialog · Hindi · 768 px**
+
+![Backup restore dialog · Hindi · 768 px](sprint-5b/backup-restore-dialog-hi-IN-768.png)
+
+**Backup restoring · Bengali · 1366 px**
+
+![Backup restoring · Bengali · 1366 px](sprint-5b/backup-restoring-bn-IN-1366.png)
+
+**Backup restoring · Hindi · 768 px**
+
+![Backup restoring · Hindi · 768 px](sprint-5b/backup-restoring-hi-IN-768.png)
+
+**Backups · Bengali · 1366 px**
+
+![Backups · Bengali · 1366 px](sprint-5b/backups-bn-IN-1366.png)
+
+**Backups · Hindi · 768 px**
+
+![Backups · Hindi · 768 px](sprint-5b/backups-hi-IN-768.png)
+
+**Channel dialog · Bengali · 1366 px**
+
+![Channel dialog · Bengali · 1366 px](sprint-5b/channel-dialog-bn-IN-1366.png)
+
+**Channel dialog · Hindi · 768 px**
+
+![Channel dialog · Hindi · 768 px](sprint-5b/channel-dialog-hi-IN-768.png)
+
+**Channels · Bengali · 1366 px**
+
+![Channels · Bengali · 1366 px](sprint-5b/channels-bn-IN-1366.png)
+
+**Channels · Hindi · 768 px**
+
+![Channels · Hindi · 768 px](sprint-5b/channels-hi-IN-768.png)
+
+**Customer detail · Bengali · 1366 px**
+
+![Customer detail · Bengali · 1366 px](sprint-5b/customer-detail-bn-IN-1366.png)
+
+**Customer detail · Hindi · 768 px**
+
+![Customer detail · Hindi · 768 px](sprint-5b/customer-detail-hi-IN-768.png)
+
+**Customer lookup · Bengali · 1366 px**
+
+![Customer lookup · Bengali · 1366 px](sprint-5b/customer-lookup-bn-IN-1366.png)
+
+**Customer lookup · Hindi · 768 px**
+
+![Customer lookup · Hindi · 768 px](sprint-5b/customer-lookup-hi-IN-768.png)
+
+**Customers · Bengali · 1366 px**
+
+![Customers · Bengali · 1366 px](sprint-5b/customers-bn-IN-1366.png)
+
+**Customers · Hindi · 768 px**
+
+![Customers · Hindi · 768 px](sprint-5b/customers-hi-IN-768.png)
+
+**Dashboard · Bengali · 1366 px**
+
+![Dashboard · Bengali · 1366 px](sprint-5b/dashboard-bn-IN-1366.png)
+
+**Dashboard · Hindi · 768 px**
+
+![Dashboard · Hindi · 768 px](sprint-5b/dashboard-hi-IN-768.png)
+
+**Day end · Bengali · 1366 px**
+
+![Day end · Bengali · 1366 px](sprint-5b/day-end-bn-IN-1366.png)
+
+**Day end · Hindi · 768 px**
+
+![Day end · Hindi · 768 px](sprint-5b/day-end-hi-IN-768.png)
+
+**Delivery · Bengali · 1366 px**
+
+![Delivery · Bengali · 1366 px](sprint-5b/delivery-bn-IN-1366.png)
+
+**Delivery · Hindi · 768 px**
+
+![Delivery · Hindi · 768 px](sprint-5b/delivery-hi-IN-768.png)

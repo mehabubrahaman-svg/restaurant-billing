@@ -2,7 +2,7 @@ import { ShieldAlert } from '@restroos/ui';
 import { lazy, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
-import { AdminLayout } from '../features/admin/admin-layout';
+import { AdminLayout, CUSTOMER_PERMISSIONS } from '../features/admin/admin-layout';
 import type { PermissionRequirement } from '../features/auth/permissions';
 import { LoginPage } from '../features/auth/login-page';
 import { AvailabilityPage } from '../features/menu/availability-page';
@@ -17,10 +17,12 @@ import {
 import { PortalPlaceholder } from '../portals/portal-placeholder';
 import { BillsPage } from '../portals/pos/bills-page';
 import { CounterPage } from '../portals/pos/counter-page';
+import { DeliveryPage } from '../portals/pos/delivery-page';
 import { InvoiceDetailPage } from '../portals/pos/invoice-detail-page';
 import { PosLayout } from '../portals/pos/pos-layout';
 import { ShiftPage, ShiftReportPage } from '../portals/pos/shift-page';
 import { QrMenuPage } from '../portals/qr-menu/qr-menu-page';
+import { ReportsLayout } from '../portals/reports/reports-layout';
 import { TokenDisplayPage } from '../portals/token-display/token-display-page';
 import { AppShell } from './layout/app-shell';
 import { RequirePermission } from './layout/require-permission';
@@ -86,6 +88,28 @@ const FloorEditorPage = lazy(() =>
 const QrPrintPage = lazy(() =>
   import('../features/floor/qr-print-page').then((m) => ({ default: m.QrPrintPage })),
 );
+const BackupsPage = lazy(() =>
+  import('../features/admin/backups/backups-page').then((m) => ({ default: m.BackupsPage })),
+);
+const SalesChannelsPage = lazy(() =>
+  import('../features/admin/sales-channels/sales-channels-page').then((m) => ({
+    default: m.SalesChannelsPage,
+  })),
+);
+const CustomersPage = lazy(() =>
+  import('../features/admin/customers/customers-page').then((m) => ({ default: m.CustomersPage })),
+);
+const CustomerDetailPage = lazy(() =>
+  import('../features/admin/customers/customers-page').then((m) => ({
+    default: m.CustomerDetailPage,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import('../portals/reports/dashboard-page').then((m) => ({ default: m.DashboardPage })),
+);
+const DayEndPage = lazy(() =>
+  import('../portals/reports/day-end-page').then((m) => ({ default: m.DayEndPage })),
+);
 const DevicesPage = lazy(() =>
   import('../features/devices/devices-page').then((m) => ({ default: m.DevicesPage })),
 );
@@ -132,7 +156,10 @@ function AdminGuard({
     | 'admin.tabs.menu'
     | 'admin.tabs.floor'
     | 'admin.tabs.devices'
-    | 'admin.tabs.audit';
+    | 'admin.tabs.audit'
+    | 'admin.tabs.backups'
+    | 'admin.tabs.channels'
+    | 'admin.tabs.customers';
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -153,6 +180,7 @@ const OWN_ROUTES: ReadonlySet<Portal['id']> = new Set([
   'kitchen',
   'tokenDisplay',
   'pos',
+  'reports',
 ]);
 
 function adminRoutes(): RouteObject {
@@ -238,6 +266,7 @@ function adminRoutes(): RouteObject {
           ['charges', 'admin.tabs.charges', <ChargesPage key="c" />],
           ['coupons', 'admin.tabs.coupons', <CouponsPage key="cp" />],
           ['printers', 'admin.tabs.printers', <PrintersPage key="p" />],
+          ['sales-channels', 'admin.tabs.channels', <SalesChannelsPage key="sc" />],
         ] as const
       ).map(([path, labelKey, page]) => ({
         path,
@@ -247,6 +276,30 @@ function adminRoutes(): RouteObject {
           </AdminGuard>
         ),
       })),
+      {
+        path: 'backups',
+        element: (
+          <AdminGuard permission="backup.manage" labelKey="admin.tabs.backups">
+            <BackupsPage />
+          </AdminGuard>
+        ),
+      },
+      {
+        path: 'customers',
+        element: (
+          <AdminGuard permission={CUSTOMER_PERMISSIONS} labelKey="admin.tabs.customers">
+            <CustomersPage />
+          </AdminGuard>
+        ),
+      },
+      {
+        path: 'customers/:customerId',
+        element: (
+          <AdminGuard permission={CUSTOMER_PERMISSIONS} labelKey="admin.tabs.customers">
+            <CustomerDetailPage />
+          </AdminGuard>
+        ),
+      },
       {
         path: 'audit',
         element: (
@@ -289,6 +342,14 @@ function posRoutes(): RouteObject {
       { path: 'bills', element: <BillsPage /> },
       { path: 'bills/:invoiceId', element: <InvoiceDetailPage /> },
       {
+        path: 'delivery',
+        element: (
+          <DeliveryGuard>
+            <DeliveryPage />
+          </DeliveryGuard>
+        ),
+      },
+      {
         path: 'shift',
         element: (
           <ShiftGuard>
@@ -304,6 +365,31 @@ function posRoutes(): RouteObject {
           </ShiftGuard>
         ),
       },
+    ],
+  };
+}
+
+function DeliveryGuard({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <RequirePermission permission="orders.create" name={t('pos.tabs.delivery')}>
+      {children}
+    </RequirePermission>
+  );
+}
+
+function reportsRoutes(): RouteObject {
+  const reports = portal('reports');
+  return {
+    path: 'reports',
+    element: (
+      <PortalGuard portal={reports}>
+        <ReportsLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <DashboardPage /> },
+      { path: 'day-end', element: <DayEndPage /> },
     ],
   };
 }
@@ -370,6 +456,7 @@ export const routes: RouteObject[] = [
           captainRoutes(),
           kitchenRoutes(),
           posRoutes(),
+          reportsRoutes(),
           ...PORTALS.filter((p) => !OWN_ROUTES.has(p.id)).map((p) => ({
             path: p.path,
             element: (

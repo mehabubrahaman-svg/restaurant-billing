@@ -60,6 +60,10 @@ export interface RequestOptions {
   /** Makes a command safe to retry: the Hub answers a replay with the stored response. */
   readonly idempotencyKey?: string;
   readonly signal?: AbortSignal;
+  /** A file sent as is (`application/octet-stream`) instead of a JSON `body`. */
+  readonly rawBody?: Blob;
+  /** Extra request headers (e.g. a backup passphrase). */
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 /** Header the Hub's idempotency plugin reads (POST and PATCH). */
@@ -147,6 +151,22 @@ export class ApiClient {
     }
   }
 
+  /** A file download (CSV, backup): the body as a Blob, with the server's file name. */
+  async blob(
+    path: string,
+    options: RequestOptions = {},
+  ): Promise<{ blob: Blob; fileName: string | null }> {
+    const response = await this.send(path, options);
+    try {
+      return {
+        blob: await response.blob(),
+        fileName: fileNameOf(response.headers.get('content-disposition')),
+      };
+    } catch {
+      throw new ApiError(response.status, 'BAD_RESPONSE', null);
+    }
+  }
+
   /** Request whose response body is ignored (204, 202). */
   async void(path: string, options: RequestOptions = {}): Promise<void> {
     await this.send(path, options);
@@ -172,8 +192,9 @@ export class ApiClient {
   }
 
   private async fetchOnce(path: string, options: RequestOptions, auth: boolean) {
-    const headers: Record<string, string> = { accept: 'application/json' };
+    const headers: Record<string, string> = { accept: 'application/json', ...options.headers };
     if (options.body !== undefined) headers['content-type'] = 'application/json';
+    if (options.rawBody !== undefined) headers['content-type'] = 'application/octet-stream';
     const token = auth ? (this.bridge?.accessToken() ?? null) : null;
     if (token !== null) headers['authorization'] = `Bearer ${token}`;
     if (options.approverToken !== undefined) headers[APPROVER_HEADER] = options.approverToken;
@@ -185,6 +206,7 @@ export class ApiClient {
       headers,
       credentials: 'include',
       ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+      ...(options.rawBody !== undefined ? { body: options.rawBody } : {}),
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
     };
     try {
@@ -194,6 +216,21 @@ export class ApiClient {
       throw new NetworkError(error);
     }
   }
+}
+
+/** `attachment; filename="day-end-2026-10-28.csv"` → `day-end-2026-10-28.csv`. */
+export function fileNameOf(disposition: string | null): string | null {
+  if (disposition === null) return null;
+  const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition);
+  if (star !== null) {
+    try {
+      return decodeURIComponent(star[1]!.trim().replaceAll('"', ''));
+    } catch {
+      // Fall through to the plain form.
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(disposition);
+  return plain === null ? null : plain[1]!.trim();
 }
 
 function buildUrl(path: string, query: RequestOptions['query']): string {

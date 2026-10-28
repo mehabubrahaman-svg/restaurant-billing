@@ -17,6 +17,7 @@ import { FoodTypeMark } from '../../features/menu/food-type';
 import { useDishName } from '../../features/menu/use-dish-name';
 import { useElapsed } from '../../features/orders/elapsed';
 import type { KotUrgency } from '../../features/kitchen/kot-timing';
+import { ReprintKotButton } from '../../features/kitchen/reprint-kot-button';
 import { useFormat } from '../../i18n/use-format';
 
 const URGENCY_CLASSES: Readonly<Record<KotUrgency, string>> = {
@@ -139,11 +140,14 @@ export const KotCard = memo(function KotCard({
             ? t('kds.chefNone')
             : t('kds.chef', { name: kot.assignedChefName })}
         </span>
-        {canAssign && (
-          <Button variant="outline" size="touch" onClick={() => onAssign(kot)}>
-            {kot.assignedChefName === null ? t('kds.assign') : t('kds.reassign')}
-          </Button>
-        )}
+        <span className="flex flex-wrap gap-2">
+          <ReprintKotButton kotId={kot.id} kotNo={kot.kotNo} iconOnly />
+          {canAssign && (
+            <Button variant="outline" size="touch" onClick={() => onAssign(kot)}>
+              {kot.assignedChefName === null ? t('kds.assign') : t('kds.reassign')}
+            </Button>
+          )}
+        </span>
       </div>
 
       <ul className="flex flex-col divide-y divide-border border-y">

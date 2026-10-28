@@ -114,6 +114,8 @@ describe('Bills', () => {
         }),
       [`GET /invoices/${INVOICE_ID}`]: () => json(invoice),
       [`GET /invoices/${CN_ID}`]: () => json(creditNote),
+      [`GET /invoices/${INVOICE_ID}/credit-notes`]: () =>
+        json({ data: refunded ? [creditNote] : [] }),
       [`GET /orders/${ORDER_ID}/invoices`]: () => json({ data: [invoice] }),
       [`POST /invoices/${INVOICE_ID}/refunds`]: ({ headers }) => {
         if (headers.get('x-approver-token') !== 'appr-9') {
@@ -154,6 +156,11 @@ describe('Bills', () => {
     });
     expect(await screen.findByRole('link', { name: 'KOL1/CN/2026-27/000001' })).toBeInTheDocument();
     expect(screen.getByText('Part refunded')).toBeInTheDocument();
+    // Credit notes come from the invoice's own list, not a scan of the day's bills.
+    expect(
+      callsTo(fetchMock, 'GET', `/invoices/${INVOICE_ID}/credit-notes`).length,
+    ).toBeGreaterThan(0);
+    expect(callsTo(fetchMock, 'GET', '/invoices')).toHaveLength(0);
     void INV_LINE_1;
   });
 

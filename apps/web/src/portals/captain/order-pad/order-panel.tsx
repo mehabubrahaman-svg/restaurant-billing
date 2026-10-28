@@ -38,6 +38,7 @@ import {
   padTotals,
   type NewLine,
 } from '../../../features/orders/order-lines';
+import { ReprintKotButton } from '../../../features/kitchen/reprint-kot-button';
 import { applyKotToOrder, setOrder } from '../../../features/orders/order-queries';
 import {
   editQuantity,
@@ -209,7 +210,10 @@ export function OrderPanel({
                   ? t('order.kot.title', { kotNo: kot.kotNo })
                   : t('order.kot.titleStation', { kotNo: kot.kotNo, station: kot.stationName })}
               </h3>
-              <KotChip status={kot.status} />
+              <span className="flex items-center gap-2">
+                <KotChip status={kot.status} />
+                <ReprintKotButton kotId={kot.id} kotNo={kot.kotNo} />
+              </span>
             </header>
             <ul className="flex flex-col divide-y">
               {items.map((item) => (

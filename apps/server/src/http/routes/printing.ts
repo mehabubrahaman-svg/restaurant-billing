@@ -1,4 +1,5 @@
 import { PrintRequestSchema, type PrintDocument, type PrintOutcome } from '@restroos/contracts';
+import { DomainError } from '@restroos/domain';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Cradle } from '../../container';
@@ -37,13 +38,18 @@ export async function printingRoutes(app: FastifyInstance, { cradle }: { cradle:
   app.post(
     '/kitchen/kots/:id/reprint',
     { config: { permission: ['kds.view', 'orders.fire_kot'] } },
-    async (request) => ({
-      data: await printing.printKot(
+    async (request) => {
+      const data = await printing.printKot(
         IdParams.parse(request.params).id,
         request.principal!.branchId,
         true,
-      ),
-    }),
+      );
+      // Firing prints quietly when no KOT printer is set up; asking to reprint says so.
+      if (data.length === 0) {
+        throw new DomainError('NO_PRINTER', 'no KOT printer is set up for this station');
+      }
+      return { data };
+    },
   );
 
   app.post(

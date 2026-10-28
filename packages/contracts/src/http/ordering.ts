@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { FoodTypeSchema } from './catalog';
-import { IdSchema, PaiseSchema } from './common';
+import { IdSchema, PaiseSchema, patchSchema } from './common';
 
 const Version = z.number().int();
 
@@ -237,7 +237,7 @@ export const SaveSalesChannelRequestSchema = z.object({
   priceMarkupBp: z.number().int().min(0).max(10_000).default(0),
   gstPaidByOperator: z.boolean().default(true),
 });
-export const UpdateSalesChannelRequestSchema = SaveSalesChannelRequestSchema.partial().extend({
+export const UpdateSalesChannelRequestSchema = patchSchema(SaveSalesChannelRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });

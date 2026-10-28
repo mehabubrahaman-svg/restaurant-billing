@@ -1,4 +1,4 @@
-import type { Printer } from '@restroos/contracts';
+import type { Printer, PrintOutcome } from '@restroos/contracts';
 import {
   Alert,
   Badge,
@@ -18,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api, type SavePrinterBody } from '../../../api/endpoints';
+import { useFormat } from '../../../i18n/use-format';
 import { useErrorMessage } from '../../../lib/errors';
 import { toast } from '../../toast/toast-store';
 import { AdminHeader } from '../admin-layout';
@@ -33,10 +34,18 @@ export function PrintersPage() {
   const errorMessage = useErrorMessage();
   const printers = useQuery({ queryKey: ['printers'], queryFn: api.printers.list });
   const [editing, setEditing] = useState<Printer | 'new' | null>(null);
+  /** The last test print of each printer: what was sent, or why it failed. */
+  const [results, setResults] = useState<
+    Readonly<Record<string, { ok: true; outcome: PrintOutcome } | { ok: false; message: string }>>
+  >({});
   const test = useMutation({
-    mutationFn: (p: Printer) => api.printers.test(p.id).then(() => p),
-    onSuccess: (p) => toast(t('printers.testQueued', { name: p.name })),
-    onError: (e) => toast(errorMessage(e), 'danger'),
+    mutationFn: (p: Printer) => api.printers.test(p.id),
+    onSuccess: (outcome, p) => {
+      setResults((r) => ({ ...r, [p.id]: { ok: true, outcome } }));
+      toast(t('printers.testSent', { name: outcome.printerName }));
+    },
+    onError: (e, p) =>
+      setResults((r) => ({ ...r, [p.id]: { ok: false, message: errorMessage(e) } })),
   });
 
   return (
@@ -78,6 +87,7 @@ export function PrintersPage() {
                       <Badge variant="outline">{t('printers.width', { mm: p.paperWidthMm })}</Badge>
                       {!p.isActive && <Badge>{t('common.inactive')}</Badge>}
                     </div>
+                    <TestResult result={results[p.id]} />
                     <div className="mt-auto flex flex-wrap gap-2">
                       <Button variant="outline" onClick={() => setEditing(p)}>
                         <Pencil aria-hidden="true" />
@@ -87,8 +97,11 @@ export function PrintersPage() {
                         variant="secondary"
                         onClick={() => test.mutate(p)}
                         disabled={!p.isActive || test.isPending}
+                        aria-label={t('printers.testNamed', { name: p.name })}
                       >
-                        {t('printers.test')}
+                        {test.isPending && test.variables?.id === p.id
+                          ? t('pos.print.printing')
+                          : t('printers.test')}
                       </Button>
                     </div>
                   </Card>
@@ -105,6 +118,33 @@ export function PrintersPage() {
         />
       )}
     </div>
+  );
+}
+
+function TestResult({
+  result,
+}: {
+  result: { ok: true; outcome: PrintOutcome } | { ok: false; message: string } | undefined;
+}) {
+  const { t } = useTranslation();
+  const format = useFormat();
+  if (result === undefined) return null;
+  if (!result.ok) {
+    return (
+      <Alert tone="danger" role="alert">
+        {result.message}
+      </Alert>
+    );
+  }
+  const { outcome } = result;
+  return (
+    <Alert tone="success" role="status">
+      {t('printers.testResult', {
+        name: outcome.printerName,
+        mode: t(`printers.modes.${outcome.mode}`),
+        bytes: format.number(outcome.bytes),
+      })}
+    </Alert>
   );
 }
 

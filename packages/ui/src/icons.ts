@@ -4,6 +4,7 @@
  * Add icons as screens need them.
  */
 export {
+  ArchiveRestore,
   ArrowDown,
   ArrowLeft,
   ArrowRight,
@@ -37,10 +38,12 @@ export {
   Clock,
   CloudOff,
   Coins,
+  Contact,
   Contrast,
   CookingPot,
   Copy,
   CreditCard,
+  DatabaseBackup,
   Delete,
   Download,
   EllipsisVertical,
@@ -49,9 +52,11 @@ export {
   FileSpreadsheet,
   Flag,
   Flame,
+  FolderOpen,
   Gift,
   GripVertical,
   HandCoins,
+  HardDrive,
   Hourglass,
   Info,
   KeyRound,

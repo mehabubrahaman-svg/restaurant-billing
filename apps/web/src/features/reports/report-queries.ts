@@ -1,0 +1,48 @@
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { api } from '../../api/endpoints';
+import { saveBlob } from '../../lib/download';
+import { useErrorMessage } from '../../lib/errors';
+import { toast } from '../toast/toast-store';
+
+export const REPORT_KEYS = {
+  all: ['reports'],
+  dashboard: ['reports', 'dashboard'],
+  /** `null`: today's business day, as the Hub reckons it. */
+  dayEnd: (date: string | null) => ['reports', 'day-end', date] as const,
+} as const;
+
+/** The owner's dashboard; refreshed every minute while it is on screen. */
+export function useDashboard() {
+  return useQuery({
+    queryKey: REPORT_KEYS.dashboard,
+    queryFn: api.reports.dashboard,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useDayEndReport(date: string | null) {
+  return useQuery({
+    queryKey: REPORT_KEYS.dayEnd(date),
+    queryFn: () => api.reports.dayEnd(date ?? undefined),
+  });
+}
+
+/** Fetches a file from the Hub (with the session) and saves it; errors become a toast. */
+export function useDownload<A>(
+  fetchFile: (args: A) => Promise<{ blob: Blob; fileName: string | null }>,
+  fallbackName: (args: A) => string,
+) {
+  const { t } = useTranslation();
+  const errorMessage = useErrorMessage();
+  return useMutation({
+    mutationFn: async (args: A) => {
+      const { blob, fileName } = await fetchFile(args);
+      const name = fileName ?? fallbackName(args);
+      saveBlob(blob, name);
+      return name;
+    },
+    onSuccess: (name) => toast(t('reports.downloaded', { name })),
+    onError: (error) => toast(errorMessage(error), 'danger'),
+  });
+}

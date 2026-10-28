@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema, LocaleSchema, PaiseSchema } from './common';
+import { IdSchema, LocaleSchema, PaiseSchema, patchSchema } from './common';
 
 /** Indian mobile number, stored as E.164 (+91XXXXXXXXXX). 10 digits, or with +91 / 0 in front. */
 export const IndianMobileSchema = z
@@ -57,6 +57,6 @@ export const SaveCustomerRequestSchema = z.object({
   preferredLocale: LocaleSchema.nullable().default(null),
   marketingOptIn: z.boolean().default(false),
 });
-export const UpdateCustomerRequestSchema = SaveCustomerRequestSchema.partial().extend({
+export const UpdateCustomerRequestSchema = patchSchema(SaveCustomerRequestSchema).extend({
   version: z.number().int(),
 });

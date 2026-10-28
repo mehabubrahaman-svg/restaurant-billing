@@ -5,6 +5,7 @@ import {
   LocaleSchema,
   PaiseSchema,
   ReceiptLanguageSchema,
+  patchSchema,
 } from './common';
 import { GstinSchema } from './setup';
 
@@ -90,7 +91,7 @@ export const SaveTaxGroupRequestSchema = z.object({
   isInclusive: z.boolean().default(false),
   components: z.array(TaxComponentSchema).max(6),
 });
-export const UpdateTaxGroupRequestSchema = SaveTaxGroupRequestSchema.partial().extend({
+export const UpdateTaxGroupRequestSchema = patchSchema(SaveTaxGroupRequestSchema).extend({
   version: z.number().int(),
   isActive: z.boolean().optional(),
 });
@@ -119,7 +120,7 @@ export const SaveChargeRuleRequestSchema = z.object({
   taxGroupId: IdSchema.nullable().default(null),
   isOptional: z.boolean().default(true),
 });
-export const UpdateChargeRuleRequestSchema = SaveChargeRuleRequestSchema.partial().extend({
+export const UpdateChargeRuleRequestSchema = patchSchema(SaveChargeRuleRequestSchema).extend({
   version: z.number().int(),
   isActive: z.boolean().optional(),
 });
@@ -150,7 +151,7 @@ export const SavePrinterRequestSchema = z.object({
   stationId: IdSchema.nullable().default(null),
   deviceId: IdSchema.nullable().default(null),
 });
-export const UpdatePrinterRequestSchema = SavePrinterRequestSchema.partial().extend({
+export const UpdatePrinterRequestSchema = patchSchema(SavePrinterRequestSchema).extend({
   version: z.number().int(),
   isActive: z.boolean().optional(),
 });

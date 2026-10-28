@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiClient, ApiError, NetworkError, type RefreshOutcome } from './client';
+import { ApiClient, ApiError, fileNameOf, NetworkError, type RefreshOutcome } from './client';
 import { json, problem } from '../test/mock-hub';
 
 /** A zod-like schema without importing zod (the app depends on it only via contracts). */
@@ -108,5 +108,47 @@ describe('ApiClient', () => {
     expect(new Headers(fetchImpl.mock.calls[0]![1]?.headers).get('x-approver-token')).toBe(
       'appr-1',
     );
+  });
+});
+
+describe('files', () => {
+  it('downloads a file with the session, keeping the server’s file name', async () => {
+    const { client, fetchImpl } = setup(
+      () =>
+        new Response('a,b\n', {
+          headers: { 'content-disposition': 'attachment; filename="day-end-2026-10-28.csv"' },
+        }),
+    );
+    const { blob, fileName } = await client.blob('/reports/day-end.csv', {
+      query: { date: '2026-10-28' },
+    });
+    expect(await blob.text()).toBe('a,b\n');
+    expect(fileName).toBe('day-end-2026-10-28.csv');
+    const [url, init] = fetchImpl.mock.calls[0]!;
+    expect(url).toBe('/api/v1/reports/day-end.csv?date=2026-10-28');
+    expect(new Headers(init?.headers).get('authorization')).toBe('Bearer old');
+  });
+
+  it('uploads a file as is, with extra headers', async () => {
+    const { client, fetchImpl } = setup(() => json({ ok: true }, 201));
+    const file = new Blob([new Uint8Array([1, 2, 3])]);
+    await client.json('/backups/import', Thing, {
+      method: 'POST',
+      rawBody: file,
+      headers: { 'x-backup-passphrase': 'secret words here' },
+    });
+    const init = fetchImpl.mock.calls[0]![1]!;
+    expect(init.body).toBe(file);
+    const headers = new Headers(init.headers);
+    expect(headers.get('content-type')).toBe('application/octet-stream');
+    expect(headers.get('x-backup-passphrase')).toBe('secret words here');
+  });
+
+  it('reads plain and RFC 5987 file names from Content-Disposition', () => {
+    expect(fileNameOf('attachment; filename="a b.csv"')).toBe('a b.csv');
+    expect(fileNameOf('attachment; filename=plain.rbak')).toBe('plain.rbak');
+    expect(fileNameOf("attachment; filename*=UTF-8''%E0%A4%AC.csv")).toBe('ब.csv');
+    expect(fileNameOf('inline')).toBeNull();
+    expect(fileNameOf(null)).toBeNull();
   });
 });

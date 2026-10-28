@@ -8,8 +8,19 @@ import {
   BillPreviewResponseSchema,
   CouponSchema,
   CouponsResponseSchema,
+  BACKUP_PASSPHRASE_HEADER,
+  BackupSchema,
+  BackupsResponseSchema,
+  CustomerDetailSchema,
+  CustomersResponseSchema,
+  DashboardSchema,
+  DayEndReportSchema,
+  KotPrintResponseSchema,
   PrintDocumentSchema,
   PrintOutcomeSchema,
+  RestoreBackupResponseSchema,
+  SalesChannelSchema,
+  SalesChannelsResponseSchema,
   BillResponseSchema,
   BranchSettingsSchema,
   InvoiceSchema,
@@ -280,6 +291,26 @@ export interface CloseShiftBody {
   notes?: string;
 }
 export type KotTarget = 'ACCEPTED' | 'COOKING' | 'READY' | 'SERVED';
+export interface SaveSalesChannelBody {
+  code?: string;
+  name?: string;
+  kind?: 'AGGREGATOR' | 'OWN_ONLINE';
+  /** Basis points (2200 = 22%). */
+  commissionBp?: number;
+  priceMarkupBp?: number;
+  gstPaidByOperator?: boolean;
+  isActive?: boolean;
+  version?: number;
+}
+/** POST /orders/aggregator: a Swiggy/Zomato order keyed in from the partner's tablet. */
+export interface AggregatorOrderBody {
+  salesChannelId: string;
+  externalOrderId: string;
+  externalOtp?: string;
+  notes?: string;
+  items: NewOrderItem[];
+  fire?: boolean;
+}
 
 /** Per-call extras for commands: a retry-safe key and a manager's approval. */
 export interface CommandOptions {
@@ -317,8 +348,8 @@ const TablesSchema = {
   },
 };
 
-/** GET /orders/{id}/invoices: full invoices (and credit notes) of one order. */
-const InvoicesOfOrderSchema = {
+/** `{ data: Invoice[] }`: an order's invoices, or an invoice's credit notes. */
+const InvoiceListSchema = {
   parse(input: unknown) {
     const data = (input as { data?: unknown } | null)?.data;
     if (!Array.isArray(data)) throw new Error('not an invoice list');
@@ -395,7 +426,8 @@ export const api = {
     create: (body: SavePrinterBody) => c.json('/printers', PrinterSchema, { method: POST, body }),
     update: (id: string, body: SavePrinterBody) =>
       c.json(`/printers/${id}`, PrinterSchema, { method: PATCH, body }),
-    test: (id: string) => c.void(`/printers/${id}/test`, { method: POST }),
+    test: (id: string) =>
+      c.json(`/printers/${id}/test`, PrintOutcomeSchema, { method: POST, body: {} }),
   },
   audit: {
     list: (query: AuditFilter & { cursor?: string; limit?: number }) =>
@@ -482,6 +514,58 @@ export const api = {
       c.json(`/orders/${id}/kots`, FireKotsResponseSchema, { method: POST, ...extras(o) }),
     cancel: (id: string, body: CancelOrderBody, o?: CommandOptions) =>
       c.json(`/orders/${id}/cancel`, OrderSchema, { method: POST, body, ...extras(o) }),
+    /** A delivery order with its items, fired to the kitchen at once. */
+    aggregator: (body: AggregatorOrderBody, o?: CommandOptions) =>
+      c.json('/orders/aggregator', FireKotsResponseSchema, { method: POST, body, ...extras(o) }),
+  },
+  salesChannels: {
+    list: () => c.json('/sales-channels', SalesChannelsResponseSchema),
+    create: (body: SaveSalesChannelBody) =>
+      c.json('/sales-channels', SalesChannelSchema, { method: POST, body }),
+    update: (id: string, body: SaveSalesChannelBody & { version: number }) =>
+      c.json(`/sales-channels/${id}`, SalesChannelSchema, { method: PATCH, body }),
+  },
+  customers: {
+    /** By mobile number or name; an empty query finds nobody. */
+    search: (q: string, signal?: AbortSignal) =>
+      c.json('/customers', CustomersResponseSchema, {
+        query: { q },
+        ...(signal === undefined ? {} : { signal }),
+      }),
+    get: (id: string) => c.json(`/customers/${id}`, CustomerDetailSchema),
+  },
+  reports: {
+    /** The business day's report; today's business date when `date` is left out. */
+    dayEnd: (date?: string) => c.json('/reports/day-end', DayEndReportSchema, { query: { date } }),
+    printDayEnd: (date: string, printerId?: string) =>
+      c.json('/reports/day-end/print', PrintOutcomeSchema, {
+        method: POST,
+        query: { date },
+        body: printerId === undefined ? {} : { printerId },
+      }),
+    dayEndCsv: (date: string) => c.blob('/reports/day-end.csv', { query: { date } }),
+    /** Every invoice and credit note of the range (at most 366 days). */
+    salesRegisterCsv: (from: string, to: string) =>
+      c.blob('/reports/sales-register.csv', { query: { from, to } }),
+    dashboard: () => c.json('/reports/dashboard', DashboardSchema),
+  },
+  backups: {
+    list: () => c.json('/backups', BackupsResponseSchema),
+    create: () => c.json('/backups', BackupSchema, { method: POST, body: {} }),
+    download: (id: string) => c.blob(`/backups/${id}/download`),
+    /** A .rbak file from another PC or a USB drive, with the passphrase it was made with. */
+    import: (file: Blob, passphrase: string) =>
+      c.json('/backups/import', BackupSchema, {
+        method: POST,
+        rawBody: file,
+        headers: { [BACKUP_PASSPHRASE_HEADER]: passphrase },
+      }),
+    /** Replaces every record on the Hub; it restarts right after answering. */
+    restore: (id: string, passphrase?: string) =>
+      c.json(`/backups/${id}/restore`, RestoreBackupResponseSchema, {
+        method: POST,
+        body: { confirm: 'RESTORE', ...(passphrase === undefined ? {} : { passphrase }) },
+      }),
   },
   billing: {
     /** What the bill would be; nothing is saved. Two drafts when liquor is billed separately. */
@@ -498,8 +582,9 @@ export const api = {
         body,
         ...extras(o),
       }),
-    orderInvoices: (orderId: string) =>
-      c.json(`/orders/${orderId}/invoices`, InvoicesOfOrderSchema),
+    orderInvoices: (orderId: string) => c.json(`/orders/${orderId}/invoices`, InvoiceListSchema),
+    /** Credit notes issued against one invoice (refunds), oldest first. */
+    creditNotes: (id: string) => c.json(`/invoices/${id}/credit-notes`, InvoiceListSchema),
     list: (date: string, status?: InvoiceStatus) =>
       c.json('/invoices', InvoicesResponseSchema, { query: { date, status } }),
     get: (id: string) => c.json(`/invoices/${id}`, InvoiceSchema),
@@ -556,6 +641,9 @@ export const api = {
       c.json(`/kitchen/kots/${id}/assign`, KotSchema, { method: POST, body: { chefId, version } }),
     chefs: () => c.json('/kitchen/chefs', ChefsResponseSchema),
     metrics: () => c.json('/kitchen/metrics', KitchenMetricsSchema),
+    /** Prints the KOT again on its station's printer(s), marked REPRINT. */
+    reprint: (id: string) =>
+      c.json(`/kitchen/kots/${id}/reprint`, KotPrintResponseSchema, { method: POST, body: {} }),
   },
   tokens: {
     /** Public: the token display TV works without anyone signed in. */

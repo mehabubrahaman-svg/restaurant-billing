@@ -1,7 +1,23 @@
-import { Alert, Button, Dialog, Field, Input, SegmentedControl } from '@restroos/ui';
-import { useRef, useState, type ReactNode } from 'react';
+import { Money } from '@restroos/domain';
+import {
+  Alert,
+  Button,
+  Check,
+  Dialog,
+  Field,
+  Input,
+  SegmentedControl,
+  Spinner,
+} from '@restroos/ui';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { exceedsLimit, type BillOptions } from '../../features/billing/bill-options';
+import {
+  formatPhone,
+  searchTerm,
+  useCustomerSearch,
+} from '../../features/customers/customer-queries';
+import { useFormat } from '../../i18n/use-format';
 import { gstinProblem } from '../../features/setup/gstin';
 import {
   bpToPercent,
@@ -288,6 +304,20 @@ export function CustomerDialog({
   const [phone, setPhone] = useState(current?.phone ?? '');
   const [phoneError, setPhoneError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const format = useFormat();
+  const search = useCustomerSearch(phone);
+  const matches = search.enabled ? (search.data?.data ?? []).slice(0, 5) : [];
+  const typed = searchTerm(phone).slice(-10);
+  const fullNumber = /^[6-9]\d{9}$/.test(typed);
+  const exact = fullNumber ? matches.find((c) => c.phone.slice(-10) === typed) : undefined;
+  const filledFor = useRef<string | null>(null);
+  // A known guest's full number: fill in their name and GSTIN (once, so edits stick).
+  useEffect(() => {
+    if (exact === undefined || filledFor.current === exact.id) return;
+    filledFor.current = exact.id;
+    setName((n) => (n.trim() === '' ? (exact.name ?? '') : n));
+    setTaxId((g) => (g.trim() === '' ? (exact.taxId ?? '') : g));
+  }, [exact]);
   return (
     <FormDialog
       title={t('pos.customer.title')}
@@ -326,6 +356,59 @@ export function CustomerDialog({
           />
         )}
       </Field>
+      {search.enabled && search.isFetching && matches.length === 0 && (
+        <Spinner label={t('pos.customer.searching')} className="size-4" />
+      )}
+      {matches.length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <p id="customer-matches" className="text-sm font-medium">
+            {t('pos.customer.matches')}
+          </p>
+          <ul aria-labelledby="customer-matches" className="flex flex-col gap-1.5">
+            {matches.map((c) => {
+              const chosen = c.phone.slice(-10) === typed;
+              return (
+                <li key={c.id}>
+                  <Button
+                    variant="outline"
+                    aria-pressed={chosen}
+                    className="h-auto w-full justify-start py-2 text-start"
+                    onClick={() => {
+                      setPhone(formatPhone(c.phone));
+                      setName(c.name ?? '');
+                      setTaxId(c.taxId ?? '');
+                      setPhoneError(false);
+                    }}
+                  >
+                    {chosen && <Check aria-hidden="true" />}
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="font-semibold break-words">
+                        {c.name ?? t('pos.customer.noName')}
+                      </span>
+                      <span className="text-sm font-normal text-muted-foreground tabular-nums">
+                        {t('pos.customer.matchDetail', {
+                          phone: formatPhone(c.phone),
+                          count: c.visitCount,
+                          spend: format.money(Money.ofPaise(c.lifetimeValue)),
+                        })}
+                      </span>
+                    </span>
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+      {search.enabled &&
+        !search.isFetching &&
+        search.isSuccess &&
+        matches.length === 0 &&
+        fullNumber && (
+          <p className="text-sm text-muted-foreground" role="status">
+            {t('pos.customer.newGuest')}
+          </p>
+        )}
       <Field label={t('pos.customer.name')}>
         {(p) => (
           <Input

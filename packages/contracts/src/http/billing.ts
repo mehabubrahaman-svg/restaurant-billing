@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema, PaiseSchema } from './common';
+import { IdSchema, PaiseSchema, patchSchema } from './common';
 import { IndianMobileSchema } from './customers';
 
 const Version = z.number().int();
@@ -336,7 +336,7 @@ export const SaveCouponRequestSchema = z.object({
   validTo: Day.nullable().default(null),
   usageLimit: z.number().int().positive().nullable().default(null),
 });
-export const UpdateCouponRequestSchema = SaveCouponRequestSchema.partial().extend({
+export const UpdateCouponRequestSchema = patchSchema(SaveCouponRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });

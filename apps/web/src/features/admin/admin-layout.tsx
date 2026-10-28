@@ -1,5 +1,8 @@
 import {
+  Bike,
   cn,
+  Contact,
+  DatabaseBackup,
   Spinner,
   LayoutDashboard,
   MonitorSmartphone,
@@ -36,9 +39,15 @@ export interface AdminSection {
     | 'admin.tabs.menu'
     | 'admin.tabs.floor'
     | 'admin.tabs.devices'
-    | 'admin.tabs.audit';
+    | 'admin.tabs.audit'
+    | 'admin.tabs.backups'
+    | 'admin.tabs.channels'
+    | 'admin.tabs.customers';
   readonly permission: PermissionRequirement;
 }
+
+/** Either opens the guest list (billing staff look guests up from the POS instead). */
+export const CUSTOMER_PERMISSIONS = ['customers.view', 'customers.manage'] as const;
 
 export const ADMIN_SECTIONS: readonly AdminSection[] = [
   {
@@ -49,6 +58,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
   },
   { path: 'menu', icon: UtensilsCrossed, labelKey: 'admin.tabs.menu', permission: 'menu.manage' },
   { path: 'floor', icon: LayoutGrid, labelKey: 'admin.tabs.floor', permission: 'floor.manage' },
+  {
+    path: 'customers',
+    icon: Contact,
+    labelKey: 'admin.tabs.customers',
+    permission: CUSTOMER_PERMISSIONS,
+  },
   { path: 'users', icon: Users, labelKey: 'admin.tabs.users', permission: 'users.manage' },
   {
     path: 'roles',
@@ -67,10 +82,22 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     permission: 'settings.manage',
   },
   {
+    path: 'sales-channels',
+    icon: Bike,
+    labelKey: 'admin.tabs.channels',
+    permission: 'settings.manage',
+  },
+  {
     path: 'devices',
     icon: MonitorSmartphone,
     labelKey: 'admin.tabs.devices',
     permission: 'settings.manage',
+  },
+  {
+    path: 'backups',
+    icon: DatabaseBackup,
+    labelKey: 'admin.tabs.backups',
+    permission: 'backup.manage',
   },
   { path: 'audit', icon: ScrollText, labelKey: 'admin.tabs.audit', permission: 'audit.view' },
 ];

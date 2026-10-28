@@ -6,6 +6,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { api } from '../api/endpoints';
 import { ApprovalDialog } from '../features/approval/approval-dialog';
 import { useAuthStore } from '../features/auth/auth-store';
+import { RestoreOverlay } from '../features/backups/restore-overlay';
 import { useConnectionMonitor } from '../features/connection/use-connection-monitor';
 import { useLiveConnection } from '../features/live/use-live-connection';
 import { startCommandQueue } from '../features/offline/command-queue';
@@ -38,6 +39,16 @@ function Splash({ children }: { children: React.ReactNode }) {
  * restored from the refresh cookie; (3) only then do routes render.
  */
 export function RootLayout() {
+  // Outside the start-up gates: a restore's wait must survive the Hub being away.
+  return (
+    <>
+      <RootGates />
+      <RestoreOverlay />
+    </>
+  );
+}
+
+function RootGates() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   useConnectionMonitor();

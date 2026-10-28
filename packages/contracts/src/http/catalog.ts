@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema, PaiseSchema } from './common';
+import { IdSchema, PaiseSchema, patchSchema } from './common';
 
 /** Customer-facing names in other languages: { hi: "…", bn: "…" }. English is the main `name`. */
 export const TranslationsSchema = z
@@ -50,7 +50,7 @@ export const SaveCategoryRequestSchema = z.object({
     .default(null),
   sortOrder: z.number().int().default(0),
 });
-export const UpdateCategoryRequestSchema = SaveCategoryRequestSchema.partial().extend({
+export const UpdateCategoryRequestSchema = patchSchema(SaveCategoryRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });
@@ -91,7 +91,7 @@ export const SaveAddonGroupRequestSchema = z.object({
     .min(1)
     .max(50),
 });
-export const UpdateAddonGroupRequestSchema = SaveAddonGroupRequestSchema.partial().extend({
+export const UpdateAddonGroupRequestSchema = patchSchema(SaveAddonGroupRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });
@@ -181,7 +181,7 @@ export const SaveMenuItemRequestSchema = z.object({
   addonGroupIds: z.array(IdSchema).max(10).default([]),
 });
 export type SaveMenuItemRequest = z.input<typeof SaveMenuItemRequestSchema>;
-export const UpdateMenuItemRequestSchema = SaveMenuItemRequestSchema.partial().extend({
+export const UpdateMenuItemRequestSchema = patchSchema(SaveMenuItemRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });

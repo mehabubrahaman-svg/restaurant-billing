@@ -58,6 +58,8 @@ const CODE_KEYS = {
   PRINTER_ON_DEVICE: 'errors.printerOnDevice',
   PRINTER_UNSUPPORTED: 'errors.printerUnsupported',
   DUPLICATE_EXTERNAL_ORDER: 'errors.duplicateExternalOrder',
+  BACKUP_UNAVAILABLE: 'errors.backupUnavailable',
+  BACKUP_UNREADABLE: 'errors.backupUnreadable',
   IDEMPOTENCY_KEY_REUSED: 'errors.unknown',
   IDEMPOTENCY_IN_PROGRESS: 'errors.inProgress',
   INTERNAL_ERROR: 'errors.unknown',

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema } from './common';
+import { IdSchema, patchSchema } from './common';
 
 export const DeviceKindSchema = z.enum([
   'POS',
@@ -115,7 +115,7 @@ export const SavePeripheralRequestSchema = PeripheralSchema.pick({
   deviceId: IdSchema.nullable().default(null),
   address: z.string().trim().max(200).nullable().default(null),
 });
-export const UpdatePeripheralRequestSchema = SavePeripheralRequestSchema.partial().extend({
+export const UpdatePeripheralRequestSchema = patchSchema(SavePeripheralRequestSchema).extend({
   version: z.number().int(),
   isActive: z.boolean().optional(),
 });

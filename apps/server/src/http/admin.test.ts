@@ -227,6 +227,16 @@ describe('settings', () => {
     const test = await call('POST', `/printers/${printer.json().id}/test`);
     expect(test.json()).toMatchObject({ code: 'PRINTER_OFFLINE' });
     expect((await call('GET', '/printers')).json().data).toHaveLength(1);
+    // A PATCH changes only what it sends; defaults don't reset other fields.
+    const paused = await call('PATCH', `/printers/${printer.json().id}`, {
+      isActive: false,
+      version: printer.json().version,
+    });
+    expect(paused.json()).toMatchObject({
+      isActive: false,
+      address: '127.0.0.1:1',
+      paperWidthMm: 80,
+    });
   });
 });
 

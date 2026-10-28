@@ -134,7 +134,8 @@
     "tabs": {
       "counter": "Counter",
       "bills": "Bills",
-      "shift": "Cash shift"
+      "shift": "Cash shift",
+      "delivery": "Delivery"
     },
     "queue": {
       "title": "Orders to bill",
@@ -261,11 +262,16 @@
       "title": "Customer on the bill",
       "name": "Name",
       "gstin": "GSTIN (business guests)",
-      "gstinHint": "For a B2B tax invoice. 15 characters, e.g. 19AABCU9603R1ZM.",
+      "gstinHint": "For a B2B tax invoice. 15 characters, e.g. 19AABCU9603R1ZK.",
       "apply": "Save",
       "phone": "Mobile number",
       "phoneHint": "Finds the guest, or adds them, so visits and spend are tracked.",
-      "phoneInvalid": "Enter a 10-digit Indian mobile number."
+      "phoneInvalid": "Enter a 10-digit Indian mobile number.",
+      "searching": "Looking up the guest…",
+      "matches": "Guests with this number",
+      "matchDetail": "{phone} · {count, plural, one {# visit} other {# visits}} · {spend}",
+      "noName": "No name saved",
+      "newGuest": "New guest: they are added when the bill is made."
     },
     "pay": {
       "title": "Payment",
@@ -460,6 +466,32 @@
       "sent": "Sent to {printer}.",
       "fallback": "You can print it from this screen instead.",
       "qr": "QR code on the bill"
+    },
+    "delivery": {
+      "title": "New delivery order",
+      "channel": "Channel",
+      "channelRequired": "Choose the channel.",
+      "externalId": "Channel order number",
+      "externalIdInvalid": "Enter the order number from the partner app (3 to 40 characters).",
+      "otp": "Rider OTP",
+      "otpHint": "Optional. Printed on the bill for the rider.",
+      "otpInvalid": "Up to 12 characters.",
+      "notes": "Note for the kitchen (optional)",
+      "items": "{count, plural, =0 {Items} one {# item} other {# items}}",
+      "noItems": "Tap dishes on the menu to add them.",
+      "subtotal": "Subtotal at menu prices",
+      "markup": "{channel} prices are {rate}% above the menu; the bill shows the final amount.",
+      "noMarkup": "Charged at menu prices.",
+      "operatorGst": "The channel pays the GST, so the bill has none.",
+      "send": "Send to kitchen",
+      "sent": "{channel} #{id} sent to the kitchen as token {token} ({count, plural, one {# KOT} other {# KOTs}}).",
+      "placedTitle": "Sent to the kitchen",
+      "placed": "Order #{orderNo} · token {token}. Bill it when the rider arrives.",
+      "bill": "Open the bill",
+      "noChannelsTitle": "No delivery channel yet",
+      "noChannels": "Ask the admin to add Swiggy or Zomato in Admin → Sales channels.",
+      "noChannelsAdmin": "Add Swiggy, Zomato or your own online shop first, with its commission.",
+      "setUpChannels": "Set up sales channels"
     }
   },
   "state": {
@@ -540,7 +572,9 @@
     "printerOffline": "The printer did not answer. Check it is on, has paper and is connected.",
     "printerOnDevice": "This printer is paired with a tablet and prints from there.",
     "printerUnsupported": "This printer can’t print this.",
-    "duplicateExternalOrder": "This aggregator order number was already entered."
+    "duplicateExternalOrder": "This aggregator order number was already entered.",
+    "backupUnavailable": "This backup file was removed or is missing on the Hub.",
+    "backupUnreadable": "This backup can’t be opened: wrong passphrase, or it is not a RestroOS backup."
   },
   "common": {
     "save": "Save",
@@ -748,7 +782,10 @@
       "menu": "Menu",
       "floor": "Floor",
       "devices": "Devices",
-      "coupons": "Coupons"
+      "coupons": "Coupons",
+      "backups": "Backups",
+      "channels": "Sales channels",
+      "customers": "Customers"
     }
   },
   "users": {
@@ -1050,7 +1087,7 @@
   },
   "printers": {
     "title": "Printers",
-    "description": "Bill and KOT printers. Printing itself arrives in a later update.",
+    "description": "Bill, KOT and report printers. Print a test page after adding one.",
     "add": "Add printer",
     "empty": "No printers yet.",
     "name": "Name",
@@ -1075,8 +1112,14 @@
     "paper": "Paper width",
     "width": "{mm, number} mm",
     "test": "Print test page",
-    "testQueued": "Test page queued for {name}.",
-    "saved": "{name} saved."
+    "saved": "{name} saved.",
+    "testSent": "Test page sent to {name}.",
+    "testNamed": "Test print on {name}",
+    "testResult": "Test page sent to {name}: {bytes} bytes, {mode}.",
+    "modes": {
+      "TEXT": "printer font",
+      "RASTER": "printed as an image (Hindi/Bengali)"
+    }
   },
   "audit": {
     "title": "Audit log",
@@ -1752,6 +1795,11 @@
       "start": "Start",
       "ready": "Ready",
       "served": "Served"
+    },
+    "reprint": {
+      "action": "Reprint",
+      "named": "Reprint KOT {kotNo, number}",
+      "none": "No KOT printer is set up for this station."
     }
   },
   "tokens": {
@@ -1788,5 +1836,248 @@
     "datesError": "The end date must be on or after the start date.",
     "limitError": "Enter a whole number above zero.",
     "saved": "Coupon {code} saved."
+  },
+  "reports": {
+    "sections": "Report sections",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "dayEnd": "Day-end"
+    },
+    "refresh": "Refresh",
+    "none": "—",
+    "item": "Item",
+    "quantity": "Qty",
+    "amount": "Amount",
+    "downloaded": "Saved {name}.",
+    "dashboard": {
+      "title": "Owner dashboard",
+      "businessDate": "Business day: {date}",
+      "today": "Today",
+      "month": "This month",
+      "year": "This financial year",
+      "invoices": "Bills",
+      "covers": "Covers",
+      "averageBill": "Average bill",
+      "range": "{from} – {to}",
+      "daily": "Net sales, last 14 days",
+      "dayBar": "{date}: {amount}, {count, plural, one {# bill} other {# bills}}",
+      "paymentMix": "Payment mix",
+      "noPayments": "No payments yet.",
+      "topItems": "Top items",
+      "noItems": "Nothing sold yet.",
+      "kitchen": "Kitchen today",
+      "pending": "KOTs in progress",
+      "delayed": "Delayed",
+      "avgCook": "Average cook time",
+      "now": "Right now",
+      "openOrders": "Open orders",
+      "openTables": "Tables with guests"
+    },
+    "dayEnd": {
+      "title": "Day-end report",
+      "date": "Business day",
+      "subtitle": "{branch} · {date} · made at {time}",
+      "csv": "Download CSV",
+      "empty": "No orders or bills on this day.",
+      "sales": "Sales",
+      "invoiceCount": "Bills",
+      "gross": "Item total",
+      "discounts": "Discounts",
+      "charges": "Charges",
+      "taxable": "Taxable value",
+      "tax": "Tax",
+      "roundOff": "Round-off",
+      "total": "Billed total",
+      "refunds": "Refunds (credit notes)",
+      "net": "Net sales",
+      "averageBill": "Average bill",
+      "orders": "Orders",
+      "orderCount": "Orders",
+      "openOrders": "Still open",
+      "cancelledOrders": "Cancelled",
+      "payments": "Payments",
+      "methodCount": "{method} ({count, plural, one {# payment} other {# payments}})",
+      "refundsAndVoids": "Refunds and cancellations",
+      "creditNotes": "{count, plural, one {# credit note} other {# credit notes}}",
+      "cancelledInvoices": "{count, plural, one {# cancelled bill} other {# cancelled bills}}",
+      "voidedItems": "{count, plural, one {# item cancelled after the KOT} other {# items cancelled after the KOT}}",
+      "wastage": "Wastage",
+      "discountsGiven": "Discounts given",
+      "noDiscounts": "No discounts.",
+      "discountCount": "{kind} ({count, number})",
+      "liquor": "Liquor (VAT)",
+      "vat": "VAT",
+      "kitchen": "Kitchen",
+      "kots": "KOTs",
+      "taxes": "Tax summary",
+      "noTaxes": "No tax collected.",
+      "taxCode": "Tax",
+      "rate": "Rate",
+      "ratePercent": "{rate}%",
+      "channels": "Delivery channels",
+      "channel": "Channel",
+      "channelSales": "Sales",
+      "commission": "Commission",
+      "netRevenue": "Net revenue",
+      "shifts": "Cash shifts",
+      "noShifts": "No cash shift on this day.",
+      "openedBy": "Opened by",
+      "shiftStatus": "Status",
+      "shiftStates": {
+        "OPEN": "Open",
+        "CLOSED": "Closed"
+      },
+      "hourly": "Sales by hour",
+      "hourBar": "{hour}: {amount}, {count, plural, one {# bill} other {# bills}}"
+    },
+    "discountKinds": {
+      "PERCENT": "Percentage",
+      "FIXED": "Fixed amount",
+      "COUPON": "Coupon",
+      "COMPLIMENTARY": "Complimentary"
+    },
+    "register": {
+      "title": "Sales register (CSV)",
+      "description": "Every bill and credit note in a date range, for your accountant or GST filing.",
+      "from": "From",
+      "to": "To",
+      "download": "Download register",
+      "invalid": "Choose a range of up to {max, number} days, with From on or before To."
+    }
+  },
+  "backups": {
+    "title": "Backups",
+    "description": "Encrypted copies of everything on the Hub. One is taken automatically every day.",
+    "create": "Back up now",
+    "creating": "Backing up…",
+    "created": "Backup {name} saved.",
+    "backupDir": "Saved on the Hub in",
+    "copyDir": "Second copy (USB drive or NAS)",
+    "noCopyDir": "Not set up. A second copy on a USB drive keeps your data safe if the Hub PC fails.",
+    "empty": "No backups yet.",
+    "tableLabel": "{count, plural, one {# backup} other {# backups}}",
+    "when": "Taken",
+    "kind": "Type",
+    "status": "Status",
+    "fileSize": "Size",
+    "by": "By",
+    "actions": "Actions",
+    "copied": "Also copied to the second location",
+    "system": "Automatic",
+    "size": "{value} {unit}",
+    "download": "Download",
+    "downloadNamed": "Download {name}",
+    "passphrase": "Backup passphrase",
+    "kinds": {
+      "SCHEDULED": "Daily",
+      "MANUAL": "Manual",
+      "PRE_MIGRATION": "Before an update",
+      "PRE_RESTORE": "Safety (before a restore)",
+      "IMPORTED": "Imported"
+    },
+    "statuses": {
+      "AVAILABLE": "Available",
+      "PRUNED": "Removed (old)",
+      "MISSING": "File missing"
+    },
+    "import": {
+      "action": "Import a backup",
+      "title": "Import a backup file",
+      "description": "A .rbak file from a USB drive or another PC.",
+      "file": "Backup file (.rbak)",
+      "fileRequired": "Choose a backup file.",
+      "passphraseRequired": "Enter the passphrase.",
+      "passphraseHint": "The passphrase of the Hub that made this backup.",
+      "submit": "Import",
+      "uploading": "Importing…",
+      "done": "Imported {name}."
+    },
+    "restore": {
+      "action": "Restore",
+      "actionNamed": "Restore the backup of {date}",
+      "title": "Restore this backup?",
+      "warningTitle": "Everything goes back to {date}",
+      "warning": "All orders, bills, menu and staff changes made after this backup are replaced by the backup’s data.",
+      "safety": "A safety backup of today’s data is taken first, so you can go back to it.",
+      "restart": "The Hub restarts: every till, tablet and kitchen screen disconnects for a few seconds.",
+      "signIn": "You may have to sign in again afterwards.",
+      "passphraseHint": "Only for a backup made on another PC or with another passphrase.",
+      "typeLabel": "Type {word} to confirm",
+      "confirm": "Restore and restart",
+      "starting": "Starting the restore…",
+      "waitTitle": "Restoring the backup…",
+      "waitBody": "The Hub is going back to the backup of {date} and restarting. This screen reconnects by itself.",
+      "waitBodyPlain": "The Hub is restarting. This screen reconnects by itself.",
+      "reconnecting": "Reconnecting…",
+      "slowTitle": "The Hub is taking long to come back",
+      "slowBody": "Check that the Hub PC is on, then reload this page.",
+      "done": "Backup restored. Every screen has been reloaded.",
+      "doneSignIn": "Backup restored. Sign in again."
+    }
+  },
+  "channels": {
+    "title": "Sales channels",
+    "description": "Swiggy, Zomato and your own online orders, with their commission and price markup.",
+    "add": "Add channel",
+    "name": "Name",
+    "nameHint": "As staff know it, e.g. Swiggy.",
+    "nameInvalid": "2 to 60 characters.",
+    "code": "Code",
+    "codeHint": "Short code in capitals, e.g. SWIGGY.",
+    "codeInvalid": "2 to 20 capital letters, digits or _.",
+    "kind": "Type",
+    "kinds": {
+      "DIRECT": "Direct (dine-in, takeaway)",
+      "AGGREGATOR": "Delivery aggregator",
+      "OWN_ONLINE": "Own online orders"
+    },
+    "commission": "Commission",
+    "markup": "Price markup",
+    "gst": "GST",
+    "gstOperator": "Paid by the channel",
+    "gstRestaurant": "On the bill",
+    "actions": "Actions",
+    "editNamed": "Edit {name}",
+    "commissionLabel": "Commission (%)",
+    "commissionHint": "What the channel keeps; reports show net revenue after it.",
+    "markupLabel": "Price markup (%)",
+    "markupHint": "Channel prices are menu prices plus this much.",
+    "percentInvalid": "Enter a percentage from 0 to 100, e.g. 22 or 12.5.",
+    "gstOperatorLabel": "GST paid by the channel",
+    "gstOperatorHint": "Under section 9(5) of the CGST Act the aggregator pays the GST, so the bill charges none.",
+    "saved": "Saved {name}."
+  },
+  "customers": {
+    "title": "Customers",
+    "description": "Guests found by mobile number: their visits, spend and favourite dishes.",
+    "search": "Find a guest",
+    "searchPlaceholder": "Mobile number or name",
+    "hint": "Type at least {min, number} characters of a mobile number or name.",
+    "none": "No guest matches “{q}”.",
+    "found": "{count, plural, one {# guest} other {# guests}}",
+    "name": "Name",
+    "phone": "Mobile",
+    "visits": "Visits",
+    "lifetimeValue": "Total spend",
+    "lastVisit": "Last visit",
+    "back": "All customers",
+    "email": "Email",
+    "gstin": "GSTIN",
+    "language": "Language",
+    "marketing": "Offers by SMS or WhatsApp",
+    "optedIn": "Yes",
+    "optedOut": "No",
+    "recent": "Recent bills",
+    "noBills": "No bills yet.",
+    "bill": "Bill",
+    "date": "Date",
+    "favourites": "Favourite dishes",
+    "noFavourites": "No orders yet.",
+    "times": "{count, plural, one {# time} other {# times}}",
+    "locales": {
+      "en-IN": "English",
+      "hi-IN": "हिन्दी",
+      "bn-IN": "বাংলা"
+    }
   }
 }

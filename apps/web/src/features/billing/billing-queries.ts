@@ -6,7 +6,7 @@ import type {
   InvoicesResponse,
   ShiftReport,
 } from '@restroos/contracts';
-import { keepPreviousData, useQueries, useQuery, type QueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, type QueryClient } from '@tanstack/react-query';
 import { isApiError } from '../../api/client';
 import { api } from '../../api/endpoints';
 import { usePermission } from '../auth/permissions';
@@ -20,6 +20,7 @@ export const BILLING_KEYS = {
   invoices: (date: string, status: InvoiceStatus | null) =>
     ['billing', 'invoices', date, status] as const,
   invoice: (id: string) => ['billing', 'invoice', id] as const,
+  creditNotes: (id: string) => ['billing', 'invoice', id, 'credit-notes'] as const,
   shifts: ['billing', 'shift'],
   currentShift: ['billing', 'shift', 'current'],
   shift: (id: string) => ['billing', 'shift', id] as const,
@@ -84,30 +85,14 @@ export function useInvoice(id: string, enabled = true) {
   });
 }
 
-/**
- * Credit notes against an invoice. GET /orders/{id}/invoices leaves credit
- * notes out, so they are found in the day's list (same order, kind
- * CREDIT_NOTE) and read one by one for their `originalInvoiceId`.
- */
-export function useCreditNotes(invoice: Pick<Invoice, 'id' | 'orderId' | 'businessDate' | 'kind'>) {
-  const isInvoice = invoice.kind === 'INVOICE';
-  const day = useQuery({
-    queryKey: BILLING_KEYS.invoices(invoice.businessDate, null),
-    queryFn: () => api.billing.list(invoice.businessDate),
-    enabled: isInvoice,
+/** Credit notes issued against an invoice (its refunds). */
+export function useCreditNotes(invoice: Pick<Invoice, 'id' | 'kind'>) {
+  const notes = useQuery({
+    queryKey: BILLING_KEYS.creditNotes(invoice.id),
+    queryFn: async () => (await api.billing.creditNotes(invoice.id)).data,
+    enabled: invoice.kind === 'INVOICE',
   });
-  const ids = (day.data?.data ?? [])
-    .filter((i) => i.kind === 'CREDIT_NOTE' && i.orderId === invoice.orderId)
-    .map((i) => i.id);
-  const notes = useQueries({
-    queries: ids.map((id) => ({
-      queryKey: BILLING_KEYS.invoice(id),
-      queryFn: () => api.billing.get(id),
-    })),
-  });
-  return notes
-    .map((q) => q.data)
-    .filter((cn): cn is Invoice => cn !== undefined && cn.originalInvoiceId === invoice.id);
+  return notes.data ?? [];
 }
 
 /** The cash shift open on this device, or `null` when there is none (the Hub answers 404). */
@@ -151,6 +136,12 @@ export function setInvoice(client: QueryClient, invoice: Invoice): void {
     if (list[at]!.version > invoice.version) return list;
     return list.map((i) => (i.id === invoice.id ? invoice : i));
   });
+  if (invoice.originalInvoiceId !== null) {
+    // A credit note: it joins its invoice's list of refunds.
+    client.setQueryData<Invoice[]>(BILLING_KEYS.creditNotes(invoice.originalInvoiceId), (list) =>
+      list === undefined ? list : [...list.filter((i) => i.id !== invoice.id), invoice],
+    );
+  }
   applyInvoiceSummary(client, invoice, { refetchDetail: false });
 }
 

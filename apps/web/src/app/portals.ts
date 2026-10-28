@@ -64,6 +64,9 @@ export const ADMIN_PERMISSIONS = [
   'audit.view',
   'menu.manage',
   'floor.manage',
+  'backup.manage',
+  'customers.view',
+  'customers.manage',
 ] as const;
 
 /** Order here is nav order. */

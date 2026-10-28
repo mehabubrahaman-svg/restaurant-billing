@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema } from './common';
+import { IdSchema, patchSchema } from './common';
 
 const Version = z.number().int();
 
@@ -80,7 +80,7 @@ export const SaveFloorAreaRequestSchema = z.object({
   name: z.string().trim().min(1).max(60),
   sortOrder: z.number().int().default(0),
 });
-export const UpdateFloorAreaRequestSchema = SaveFloorAreaRequestSchema.partial().extend({
+export const UpdateFloorAreaRequestSchema = patchSchema(SaveFloorAreaRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });
@@ -93,7 +93,7 @@ export const SaveTableRequestSchema = z.object({
   posX: GridX.default(0),
   posY: GridY.default(0),
 });
-export const UpdateTableRequestSchema = SaveTableRequestSchema.partial().extend({
+export const UpdateTableRequestSchema = patchSchema(SaveTableRequestSchema).extend({
   version: Version,
   isActive: z.boolean().optional(),
 });

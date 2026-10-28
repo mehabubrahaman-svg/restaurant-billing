@@ -134,7 +134,8 @@
     "tabs": {
       "counter": "काउंटर",
       "bills": "बिल",
-      "shift": "कैश शिफ्ट"
+      "shift": "कैश शिफ्ट",
+      "delivery": "डिलीवरी"
     },
     "queue": {
       "title": "बिल के लिए ऑर्डर",
@@ -261,11 +262,16 @@
       "title": "बिल पर ग्राहक",
       "name": "नाम",
       "gstin": "GSTIN (व्यापारी ग्राहक)",
-      "gstinHint": "B2B टैक्स इनवॉइस के लिए। 15 अक्षर, जैसे 19AABCU9603R1ZM।",
+      "gstinHint": "B2B टैक्स इनवॉइस के लिए। 15 अक्षर, जैसे 19AABCU9603R1ZK।",
       "apply": "सेव करें",
       "phone": "मोबाइल नंबर",
       "phoneHint": "ग्राहक को ढूँढता है या जोड़ता है, ताकि उनकी विज़िट और ख़र्च दर्ज रहें।",
-      "phoneInvalid": "10 अंकों का भारतीय मोबाइल नंबर डालें।"
+      "phoneInvalid": "10 अंकों का भारतीय मोबाइल नंबर डालें।",
+      "searching": "ग्राहक ढूँढ रहे हैं…",
+      "matches": "इस नंबर वाले ग्राहक",
+      "matchDetail": "{phone} · {count, plural, one {# विज़िट} other {# विज़िट}} · {spend}",
+      "noName": "नाम सेव नहीं है",
+      "newGuest": "नया ग्राहक: बिल बनते ही जुड़ जाएगा।"
     },
     "pay": {
       "title": "भुगतान",
@@ -460,6 +466,32 @@
       "sent": "{printer} पर भेजा गया।",
       "fallback": "आप इसे इसी स्क्रीन से प्रिंट कर सकते हैं।",
       "qr": "बिल पर QR कोड"
+    },
+    "delivery": {
+      "title": "नया डिलीवरी ऑर्डर",
+      "channel": "चैनल",
+      "channelRequired": "चैनल चुनें।",
+      "externalId": "चैनल का ऑर्डर नंबर",
+      "externalIdInvalid": "पार्टनर ऐप से ऑर्डर नंबर डालें (3 से 40 अक्षर)।",
+      "otp": "राइडर OTP",
+      "otpHint": "वैकल्पिक। राइडर के लिए बिल पर छपता है।",
+      "otpInvalid": "ज़्यादा से ज़्यादा 12 अक्षर।",
+      "notes": "किचन के लिए नोट (वैकल्पिक)",
+      "items": "{count, plural, =0 {आइटम} one {# आइटम} other {# आइटम}}",
+      "noItems": "जोड़ने के लिए मेन्यू में डिश पर टैप करें।",
+      "subtotal": "मेन्यू दाम पर सबटोटल",
+      "markup": "{channel} के दाम मेन्यू से {rate}% ज़्यादा हैं; बिल में अंतिम रकम दिखेगी।",
+      "noMarkup": "मेन्यू के दाम पर।",
+      "operatorGst": "GST चैनल भरता है, इसलिए बिल पर GST नहीं है।",
+      "send": "किचन भेजें",
+      "sent": "{channel} #{id} टोकन {token} के रूप में किचन भेजा गया ({count, plural, one {# KOT} other {# KOT}})।",
+      "placedTitle": "किचन भेजा गया",
+      "placed": "ऑर्डर #{orderNo} · टोकन {token}। राइडर आने पर बिल बनाएँ।",
+      "bill": "बिल खोलें",
+      "noChannelsTitle": "अभी कोई डिलीवरी चैनल नहीं",
+      "noChannels": "एडमिन से कहें कि एडमिन → बिक्री चैनल में Swiggy या Zomato जोड़ें।",
+      "noChannelsAdmin": "पहले Swiggy, Zomato या अपनी ऑनलाइन दुकान उसके कमीशन के साथ जोड़ें।",
+      "setUpChannels": "बिक्री चैनल सेट करें"
     }
   },
   "state": {
@@ -562,7 +594,9 @@
     "printerOffline": "प्रिंटर ने जवाब नहीं दिया। देखें कि वह चालू है, उसमें कागज़ है और जुड़ा है।",
     "printerOnDevice": "यह प्रिंटर एक टैबलेट से जुड़ा है और वहीं से प्रिंट करता है।",
     "printerUnsupported": "यह प्रिंटर इसे प्रिंट नहीं कर सकता।",
-    "duplicateExternalOrder": "यह एग्रीगेटर ऑर्डर नंबर पहले ही डाला जा चुका है।"
+    "duplicateExternalOrder": "यह एग्रीगेटर ऑर्डर नंबर पहले ही डाला जा चुका है।",
+    "backupUnavailable": "यह बैकअप फ़ाइल Hub से हटाई गई है या मिल नहीं रही।",
+    "backupUnreadable": "यह बैकअप नहीं खुला: पासफ़्रेज़ ग़लत है, या यह RestroOS बैकअप नहीं है।"
   },
   "validation": {
     "required": "ज़रूरी है।",
@@ -614,7 +648,10 @@
       "menu": "मेन्यू",
       "floor": "फ़्लोर",
       "devices": "डिवाइस",
-      "coupons": "कूपन"
+      "coupons": "कूपन",
+      "backups": "बैकअप",
+      "channels": "बिक्री चैनल",
+      "customers": "ग्राहक"
     }
   },
   "users": {
@@ -1050,7 +1087,7 @@
   },
   "printers": {
     "title": "प्रिंटर",
-    "description": "बिल और KOT प्रिंटर। असली प्रिंटिंग अगले अपडेट में आएगी।",
+    "description": "बिल, KOT और रिपोर्ट प्रिंटर। जोड़ने के बाद एक टेस्ट पेज छापें।",
     "add": "प्रिंटर जोड़ें",
     "empty": "अभी कोई प्रिंटर नहीं।",
     "name": "नाम",
@@ -1075,8 +1112,14 @@
     "paper": "कागज़ की चौड़ाई",
     "width": "{mm, number} मिमी",
     "test": "टेस्ट पेज छापें",
-    "testQueued": "{name} के लिए टेस्ट पेज कतार में है।",
-    "saved": "{name} सेव हो गया।"
+    "saved": "{name} सेव हो गया।",
+    "testSent": "{name} पर टेस्ट पेज भेजा गया।",
+    "testNamed": "{name} पर टेस्ट प्रिंट",
+    "testResult": "{name} पर टेस्ट पेज भेजा गया: {bytes} बाइट, {mode}।",
+    "modes": {
+      "TEXT": "प्रिंटर का फ़ॉन्ट",
+      "RASTER": "चित्र के रूप में छपा (हिंदी/बांग्ला)"
+    }
   },
   "audit": {
     "title": "ऑडिट लॉग",
@@ -1752,6 +1795,11 @@
       "start": "शुरू करें",
       "ready": "तैयार",
       "served": "परोसा गया"
+    },
+    "reprint": {
+      "action": "फिर से प्रिंट",
+      "named": "KOT {kotNo, number} फिर से प्रिंट करें",
+      "none": "इस स्टेशन के लिए कोई KOT प्रिंटर सेट नहीं है।"
     }
   },
   "tokens": {
@@ -1788,5 +1836,248 @@
     "datesError": "आख़िरी तारीख शुरुआती तारीख के बाद या उसी दिन होनी चाहिए।",
     "limitError": "शून्य से बड़ी पूरी संख्या डालें।",
     "saved": "कूपन {code} सेव हुआ।"
+  },
+  "reports": {
+    "sections": "रिपोर्ट के भाग",
+    "tabs": {
+      "dashboard": "डैशबोर्ड",
+      "dayEnd": "दिन का अंत"
+    },
+    "refresh": "रीफ़्रेश",
+    "none": "—",
+    "item": "आइटम",
+    "quantity": "मात्रा",
+    "amount": "रकम",
+    "downloaded": "{name} सेव हुआ।",
+    "dashboard": {
+      "title": "मालिक का डैशबोर्ड",
+      "businessDate": "कारोबारी दिन: {date}",
+      "today": "आज",
+      "month": "इस महीने",
+      "year": "इस वित्त वर्ष",
+      "invoices": "बिल",
+      "covers": "कवर",
+      "averageBill": "औसत बिल",
+      "range": "{from} – {to}",
+      "daily": "पिछले 14 दिन की नेट बिक्री",
+      "dayBar": "{date}: {amount}, {count, plural, one {# बिल} other {# बिल}}",
+      "paymentMix": "भुगतान के तरीके",
+      "noPayments": "अभी कोई भुगतान नहीं।",
+      "topItems": "सबसे ज़्यादा बिकने वाले",
+      "noItems": "अभी कुछ नहीं बिका।",
+      "kitchen": "आज किचन",
+      "pending": "चल रहे KOT",
+      "delayed": "देरी वाले",
+      "avgCook": "औसत पकाने का समय",
+      "now": "अभी",
+      "openOrders": "खुले ऑर्डर",
+      "openTables": "मेहमानों वाली टेबल"
+    },
+    "dayEnd": {
+      "title": "दिन के अंत की रिपोर्ट",
+      "date": "कारोबारी दिन",
+      "subtitle": "{branch} · {date} · {time} पर बनी",
+      "csv": "CSV डाउनलोड करें",
+      "empty": "इस दिन कोई ऑर्डर या बिल नहीं।",
+      "sales": "बिक्री",
+      "invoiceCount": "बिल",
+      "gross": "आइटम का कुल",
+      "discounts": "छूट",
+      "charges": "चार्ज",
+      "taxable": "कर योग्य मूल्य",
+      "tax": "टैक्स",
+      "roundOff": "राउंड-ऑफ़",
+      "total": "बिल का कुल",
+      "refunds": "रिफ़ंड (क्रेडिट नोट)",
+      "net": "नेट बिक्री",
+      "averageBill": "औसत बिल",
+      "orders": "ऑर्डर",
+      "orderCount": "ऑर्डर",
+      "openOrders": "अभी खुले",
+      "cancelledOrders": "रद्द",
+      "payments": "भुगतान",
+      "methodCount": "{method} ({count, plural, one {# भुगतान} other {# भुगतान}})",
+      "refundsAndVoids": "रिफ़ंड और रद्दीकरण",
+      "creditNotes": "{count, plural, one {# क्रेडिट नोट} other {# क्रेडिट नोट}}",
+      "cancelledInvoices": "{count, plural, one {# रद्द बिल} other {# रद्द बिल}}",
+      "voidedItems": "{count, plural, one {KOT के बाद # आइटम रद्द} other {KOT के बाद # आइटम रद्द}}",
+      "wastage": "बर्बादी",
+      "discountsGiven": "दी गई छूट",
+      "noDiscounts": "कोई छूट नहीं।",
+      "discountCount": "{kind} ({count, number})",
+      "liquor": "शराब (VAT)",
+      "vat": "VAT",
+      "kitchen": "किचन",
+      "kots": "KOT",
+      "taxes": "टैक्स सारांश",
+      "noTaxes": "कोई टैक्स नहीं लिया गया।",
+      "taxCode": "टैक्स",
+      "rate": "दर",
+      "ratePercent": "{rate}%",
+      "channels": "डिलीवरी चैनल",
+      "channel": "चैनल",
+      "channelSales": "बिक्री",
+      "commission": "कमीशन",
+      "netRevenue": "नेट आय",
+      "shifts": "कैश शिफ्ट",
+      "noShifts": "इस दिन कोई कैश शिफ्ट नहीं।",
+      "openedBy": "किसने खोली",
+      "shiftStatus": "स्थिति",
+      "shiftStates": {
+        "OPEN": "खुली",
+        "CLOSED": "बंद"
+      },
+      "hourly": "घंटे के हिसाब से बिक्री",
+      "hourBar": "{hour}: {amount}, {count, plural, one {# बिल} other {# बिल}}"
+    },
+    "discountKinds": {
+      "PERCENT": "प्रतिशत",
+      "FIXED": "तय रकम",
+      "COUPON": "कूपन",
+      "COMPLIMENTARY": "मुफ़्त"
+    },
+    "register": {
+      "title": "बिक्री रजिस्टर (CSV)",
+      "description": "तारीख़ों के बीच हर बिल और क्रेडिट नोट, अकाउंटेंट या GST रिटर्न के लिए।",
+      "from": "से",
+      "to": "तक",
+      "download": "रजिस्टर डाउनलोड करें",
+      "invalid": "ज़्यादा से ज़्यादा {max, number} दिन चुनें, और “से” की तारीख़ “तक” से पहले या उसी दिन हो।"
+    }
+  },
+  "backups": {
+    "title": "बैकअप",
+    "description": "Hub पर सब कुछ की एन्क्रिप्टेड कॉपी। हर दिन एक अपने-आप बनती है।",
+    "create": "अभी बैकअप लें",
+    "creating": "बैकअप हो रहा है…",
+    "created": "बैकअप {name} सेव हुआ।",
+    "backupDir": "Hub पर यहाँ सेव",
+    "copyDir": "दूसरी कॉपी (USB ड्राइव या NAS)",
+    "noCopyDir": "सेट नहीं है। USB ड्राइव पर दूसरी कॉपी रखने से Hub PC ख़राब होने पर भी डेटा सुरक्षित रहता है।",
+    "empty": "अभी कोई बैकअप नहीं।",
+    "tableLabel": "{count, plural, one {# बैकअप} other {# बैकअप}}",
+    "when": "कब लिया",
+    "kind": "प्रकार",
+    "status": "स्थिति",
+    "fileSize": "साइज़",
+    "by": "किसने",
+    "actions": "काम",
+    "copied": "दूसरी जगह भी कॉपी हुआ",
+    "system": "अपने-आप",
+    "size": "{value} {unit}",
+    "download": "डाउनलोड",
+    "downloadNamed": "{name} डाउनलोड करें",
+    "passphrase": "बैकअप पासफ़्रेज़",
+    "kinds": {
+      "SCHEDULED": "रोज़ाना",
+      "MANUAL": "हाथ से",
+      "PRE_MIGRATION": "अपडेट से पहले",
+      "PRE_RESTORE": "सुरक्षा (रीस्टोर से पहले)",
+      "IMPORTED": "इम्पोर्ट किया"
+    },
+    "statuses": {
+      "AVAILABLE": "उपलब्ध",
+      "PRUNED": "हटाया (पुराना)",
+      "MISSING": "फ़ाइल नहीं मिली"
+    },
+    "import": {
+      "action": "बैकअप इम्पोर्ट करें",
+      "title": "बैकअप फ़ाइल इम्पोर्ट करें",
+      "description": "USB ड्राइव या दूसरे PC से .rbak फ़ाइल।",
+      "file": "बैकअप फ़ाइल (.rbak)",
+      "fileRequired": "बैकअप फ़ाइल चुनें।",
+      "passphraseRequired": "पासफ़्रेज़ डालें।",
+      "passphraseHint": "जिस Hub ने यह बैकअप बनाया, उसका पासफ़्रेज़।",
+      "submit": "इम्पोर्ट करें",
+      "uploading": "इम्पोर्ट हो रहा है…",
+      "done": "{name} इम्पोर्ट हुआ।"
+    },
+    "restore": {
+      "action": "रीस्टोर",
+      "actionNamed": "{date} का बैकअप रीस्टोर करें",
+      "title": "यह बैकअप रीस्टोर करें?",
+      "warningTitle": "सब कुछ {date} पर लौट जाएगा",
+      "warning": "इस बैकअप के बाद के सारे ऑर्डर, बिल, मेन्यू और स्टाफ़ बदलाव बैकअप के डेटा से बदल जाएँगे।",
+      "safety": "पहले आज के डेटा का सुरक्षा बैकअप लिया जाता है, ताकि आप उस पर लौट सकें।",
+      "restart": "Hub फिर से चालू होगा: हर टिल, टैबलेट और किचन स्क्रीन कुछ सेकंड के लिए कट जाएगी।",
+      "signIn": "उसके बाद फिर से साइन इन करना पड़ सकता है।",
+      "passphraseHint": "सिर्फ़ दूसरे PC पर या दूसरे पासफ़्रेज़ से बने बैकअप के लिए।",
+      "typeLabel": "पक्का करने के लिए {word} लिखें",
+      "confirm": "रीस्टोर करें और चालू करें",
+      "starting": "रीस्टोर शुरू हो रहा है…",
+      "waitTitle": "बैकअप रीस्टोर हो रहा है…",
+      "waitBody": "Hub {date} के बैकअप पर लौट रहा है और फिर से चालू हो रहा है। यह स्क्रीन अपने-आप जुड़ जाएगी।",
+      "waitBodyPlain": "Hub फिर से चालू हो रहा है। यह स्क्रीन अपने-आप जुड़ जाएगी।",
+      "reconnecting": "फिर से जुड़ रहे हैं…",
+      "slowTitle": "Hub को लौटने में देर हो रही है",
+      "slowBody": "देखें कि Hub PC चालू है, फिर यह पेज रीलोड करें।",
+      "done": "बैकअप रीस्टोर हुआ। हर स्क्रीन फिर से लोड हुई।",
+      "doneSignIn": "बैकअप रीस्टोर हुआ। फिर से साइन इन करें।"
+    }
+  },
+  "channels": {
+    "title": "बिक्री चैनल",
+    "description": "Swiggy, Zomato और आपके अपने ऑनलाइन ऑर्डर, उनके कमीशन और दाम बढ़ोतरी के साथ।",
+    "add": "चैनल जोड़ें",
+    "name": "नाम",
+    "nameHint": "जैसा स्टाफ़ जानता है, जैसे Swiggy।",
+    "nameInvalid": "2 से 60 अक्षर।",
+    "code": "कोड",
+    "codeHint": "बड़े अक्षरों में छोटा कोड, जैसे SWIGGY।",
+    "codeInvalid": "2 से 20 बड़े अंग्रेज़ी अक्षर, अंक या _।",
+    "kind": "प्रकार",
+    "kinds": {
+      "DIRECT": "सीधी बिक्री (डाइन-इन, टेकअवे)",
+      "AGGREGATOR": "डिलीवरी एग्रीगेटर",
+      "OWN_ONLINE": "अपने ऑनलाइन ऑर्डर"
+    },
+    "commission": "कमीशन",
+    "markup": "दाम बढ़ोतरी",
+    "gst": "GST",
+    "gstOperator": "चैनल भरता है",
+    "gstRestaurant": "बिल पर",
+    "actions": "काम",
+    "editNamed": "{name} बदलें",
+    "commissionLabel": "कमीशन (%)",
+    "commissionHint": "जो चैनल रखता है; रिपोर्ट में इसके बाद की नेट आय दिखती है।",
+    "markupLabel": "दाम बढ़ोतरी (%)",
+    "markupHint": "चैनल के दाम = मेन्यू दाम + इतना।",
+    "percentInvalid": "0 से 100 के बीच प्रतिशत डालें, जैसे 22 या 12.5।",
+    "gstOperatorLabel": "GST चैनल भरता है",
+    "gstOperatorHint": "CGST एक्ट की धारा 9(5) के तहत GST एग्रीगेटर भरता है, इसलिए बिल पर GST नहीं लगता।",
+    "saved": "{name} सेव हुआ।"
+  },
+  "customers": {
+    "title": "ग्राहक",
+    "description": "मोबाइल नंबर से मिले ग्राहक: उनकी विज़िट, ख़र्च और पसंदीदा डिश।",
+    "search": "ग्राहक खोजें",
+    "searchPlaceholder": "मोबाइल नंबर या नाम",
+    "hint": "मोबाइल नंबर या नाम के कम से कम {min, number} अक्षर लिखें।",
+    "none": "“{q}” से कोई ग्राहक नहीं मिला।",
+    "found": "{count, plural, one {# ग्राहक} other {# ग्राहक}}",
+    "name": "नाम",
+    "phone": "मोबाइल",
+    "visits": "विज़िट",
+    "lifetimeValue": "कुल ख़र्च",
+    "lastVisit": "पिछली विज़िट",
+    "back": "सभी ग्राहक",
+    "email": "ईमेल",
+    "gstin": "GSTIN",
+    "language": "भाषा",
+    "marketing": "SMS या WhatsApp पर ऑफ़र",
+    "optedIn": "हाँ",
+    "optedOut": "नहीं",
+    "recent": "हाल के बिल",
+    "noBills": "अभी कोई बिल नहीं।",
+    "bill": "बिल",
+    "date": "तारीख़",
+    "favourites": "पसंदीदा डिश",
+    "noFavourites": "अभी कोई ऑर्डर नहीं।",
+    "times": "{count, plural, one {# बार} other {# बार}}",
+    "locales": {
+      "en-IN": "English",
+      "hi-IN": "हिन्दी",
+      "bn-IN": "বাংলা"
+    }
   }
 }

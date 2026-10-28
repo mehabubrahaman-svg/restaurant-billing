@@ -129,7 +129,7 @@ Implemented in Sprint 4. Contracts: `packages/contracts/src/http/kitchen.ts`.
 | GET | `/kitchen/chefs` | `kds.view` | Who can be assigned |
 | GET | `/kitchen/metrics` | `kds.view` | Today: pending, delayed, completed, average fired→ready seconds, per chef |
 | GET | `/tokens` | public | Token display: `{businessDate, preparing[], ready[]}` for takeaway/delivery tokens |
-| POST | `/kitchen/kots/{id}/reprint` | `kds.view` or `orders.fire_kot` | `{printerId?}` → print outcome; prints REPRINT on the slip |
+| POST | `/kitchen/kots/{id}/reprint` | `kds.view` or `orders.fire_kot` | `{printerId?}` → print outcomes, one per KOT printer for the station; the slip says DUPLICATE. `409 NO_PRINTER` when none is set up |
 
 ### Billing (POS)
 Implemented in Sprint 5 (printing in 5B). Contracts: `packages/contracts/src/http/billing.ts`. Tax engine: `packages/domain/src/billing/tax-engine.ts`.

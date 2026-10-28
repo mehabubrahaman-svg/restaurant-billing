@@ -134,6 +134,11 @@ describe('printing', () => {
     expect(main).toContain('** NOTE: LESS SPICY **');
     expect(bread).toContain('3 x Butter Naan');
     expect(bread).not.toContain('Biryani');
+
+    const kots = (await captain('GET', `/orders/${order.id}`)).json().kots;
+    const reprint = await captain('POST', `/kitchen/kots/${kots[0].id}/reprint`, {});
+    expect(reprint.json().data).toHaveLength(1);
+    expect((await kitchen.waitForJobs(2))[1]).toContain('DUPLICATE');
   });
 
   it('reports a printer that is off, and a missing printer', async () => {
@@ -152,6 +157,10 @@ describe('printing', () => {
     expect(off.statusCode).toBe(503);
     expect(off.json().code).toBe('PRINTER_OFFLINE');
     expect((await cashier('GET', `/invoices/${invoice.id}`)).json().printCount).toBe(0);
+    const kot = (await admin('GET', `/orders/${invoice.orderId}`)).json().kots[0];
+    expect((await admin('POST', `/kitchen/kots/${kot.id}/reprint`, {})).json().code).toBe(
+      'NO_PRINTER',
+    );
   });
 
   it('previews the bill as blocks and prints test pages and shift reports', async () => {
