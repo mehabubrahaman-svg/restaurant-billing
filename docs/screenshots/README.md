@@ -845,3 +845,107 @@ Real-Hub shots were taken on the Sprint 5 Hub: the owner's dashboard and day-end
 **Delivery · Hindi · 768 px**
 
 ![Delivery · Hindi · 768 px](sprint-5b/delivery-hi-IN-768.png)
+
+## Phase 2 — stock
+
+All on a real Hub: the built server and web app with a fresh database, set up and stocked through the API — 14 stock items with Hindi and Bengali names, opening stock, a market bill with lots (one paneer lot already past its expiry), recipes for Chicken Biryani (the dish and its Full size), Kosha Mangsho and Butter Naan, curd for the Raita add-on, a lunch service of three tables whose KOTs took stock by recipe, wastage, an adjustment, a posted spot count and a closing count half done. The English real-Hub shots then change it: the store keeper receives potatoes and mustard oil from a market bill, checks the alerts, finishes and posts the closing count and opens the consumption report; the owner changes the Full biryani’s recipe and sees the estimate before saving. The other screens are in Hindi at tablet width and Bengali at desktop width, one of them with Bengali digits.
+
+**Real Hub · Stock items · English · 1366 px**
+
+![Real Hub · Stock items · English · 1366 px](phase-2/real-hub-flow-0-items.png)
+
+**Real Hub · Receiving a market bill · English · 1366 px**
+
+![Real Hub · Receiving a market bill · English · 1366 px](phase-2/real-hub-flow-1-receive.png)
+
+**Real Hub · Received, with the new balances · English · 1366 px**
+
+![Real Hub · Received, with the new balances · English · 1366 px](phase-2/real-hub-flow-2-received.png)
+
+**Real Hub · Alerts · English · 1366 px**
+
+![Real Hub · Alerts · English · 1366 px](phase-2/real-hub-flow-3-alerts.png)
+
+**Real Hub · Posting the closing count · English · 1366 px**
+
+![Real Hub · Posting the closing count · English · 1366 px](phase-2/real-hub-flow-4-count-confirm.png)
+
+**Real Hub · Closing count posted, items with a difference · English · 1366 px**
+
+![Real Hub · Closing count posted, items with a difference · English · 1366 px](phase-2/real-hub-flow-5-count-posted.png)
+
+**Real Hub · Consumption report · English · 1366 px**
+
+![Real Hub · Consumption report · English · 1366 px](phase-2/real-hub-flow-6-consumption.png)
+
+**Real Hub · Recipe change with a live estimate · English · 1366 px**
+
+![Real Hub · Recipe change with a live estimate · English · 1366 px](phase-2/real-hub-flow-7-recipe-estimate.png)
+
+**Add-on ingredients (Raita) · Hindi · 768 px**
+
+![Add-on ingredients (Raita) · Hindi · 768 px](phase-2/addon-ingredients-hi-IN-768.png)
+
+**Alerts · Bengali · 1366 px**
+
+![Alerts · Bengali · 1366 px](phase-2/alerts-bn-IN-1366.png)
+
+**Alerts · Hindi · 768 px**
+
+![Alerts · Hindi · 768 px](phase-2/alerts-hi-IN-768.png)
+
+**Consumption report, Bengali digits · Bengali · 1366 px**
+
+![Consumption report, Bengali digits · Bengali · 1366 px](phase-2/consumption-bn-IN-native-1366.png)
+
+**Consumption report · Hindi · 768 px**
+
+![Consumption report · Hindi · 768 px](phase-2/consumption-hi-IN-768.png)
+
+**Count sheet · Bengali · 1366 px**
+
+![Count sheet · Bengali · 1366 px](phase-2/count-sheet-bn-IN-1366.png)
+
+**Count sheet · Hindi · 768 px**
+
+![Count sheet · Hindi · 768 px](phase-2/count-sheet-hi-IN-768.png)
+
+**Stock counts · Bengali · 1366 px**
+
+![Stock counts · Bengali · 1366 px](phase-2/counts-bn-IN-1366.png)
+
+**Item detail and movements · Bengali · 1366 px**
+
+![Item detail and movements · Bengali · 1366 px](phase-2/item-detail-bn-IN-1366.png)
+
+**Item detail and movements · Hindi · 768 px**
+
+![Item detail and movements · Hindi · 768 px](phase-2/item-detail-hi-IN-768.png)
+
+**Edit item · Hindi · 768 px**
+
+![Edit item · Hindi · 768 px](phase-2/item-dialog-hi-IN-768.png)
+
+**Stock items · Bengali · 1366 px**
+
+![Stock items · Bengali · 1366 px](phase-2/items-bn-IN-1366.png)
+
+**Stock items · Hindi · 768 px**
+
+![Stock items · Hindi · 768 px](phase-2/items-hi-IN-768.png)
+
+**Receiving stock · Bengali · 1366 px**
+
+![Receiving stock · Bengali · 1366 px](phase-2/receive-bn-IN-1366.png)
+
+**Recipe, Full size · Bengali · 1366 px**
+
+![Recipe, Full size · Bengali · 1366 px](phase-2/recipe-bn-IN-1366.png)
+
+**Recipe, Half size using the dish’s · Hindi · 768 px**
+
+![Recipe, Half size using the dish’s · Hindi · 768 px](phase-2/recipe-hi-IN-768.png)
+
+**Wastage · Hindi · 768 px**
+
+![Wastage · Hindi · 768 px](phase-2/wastage-hi-IN-768.png)

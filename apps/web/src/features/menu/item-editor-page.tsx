@@ -31,6 +31,7 @@ import { useErrorMessage } from '../../lib/errors';
 import { rupeesToPaise } from '../../lib/units';
 import { useUnsavedGuard } from '../../lib/use-unsaved-guard';
 import { AdminHeader } from '../admin/admin-layout';
+import { RecipeSection } from '../inventory/recipe-section';
 import { toast } from '../toast/toast-store';
 import { FOOD_TYPES } from './food-type';
 import {
@@ -134,8 +135,9 @@ function ItemEditor({
   const [form, setForm] = useState<ItemForm>(initial);
   const [errors, setErrors] = useState<ItemFormErrors | null>(null);
   const [confirmRetire, setConfirmRetire] = useState(false);
+  const [recipeDirty, setRecipeDirty] = useState(false);
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
-  const { blocker, release } = useUnsavedGuard(dirty);
+  const { blocker, release } = useUnsavedGuard(dirty || recipeDirty);
 
   const set: Setter = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -155,7 +157,8 @@ function ItemEditor({
       if (saved === null) return;
       void invalidateMenu(queryClient);
       toast(t('menu.item.saved', { name: saved.name }));
-      release();
+      // An unsaved recipe still stops the way out, with the usual "Leave without saving?".
+      if (!recipeDirty) release();
       void navigate('/admin/menu');
     },
   });
@@ -475,6 +478,8 @@ function ItemEditor({
             error={fieldError('addonGroupIds')}
             onChange={(ids) => set('addonGroupIds', ids)}
           />
+
+          <RecipeSection item={item} onDirtyChange={setRecipeDirty} />
         </div>
 
         <ItemPreview form={form} />

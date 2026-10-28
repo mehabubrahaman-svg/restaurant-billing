@@ -14,6 +14,7 @@ export const STAFF = {
   chef: { username: 'bose', fullName: 'Subrata Bose', role: 'KITCHEN', pin: '4826' },
   cashier: { username: 'meera', fullName: 'Meera Saha', role: 'CASHIER', pin: '8462' },
   manager: { username: 'mou', fullName: 'Moumita Paul', role: 'MANAGER', pin: '5173' },
+  store: { username: 'gopal', fullName: 'Gopal Mondal', role: 'INVENTORY', pin: '6294' },
 } as const;
 
 /** The Hub's API, signed in as someone. */

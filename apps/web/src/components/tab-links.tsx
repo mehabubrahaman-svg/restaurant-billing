@@ -1,4 +1,5 @@
 import { cn, type LucideIcon } from '@restroos/ui';
+import type { ReactNode } from 'react';
 import { NavLink } from 'react-router';
 
 export interface TabLink {
@@ -7,6 +8,8 @@ export interface TabLink {
   readonly icon?: LucideIcon;
   /** Match the path exactly (for an index tab). */
   readonly end?: boolean;
+  /** Shown after the label, e.g. a count of what needs attention. */
+  readonly badge?: ReactNode;
 }
 
 /** A scrollable strip of route tabs, styled like the admin section tabs. */
@@ -32,6 +35,7 @@ export function TabLinks({ label, tabs }: { label: string; tabs: readonly TabLin
               >
                 {Icon !== undefined && <Icon aria-hidden="true" className="size-4" />}
                 {tab.label}
+                {tab.badge}
               </NavLink>
             </li>
           );

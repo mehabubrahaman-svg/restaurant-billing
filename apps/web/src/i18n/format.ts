@@ -51,6 +51,22 @@ export function formatNumber(
   return formatter(intlLocale(locale, digits), options).format(value);
 }
 
+/**
+ * An exact decimal string ("28.35", "-0.5") with grouping and the user's
+ * digits. Like money, it goes to `Intl` as a string, never as a float; up to
+ * three decimals are kept unless `options` says otherwise.
+ */
+export function formatDecimal(
+  decimal: string,
+  locale: string,
+  digits: DigitStyle = 'latin',
+  options: Intl.NumberFormatOptions = {},
+): string {
+  return formatter(intlLocale(locale, digits), { maximumFractionDigits: 3, ...options }).format(
+    decimal as Intl.StringNumericLiteral,
+  );
+}
+
 const dateCache = new Map<string, Intl.DateTimeFormat>();
 
 /** Date and time in the user's language and digits, e.g. "28 Oct 2026, 2:41 pm". */

@@ -23,6 +23,7 @@ import { useErrorMessage } from '../../lib/errors';
 import { paiseToRupees, rupeesToPaise } from '../../lib/units';
 import { AdminHeader } from '../admin/admin-layout';
 import { QueryState } from '../admin/query-state';
+import { AddonIngredientsButton } from '../inventory/addon-ingredients';
 import { toast } from '../toast/toast-store';
 import { newRowKey } from './item-form';
 import { PriceField } from './price-field';
@@ -102,16 +103,20 @@ export function AddonGroupsPage() {
                       {!g.isActive && <Badge>{t('common.retired')}</Badge>}
                     </div>
                     <ul className="flex flex-col gap-1 text-sm">
-                      {g.addons.map((a) => (
-                        <li key={a.id} className="flex justify-between gap-2">
-                          <span className="break-words">
-                            {localizedName(a.name, a.nameTranslations, i18n.language)}
-                          </span>
-                          <span className="tabular-nums">
-                            +{format.money(Money.ofPaise(a.price))}
-                          </span>
-                        </li>
-                      ))}
+                      {g.addons.map((a) => {
+                        const addonName = localizedName(a.name, a.nameTranslations, i18n.language);
+                        return (
+                          <li key={a.id} className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 break-words">{addonName}</span>
+                            <span className="flex items-center gap-1">
+                              <span className="tabular-nums">
+                                +{format.money(Money.ofPaise(a.price))}
+                              </span>
+                              <AddonIngredientsButton addon={{ id: a.id, name: addonName }} />
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </Card>
                 </li>
