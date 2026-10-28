@@ -328,7 +328,7 @@ export class AuthService {
       expiresAt,
       revokedAt: null,
       createdAt: now,
-      deviceId: null, // device registry arrives with pairing (Sprint 3)
+      deviceId: client.deviceId,
       ipAddress: client.ipAddress,
       userAgent: client.userAgent,
     });

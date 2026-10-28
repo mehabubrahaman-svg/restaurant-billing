@@ -26,6 +26,9 @@ export const ERROR_STATUS = {
   ACCOUNT_LOCKED: 423,
   INVALID_SETUP_CODE: 403,
   SETUP_ALREADY_DONE: 409,
+  /** PIN sign-in is only offered on paired devices (and on the Hub itself). */
+  DEVICE_NOT_PAIRED: 403,
+  PAIRING_CODE_INVALID: 403,
   FORBIDDEN: 403,
   /** The caller lacks the permission but a manager may approve: retry with X-Approver-Token. */
   APPROVAL_REQUIRED: 403,

@@ -20,6 +20,7 @@ export const REFRESH_COOKIE = 'restro_rt';
 const COOKIE_PATH = '/api/v1/auth';
 /** Brute-force guard on top of account lockout: per client IP. */
 const SIGN_IN_LIMIT = { rateLimit: { max: 20, timeWindow: '1 minute' } };
+const PIN_ONLY_ON_PAIRED = { pairedDeviceOnly: true };
 
 export async function authRoutes(app: FastifyInstance, { cradle }: { cradle: Cradle }) {
   const { authService: auth, identityQueries, config } = cradle;
@@ -28,8 +29,8 @@ export async function authRoutes(app: FastifyInstance, { cradle }: { cradle: Cra
     reply.setCookie(REFRESH_COOKIE, session.refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
-      // Tablets reach the Hub over plain HTTP until LAN TLS pairing lands (Sprint 3).
-      secure: config.secureCookies,
+      // Over HTTPS always; over plain HTTP (first contact, before the device trusts the Hub CA) only if allowed.
+      secure: config.secureCookies || reply.request.protocol === 'https',
       path: COOKIE_PATH,
       expires: session.refreshExpiresAt,
     });
@@ -50,7 +51,7 @@ export async function authRoutes(app: FastifyInstance, { cradle }: { cradle: Cra
 
   app.post(
     '/auth/pin-login',
-    { config: { public: true, ...SIGN_IN_LIMIT } },
+    { config: { public: true, ...SIGN_IN_LIMIT, ...PIN_ONLY_ON_PAIRED } },
     async (request, reply) => {
       const body = PinLoginRequestSchema.parse(request.body);
       const session = await auth.loginWithPin(body, clientInfo(request));
@@ -59,9 +60,13 @@ export async function authRoutes(app: FastifyInstance, { cradle }: { cradle: Cra
     },
   );
 
-  app.get('/auth/pin-users', { config: { public: true } }, async (): Promise<PinUsersResponse> => ({
-    data: identityQueries.pinUsers().map((u) => ({ ...u, initials: initials(u.fullName) })),
-  }));
+  app.get(
+    '/auth/pin-users',
+    { config: { public: true, ...PIN_ONLY_ON_PAIRED } },
+    async (): Promise<PinUsersResponse> => ({
+      data: identityQueries.pinUsers().map((u) => ({ ...u, initials: initials(u.fullName) })),
+    }),
+  );
 
   app.post('/auth/refresh', { config: { public: true } }, async (request, reply) => {
     const token = cookieOf(request);
@@ -110,7 +115,7 @@ export async function authRoutes(app: FastifyInstance, { cradle }: { cradle: Cra
 
   app.post(
     '/auth/approve',
-    { config: SIGN_IN_LIMIT },
+    { config: { ...SIGN_IN_LIMIT, ...PIN_ONLY_ON_PAIRED } },
     async (request): Promise<ApproveResponse> => {
       const body = ApproveRequestSchema.parse(request.body);
       const result = await auth.approve(body, request.principal!, clientInfo(request));

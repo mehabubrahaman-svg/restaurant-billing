@@ -1,6 +1,6 @@
 # 05 — API Specification
 
-Base URL: `https://<hub>:7400/api/v1` · JSON · All money in minor units · All IDs UUIDv7.
+Base URL: `https://<hub>:7443/api/v1` (HTTPS, once the device trusts the Hub CA) or `http://<hub>:7400/api/v1` (first contact and pairing) · JSON · All money in minor units · All IDs UUIDv7.
 Full OpenAPI 3.1 will be **generated from Zod contracts** (`packages/contracts`) at build time and served at `/api/docs`. This document is the design-level contract.
 
 ## 1. Conventions
@@ -32,17 +32,18 @@ Implemented in Sprint 2. Contracts: `packages/contracts/src/http/auth.ts`.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/auth/login` | public, 20/min/IP | `{username, password, branchId?}` → session (`accessToken` 15 min, user, branch, branches, roles, permissions) + httpOnly refresh cookie (12 h, path `/api/v1/auth`, SameSite=Strict) |
-| POST | `/auth/pin-login` | public, 20/min/IP | `{userId, pin, branchId?}` → session. Fast user switch |
-| GET | `/auth/pin-users` | public | PIN-pad tiles `{id, fullName, initials}`. Restricted to paired devices once pairing lands (Sprint 3) |
+| POST | `/auth/pin-login` | public, paired device, 20/min/IP | `{userId, pin, branchId?}` → session. Fast user switch |
+| GET | `/auth/pin-users` | public, paired device | PIN-pad tiles `{id, fullName, initials}` |
 | POST | `/auth/refresh` | cookie | Rotates the refresh token. Body `{branchId?}` switches branch. Replaying an old token ends the whole session (theft signal, audited) |
 | POST | `/auth/logout` | cookie | Ends the session immediately, including its access token |
 | GET | `/auth/me` | token | Current user, branch, roles, permissions |
 | POST | `/auth/change-password` | token | `{currentPassword, newPassword}`. Keeps this session, ends the others |
-| POST | `/auth/approve` | token, 20/min/IP | Manager `{userId, pin, permission}` → `approverToken` valid 60 s, **once**, for that permission and branch. Send as `X-Approver-Token` when retrying the request that returned `APPROVAL_REQUIRED` |
+| POST | `/auth/approve` | token, paired device, 20/min/IP | Manager `{userId, pin, permission}` → `approverToken` valid 60 s, **once**, for that permission and branch. Send as `X-Approver-Token` when retrying the request that returned `APPROVAL_REQUIRED` |
 
 Security behaviour:
 - **Lockout:** 5 failed passwords or PINs lock the account for 15 minutes. A wrong password and an unknown user get the same response, after the same delay.
 - **Permission checks:** permissions are re-read on every request, so role changes and deactivations apply immediately.
+- **PIN only on paired devices:** PIN routes answer `403 DEVICE_NOT_PAIRED` unless the request comes from a paired device or from the Hub PC itself (localhost). A 4-digit PIN is fine on a registered tablet, not from any browser on the Wi-Fi.
 - **Sign-in bookkeeping:** failure counts and last login don't change the user's edit `version`, so an admin editing a user never gets a conflict just because they signed in.
 
 ### Setup
@@ -55,23 +56,46 @@ Security behaviour:
 `GET/POST /users` · `GET/PATCH /users/{id}` · `POST /users/{id}/deactivate` · `POST /users/{id}/reset-pin` · `GET/POST /roles` · `PUT /roles/{id}/permissions` · `GET /permissions`
 
 ### Settings [`settings.manage`]
-`GET/PATCH /settings` · `GET/POST/PATCH /tax-groups` · `GET/POST/PATCH /charge-rules` · `GET/POST/PATCH /printers` · `POST /printers/{id}/test` · `GET/POST/PATCH /devices` · `POST /devices/pairing-code` · `GET/POST/PATCH /peripherals` · `POST /peripherals/{id}/test` · `GET/POST/PATCH /sales-channels`
+`GET/PATCH /settings` · `GET/POST/PATCH /tax-groups` · `GET/POST/PATCH /charge-rules` · `GET/POST/PATCH /printers` · `POST /printers/{id}/test` · `GET/POST/PATCH /sales-channels`
 
-### Floor
+### Devices & discovery
+Implemented in Sprint 3. Contracts: `packages/contracts/src/http/devices.ts`.
+
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| GET | `/floor` | `tables.view` | Areas + tables + live status + open order summary (amount, elapsed time, captain) |
-| POST/PATCH | `/floor-areas`, `/tables` | `floor.manage` | Layout editor |
-| POST | `/tables/{id}/status` | `tables.update_status` | `{status: CLEANING\|AVAILABLE\|RESERVED\|BLOCKED}` |
+| GET | `/hub/info` | public | `{name, version, needsSetup, urls:{http[], https[]}, caFingerprint, mdnsHost}` |
+| GET | `/hub/ca.crt` | public | The Hub's local CA (PEM) for the device to trust |
+| POST | `/devices/pairing-codes` | `settings.manage` | `{name, kind}` → `{code, expiresAt, pairUrl, caFingerprint}`. 8 characters, single use, 10 min. The QR encodes `pairUrl` (`http://<lan-ip>:7400/pair?code=…`) |
+| POST | `/devices/pair` | public, 10/min/IP | `{code, fingerprint, platform?}` → `{device, deviceToken}` + httpOnly cookie `restro_dt` (path `/api`). Native shells send the token as `X-Device-Token`. The same browser fingerprint re-pairs in place |
+| GET | `/devices/me` | public | The calling device, or `403 DEVICE_NOT_PAIRED` |
+| GET/PATCH | `/devices`, `/devices/{id}` | `settings.manage` | Registry. `isActive:false` unpairs at once; re-activating needs a new code (`DEVICE_MUST_REPAIR`) |
+| GET/POST/PATCH | `/peripherals` | `settings.manage` | Scanners, scales, cash drawers, pagers, customer displays, on the Hub or on a device |
+
+The paired device's id is recorded on audit rows and refresh tokens.
+
+### Floor
+Implemented in Sprint 3 (live order summaries arrive with orders in Sprint 4). Contracts: `packages/contracts/src/http/floor.ts`.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/floor` | `tables.view` or `floor.manage` | Areas + tables + status. The QR token is never returned, only `hasQr` |
+| POST/PATCH | `/floor-areas`, `/tables` | `floor.manage` | Layout editor. Positions are cells on a 48 × 32 grid |
+| PUT | `/floor/layout` | `floor.manage` | `{tables:[{id, posX, posY, version}]}`: drag-and-drop save, all moves or none |
+| POST | `/tables/{id}/status` | `tables.update_status` | `{status: CLEANING\|AVAILABLE\|RESERVED\|BLOCKED, version}`. Allowed manual moves: AVAILABLE→RESERVED/CLEANING/BLOCKED, RESERVED→AVAILABLE/BLOCKED, CLEANING→AVAILABLE, BLOCKED→AVAILABLE. OCCUPIED/BILLING come from orders |
+| GET/POST | `/tables/{id}/qr` | `floor.manage` | `{url, label}`. POST creates or replaces the QR (the old printout stops working) |
 | POST | `/tables/{id}/transfer` | `orders.transfer_table` | `{targetTableId, mode: MOVE\|MERGE}` |
 
 ### Menu
 | Method | Path | Perm |
 |---|---|---|
-| GET | `/menu?updatedSince=` | any authenticated. Full menu snapshot with ETag, cached by clients |
-| GET | `/menu/search?q=biry&category=&sku=` | any |
-| POST/PATCH | `/categories`, `/menu-items`, `/menu-items/{id}/variants`, `/addon-groups` | `menu.manage` |
-| POST | `/menu-items/{id}/availability` | `menu.toggle_availability` |
+| GET | `/menu` | any authenticated. Active menu snapshot `{version, categories, items, addonGroups, kitchenStations}`; `ETag` = version, `If-None-Match` → 304 |
+| GET | `/menu/search?q=biry&category=&sku=` | any (Sprint 4, if client-side search is too slow) |
+| GET/POST/PATCH | `/kitchen-stations`, `/categories`, `/addon-groups`, `/menu-items` | `menu.manage`. Variants and add-ons are sent as the full list on the item / group: entries left out are retired |
+| GET | `/menu-items?includeInactive=` | `menu.manage` or `menu.toggle_availability` |
+| POST | `/menu-items/{id}/availability` | `menu.toggle_availability`. `{isAvailable}`: branch-level "86" |
+| POST | `/menu/import` | `menu.manage`. `{csv, dryRun}`. Columns `sku, name, category, price` (+ optional `food_type, tax_group, kitchen_station, short_name, name_hi, name_bn, hsn_sac, description`). Matched by SKU; every row is checked first and nothing is written if any row fails |
+
+Implemented in Sprint 3. Contracts: `packages/contracts/src/http/catalog.ts`.
 
 ### Orders (Captain + POS)
 | Method | Path | Perm | Body / Notes |
@@ -172,7 +196,7 @@ Values longer than MTU − 1 are read with Read Blob requests, which Chrome and 
 
 ## 5. WebSocket protocol
 
-Endpoint `wss://<hub>:7400/ws?token=<access JWT>`. The server assigns rooms from the user's role and device kind. Clients can `subscribe` to extra rooms they're authorized for.
+Endpoint `wss://<hub>:7443/ws?token=<access JWT>` (or `ws://<hub>:7400/ws`). The server assigns rooms from the user's role and device kind. Clients can `subscribe` to extra rooms they're authorized for.
 
 ```jsonc
 // server → client envelope

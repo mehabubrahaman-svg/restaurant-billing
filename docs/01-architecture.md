@@ -81,7 +81,7 @@ flowchart LR
   SY -. "when online (TLS)" .-> CLOUD[("Cloud: PostgreSQL<br/>Head-office dashboard")]
 ```
 
-- The Hub binds to `0.0.0.0:7400` and serves the **React SPA plus the API from the same origin**, so tablets just open `https://restro.local:7400`.
+- The Hub serves the **React SPA plus the API from the same origin** on two ports: plain HTTP on `7400` (first contact and pairing, before a device trusts the Hub) and HTTPS on `7443` with a certificate from the Hub's own CA. Tablets open `https://restro.local:7443` once paired.
 - TLS on LAN: the Hub generates a local CA at first run. Devices trust it once during pairing (QR code). Plain HTTP is allowed only on `localhost`.
 - Guest QR ordering uses a separate, rate-limited, unauthenticated route group (`/public/qr/*`) that can only create `QR_SELF` orders in `PENDING_APPROVAL` for a captain to confirm.
 
@@ -256,11 +256,13 @@ The `domain_events` stream plus daily summary tables are the training and featur
 ## 6. Device discovery, pairing and Bluetooth
 
 ### 6.1 Finding the Hub (three independent ways)
-1. **mDNS**: the Hub advertises `_restroos._tcp.local`. Browsers open `https://restro.local:7400`.
+1. **mDNS**: the Hub advertises `_restroos._tcp.local` (TXT: HTTP/HTTPS ports, CA fingerprint prefix) and the host `restro.local`. Browsers open `https://restro.local:7443`. Some routers block multicast and some Android versions don't resolve `.local`, so the pairing QR carries the IP address.
 2. **Bluetooth LE**: the Hub advertises a RestroOS BLE service. Its GATT characteristics expose the Hub's current LAN URLs, CA fingerprint and a rotating pairing nonce. A tablet near the counter taps *Find Hub via Bluetooth* and gets connected without typing anything, even if the router hands out a new IP.
 3. **Pairing QR** shown on the Hub screen (URL + one-time code + CA fingerprint). This always works as the last resort.
 
 The device then trusts the local CA, registers as a `device` (`CAPTAIN`, `KDS`, …), and staff sign in with password or PIN.
+
+**Pairing as built (Sprint 3):** an admin creates a one-time 8-character code (10 min) for a named device. The QR encodes `http://<lan-ip>:7400/pair?code=…` and shows the CA fingerprint. The device redeems the code for a long-lived device token (httpOnly cookie `restro_dt`, or `X-Device-Token` for the Android app). Only hashes of codes and tokens are stored. The device then downloads `/api/v1/hub/ca.crt`, staff compare the fingerprint, and it moves to HTTPS. **PIN sign-in and PIN approvals only work from paired devices** (or the Hub PC itself). The CA lasts 10 years; the server certificate (≤ 397 days) is re-issued automatically when the Hub's LAN address changes or it nears expiry, so paired devices keep trusting the Hub.
 
 ### 6.2 What Bluetooth is used for
 | Use | How | Works on |

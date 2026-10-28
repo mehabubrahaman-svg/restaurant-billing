@@ -1,4 +1,5 @@
 import {
+  advertiseHub,
   findMigrationsDir,
   migrate,
   openDatabase,
@@ -9,6 +10,8 @@ import {
 } from '@restroos/infrastructure';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
+import { createServer as createHttpsServer, type Server as HttpsServer } from 'node:https';
+import { hostname } from 'node:os';
 import { join } from 'node:path';
 import pino from 'pino';
 import { loadConfig } from './config';
@@ -58,9 +61,58 @@ async function main() {
     (error) => logger.error({ err: error }, 'audit chain check failed to run'),
   );
 
+  await app.listen({ host: config.host, port: config.port });
+
+  // HTTPS on a second port, same app: devices switch to it once they trust the Hub CA.
+  const { hubNetwork } = container.cradle;
+  let https: HttpsServer | undefined;
+  if (config.httpsPort > 0) {
+    const tls = () => ({ key: hubNetwork.tls.serverKeyPem, cert: hubNetwork.tls.serverCertPem });
+    https = createHttpsServer(tls(), (req, res) => app.routing(req, res));
+    await new Promise<void>((resolve, reject) => {
+      https!.once('error', reject).listen(config.httpsPort, config.host, () => resolve());
+    });
+    logger.info(
+      { port: config.httpsPort, caFingerprint: hubNetwork.tls.caFingerprint },
+      'HTTPS listening',
+    );
+  }
+  // A new DHCP lease changes the Hub's address; re-issue the certificate for it.
+  const addressWatch = setInterval(() => {
+    try {
+      if (hubNetwork.refresh()) {
+        https?.setSecureContext({
+          key: hubNetwork.tls.serverKeyPem,
+          cert: hubNetwork.tls.serverCertPem,
+        });
+        logger.info(
+          { addresses: hubNetwork.addresses() },
+          'LAN address changed; certificate re-issued',
+        );
+      }
+    } catch (error) {
+      logger.error({ err: error }, 'certificate refresh failed');
+    }
+  }, 60_000);
+  addressWatch.unref();
+
+  const mdns = config.mdns
+    ? advertiseHub({
+        name: `RestroOS Hub (${hostname()})`,
+        httpPort: config.port,
+        httpsPort: config.httpsPort,
+        caFingerprint: hubNetwork.tls.caFingerprint,
+        onError: (error) =>
+          logger.warn({ err: error }, 'mDNS advertising failed; use the pairing QR'),
+      })
+    : undefined;
+
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'shutting down');
     auditCheck.stop();
+    clearInterval(addressWatch);
+    await mdns?.stop();
+    https?.close();
     await app.close();
     await container.dispose();
     db.close();
@@ -68,8 +120,6 @@ async function main() {
   };
   process.once('SIGINT', () => void shutdown('SIGINT'));
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
-
-  await app.listen({ host: config.host, port: config.port });
 }
 
 function recordBackup(db: SqliteDatabase, path: string) {

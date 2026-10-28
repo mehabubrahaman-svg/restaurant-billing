@@ -9,10 +9,14 @@ import { join } from 'node:path';
 import type { Cradle } from '../container';
 import type { SetupCode } from '../setup-code';
 import { authPlugin } from './plugins/auth';
+import { devicePlugin } from './plugins/device';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { errorHandler, problem, sendProblem } from './problem';
 import { auditRoutes } from './routes/audit';
 import { authRoutes } from './routes/auth';
+import { catalogRoutes } from './routes/catalog';
+import { deviceRoutes } from './routes/devices';
+import { floorRoutes } from './routes/floor';
 import { healthRoutes } from './routes/health';
 import { settingsRoutes } from './routes/settings';
 import { setupRoutes } from './routes/setup';
@@ -55,6 +59,7 @@ export async function buildApp(
   await app.register(
     async (api) => {
       const { cradle } = container;
+      await api.register(devicePlugin, { devices: cradle.deviceService });
       await api.register(authPlugin, { auth: cradle.authService });
       await api.register(idempotencyPlugin, { store: idempotencyStore });
       await api.register(healthRoutes, { cradle });
@@ -63,6 +68,9 @@ export async function buildApp(
       await api.register(userRoutes, { cradle });
       await api.register(settingsRoutes, { cradle });
       await api.register(auditRoutes, { cradle });
+      await api.register(catalogRoutes, { cradle });
+      await api.register(floorRoutes, { cradle });
+      await api.register(deviceRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(

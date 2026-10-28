@@ -3,8 +3,10 @@ import type { SessionResponse } from '@restroos/contracts';
 import {
   BcryptPasswordHasher,
   createTestDatabase,
+  ensureTlsMaterial,
   FixedClock,
   type TestDatabase,
+  type TlsMaterial,
 } from '@restroos/infrastructure';
 import type { AwilixContainer } from 'awilix';
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify';
@@ -12,6 +14,7 @@ import pino from 'pino';
 import type { ServerConfig } from '../config';
 import { buildContainer, type Cradle } from '../container';
 import { buildApp, type BuildAppOptions } from '../http/app';
+import type { HubNetwork } from '../hub-network';
 import { SetupCode } from '../setup-code';
 
 export const ADMIN = { username: 'owner', password: 'Kolkata#Biryani2026', pin: '2580' } as const;
@@ -41,6 +44,20 @@ export const SETUP_FIXTURE: SetupInput & { setupCode: string } = {
   backupPassphrase: 'correct horse battery staple',
 };
 
+/** The Hub's LAN address in tests. */
+export const TEST_LAN_IP = '192.168.1.20';
+
+let tlsFixture: TlsMaterial | undefined;
+/** One certificate for the whole test run: RSA key generation is slow. */
+function testTls(): TlsMaterial {
+  const store = new Map<string, string>();
+  tlsFixture ??= ensureTlsMaterial(
+    { get: (k) => store.get(k), put: (k, v) => void store.set(k, v) },
+    { dns: ['restro.local', 'localhost'], ips: ['127.0.0.1', TEST_LAN_IP] },
+  );
+  return tlsFixture;
+}
+
 export interface TestServer {
   readonly app: FastifyInstance;
   readonly container: AwilixContainer<Cradle>;
@@ -67,7 +84,9 @@ export async function createTestServer(
   const config: ServerConfig = {
     env: 'test',
     host: '127.0.0.1',
-    port: 0,
+    port: 7400,
+    httpsPort: 7443,
+    mdns: false,
     dataDir: database.dir,
     databasePath: database.path,
     databaseKey: database.key,
@@ -86,6 +105,13 @@ export async function createTestServer(
   const container = buildContainer(config, logger, database.db, {
     clock,
     hasher: new BcryptPasswordHasher({ password: 4, pin: 4 }), // fast in tests
+    hubNetwork: {
+      httpPort: 7400,
+      httpsPort: 7443,
+      tls: testTls(),
+      addresses: () => [TEST_LAN_IP],
+      refresh: () => false,
+    } satisfies HubNetwork,
   });
   const setupCode = new SetupCode(logger, config.setupCode);
   if (options.install ?? true) {

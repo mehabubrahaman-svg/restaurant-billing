@@ -1,7 +1,7 @@
 # 03 — Database Design
 
 Source of truth: [`database/migrations/0001_initial_schema.sql`](../database/migrations/0001_initial_schema.sql) and [`0002_seed_reference_data.sql`](../database/migrations/0002_seed_reference_data.sql).
-The migrations are validated in CI (`pnpm db:validate`): 74 tables, 73 integrity triggers, all FKs resolve.
+The migrations are validated in CI (`pnpm db:validate`): 76 tables, all FKs resolve.
 
 | Migration | Contents |
 |---|---|
@@ -9,6 +9,8 @@ The migrations are validated in CI (`pnpm db:validate`): 74 tables, 73 integrity
 | `0002_seed_reference_data` | Indian states (GST codes, waves, languages, liquor defaults), units, 52 permissions |
 | `0003_idempotency_keys` | Idempotency-Key cache for retried POST commands |
 | `0004_complete_delete_guards` | Delete guards on every remaining business table; draft-only deletion for PO and stock-count lines |
+| `0005_auth_support` | `system_secrets` (signing key, local CA), branch on refresh tokens |
+| `0006_catalog_floor_devices` | Menu item sort order, add-on group translations, device token hash + pairing, `pairing_codes` |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

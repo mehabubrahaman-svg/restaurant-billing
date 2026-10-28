@@ -6,6 +6,13 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('production'),
   RESTRO_HOST: z.string().default('0.0.0.0'),
   RESTRO_PORT: z.coerce.number().int().min(1).max(65535).default(7400),
+  /** HTTPS with the Hub's local CA, for devices that trust it (after pairing). 0 turns it off. */
+  RESTRO_HTTPS_PORT: z.coerce.number().int().min(0).max(65535).default(7443),
+  /** Advertise the Hub on the LAN with mDNS (_restroos._tcp). */
+  RESTRO_MDNS: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
   RESTRO_DATA_DIR: z.string().default('./data'),
   /** Database encryption key. In production the desktop shell supplies it from the OS keychain. */
   RESTRO_DB_KEY: z.string().min(16).optional(),
@@ -36,6 +43,8 @@ export interface ServerConfig {
   readonly env: 'development' | 'test' | 'production';
   readonly host: string;
   readonly port: number;
+  readonly httpsPort: number;
+  readonly mdns: boolean;
   readonly dataDir: string;
   readonly databasePath: string;
   readonly databaseKey: string;
@@ -69,6 +78,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     env: e.NODE_ENV,
     host: e.RESTRO_HOST,
     port: e.RESTRO_PORT,
+    httpsPort: e.RESTRO_HTTPS_PORT,
+    mdns: e.RESTRO_MDNS,
     dataDir,
     databasePath: resolve(dataDir, 'restro.db'),
     databaseKey: key,

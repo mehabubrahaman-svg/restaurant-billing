@@ -3,9 +3,8 @@ import type { FastifyRequest } from 'fastify';
 import { HttpProblem } from './problem';
 
 export function clientInfo(request: FastifyRequest): ClientInfo {
-  const device = request.headers['x-device-id'];
   return {
-    deviceId: typeof device === 'string' && device.length <= 64 ? device : null,
+    deviceId: request.device?.id ?? null,
     ipAddress: request.ip,
     userAgent: request.headers['user-agent']?.slice(0, 256) ?? null,
     correlationId: request.id,

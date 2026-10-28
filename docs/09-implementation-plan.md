@@ -30,6 +30,8 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 
 ## Sprint 3 — Menu & floor (1.5 wks)
 
+> **Status (2026-10-28)**: backend delivered (73 server tests, verified on a real Hub over HTTP and HTTPS); web screens in progress. Built: catalog commands and queries with branch-level "86", menu snapshot with ETag/304, all-or-nothing CSV import with dry run; floor areas, tables, grid layout save, manual table state machine, rotating table QR; device pairing with one-time codes, device tokens, a local CA with an auto-renewing server certificate, HTTPS on 7443 beside HTTP on 7400, mDNS advertising (`_restroos._tcp`, `restro.local`), PIN sign-in restricted to paired devices, device and peripheral registry. **Deferred: BLE advertising and GATT hub-info/pairing** until the Bluetooth spike's go/no-go on the pilot's hardware (WP 1.7), and because a pairing nonce readable by anyone in radio range needs a confirm-on-Hub step first (docs/05 §4). Discovery uses mDNS plus the pairing QR meanwhile. Guest QR pages (`/qr/<token>`) arrive with QR ordering in Phase 5; the QR codes can already be printed.
+
 | WP | Deliverable |
 |---|---|
 | 3.1 | Catalog commands/queries: categories, items, variants, addon groups, kitchen stations, availability toggle; menu snapshot endpoint with ETag |

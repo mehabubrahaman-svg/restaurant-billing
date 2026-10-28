@@ -2,6 +2,7 @@ import { DomainError, parseGstin } from '@restroos/domain';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, UnitOfWork } from '../ports/unit-of-work';
+import type { Patch } from '../patch';
 import { recordChanged } from '../shared-events';
 import type {
   BranchSettingsRecord,
@@ -18,8 +19,6 @@ export interface SettingsServiceDeps {
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }
-
-type Patch<T> = { [K in keyof T]?: T[K] | undefined };
 
 /** Restaurant configuration (permission settings.manage). Reads are open to any signed-in user. */
 export class SettingsService {

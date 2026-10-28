@@ -1,5 +1,9 @@
 import {
   AuthService,
+  CatalogService,
+  DeviceService,
+  FloorService,
+  MenuImporter,
   RoleAdminService,
   SettingsService,
   SetupService,
@@ -23,6 +27,9 @@ import {
   nodeTokenCodec,
   ScryptKeyDerivation,
   SqliteAuditQueries,
+  SqliteCatalogRepository,
+  SqliteDeviceRepository,
+  SqliteFloorRepository,
   SqliteIdempotencyStore,
   SqliteIdentityQueries,
   SqliteInstallationRepository,
@@ -39,7 +46,9 @@ import {
 } from '@restroos/infrastructure';
 import { asFunction, asValue, createContainer, type AwilixContainer } from 'awilix';
 import type { Logger } from 'pino';
+import { randomInt } from 'node:crypto';
 import type { ServerConfig } from './config';
+import { hubNetwork, type HubNetwork } from './hub-network';
 
 /** Everything the HTTP layer may resolve. */
 export interface Cradle {
@@ -63,6 +72,11 @@ export interface Cradle {
   roleAdmin: RoleAdminService;
   setupService: SetupService;
   settingsService: SettingsService;
+  catalogService: CatalogService;
+  menuImporter: MenuImporter;
+  floorService: FloorService;
+  deviceService: DeviceService;
+  hubNetwork: HubNetwork;
 }
 
 export interface ContainerOverrides {
@@ -70,6 +84,8 @@ export interface ContainerOverrides {
   ids?: IdGenerator;
   /** Tests use a cheap bcrypt cost. */
   hasher?: PasswordHasher;
+  /** Tests pass fixed LAN addresses and a pre-made certificate. */
+  hubNetwork?: HubNetwork;
 }
 
 export function buildContainer(
@@ -162,6 +178,51 @@ export function buildContainer(
           ids: c.ids,
         }),
     ),
+    catalogService: single(
+      (c) =>
+        new CatalogService({
+          catalog: new SqliteCatalogRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    menuImporter: single(
+      (c) =>
+        new MenuImporter({
+          catalog: new SqliteCatalogRepository(c.db),
+          catalogService: c.catalogService,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    floorService: single(
+      (c) =>
+        new FloorService({
+          floor: new SqliteFloorRepository(c.db),
+          tokens: nodeTokenCodec,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    deviceService: single(
+      (c) =>
+        new DeviceService({
+          devices: new SqliteDeviceRepository(c.db),
+          tokens: nodeTokenCodec,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+          randomInt: (max) => randomInt(max),
+        }),
+    ),
+    hubNetwork: overrides.hubNetwork
+      ? asValue(overrides.hubNetwork)
+      : single((c) =>
+          hubNetwork(c.db, c.clock, { http: c.config.port, https: c.config.httpsPort }),
+        ),
   });
   return container;
 }
