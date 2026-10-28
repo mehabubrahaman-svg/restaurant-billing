@@ -73,6 +73,21 @@ import {
   TaxGroupsResponseSchema,
   UserSchema,
   UsersResponseSchema,
+  AddonIngredientsSchema,
+  ConsumptionReportSchema,
+  InventoryItemSchema,
+  InventoryItemsResponseSchema,
+  RecipeSchema,
+  RecipesResponseSchema,
+  StockAlertsSchema,
+  StockCountSchema,
+  StockCountsResponseSchema,
+  StockEntryResponseSchema,
+  StockMovementsResponseSchema,
+  UnitsResponseSchema,
+  type MovementType,
+  type SaveInventoryItemRequest,
+  type SaveRecipeRequest,
   type ApproveRequest,
   type CreateUserRequest,
   type DeviceKind,
@@ -312,6 +327,50 @@ export interface AggregatorOrderBody {
   fire?: boolean;
 }
 
+/** PATCH /inventory-items/{id}: any fields of the save body; `isActive: false` retires. */
+export type UpdateInventoryItemBody = Partial<SaveInventoryItemRequest> & {
+  version: number;
+  isActive?: boolean;
+};
+export interface UpdateRecipeBody {
+  version: number;
+  yieldPortions?: number;
+  ingredients?: SaveRecipeRequest['ingredients'];
+}
+/** One received line (purchase or opening stock): quantity in milli base units, cost in paise. */
+export interface ReceiptLineBody {
+  inventoryItemId: string;
+  qtyMilli: number;
+  totalCost: number;
+  batchNo?: string | null;
+  expiresOn?: string | null;
+}
+export interface StockReceiptBody {
+  lines: ReceiptLineBody[];
+  reference?: string | null;
+}
+export interface OpeningStockBody {
+  lines: ReceiptLineBody[];
+}
+/** Wastage takes positive quantities; an adjustment's are signed (+ adds, − removes). */
+export interface StockIssueBody {
+  lines: { inventoryItemId: string; qtyMilli: number }[];
+  reason: string;
+}
+export interface StockMovementsFilter {
+  inventoryItemId?: string;
+  type?: MovementType;
+  from?: string;
+  to?: string;
+  before?: string;
+  limit?: number;
+}
+export type StockCountType = 'OPENING' | 'CLOSING' | 'SPOT';
+export interface SaveCountLinesBody {
+  version: number;
+  /** `null` clears an item's count. */
+  lines: { inventoryItemId: string; countedQtyMilli: number | null }[];
+}
 /** Per-call extras for commands: a retry-safe key and a manager's approval. */
 export interface CommandOptions {
   readonly idempotencyKey?: string;
@@ -548,6 +607,65 @@ export const api = {
     salesRegisterCsv: (from: string, to: string) =>
       c.blob('/reports/sales-register.csv', { query: { from, to } }),
     dashboard: () => c.json('/reports/dashboard', DashboardSchema),
+    /** Recipe (theoretical) against counted consumption per item, for 1 to 366 days. */
+    consumption: (from: string, to: string) =>
+      c.json('/reports/consumption', ConsumptionReportSchema, { query: { from, to } }),
+  },
+  inventory: {
+    units: () => c.json('/units', UnitsResponseSchema),
+    items: (includeRetired = false) =>
+      c.json('/inventory-items', InventoryItemsResponseSchema, {
+        query: { includeRetired: includeRetired ? 'true' : undefined },
+      }),
+    item: (id: string) => c.json(`/inventory-items/${id}`, InventoryItemSchema),
+    createItem: (body: SaveInventoryItemRequest) =>
+      c.json('/inventory-items', InventoryItemSchema, { method: POST, body }),
+    updateItem: (id: string, body: UpdateInventoryItemBody) =>
+      c.json(`/inventory-items/${id}`, InventoryItemSchema, { method: PATCH, body }),
+    /** A dish's recipes: its own (variantId null) and any per size. */
+    recipes: (menuItemId: string) =>
+      c.json('/recipes', RecipesResponseSchema, { query: { menuItemId } }),
+    createRecipe: (body: SaveRecipeRequest) =>
+      c.json('/recipes', RecipeSchema, { method: POST, body }),
+    updateRecipe: (id: string, body: UpdateRecipeBody) =>
+      c.json(`/recipes/${id}`, RecipeSchema, { method: PATCH, body }),
+    /** The dish (or size) stops taking stock; the Hub answers 204. */
+    removeRecipe: (id: string, version: number) =>
+      c.void(`/recipes/${id}`, { method: PATCH, body: { version, isActive: false } }),
+    addonIngredients: (addonId: string) =>
+      c.json(`/addons/${addonId}/ingredients`, AddonIngredientsSchema),
+    /** The full list: ingredients left out are removed. */
+    setAddonIngredients: (
+      addonId: string,
+      ingredients: { inventoryItemId: string; qtyMilli: number }[],
+    ) =>
+      c.json(`/addons/${addonId}/ingredients`, AddonIngredientsSchema, {
+        method: PUT,
+        body: { ingredients },
+      }),
+    /** Bought directly (the market, a local shop), without a purchase order. */
+    receive: (body: StockReceiptBody, o?: CommandOptions) =>
+      c.json('/stock/receipts', StockEntryResponseSchema, { method: POST, body, ...extras(o) }),
+    /** What was on the shelves on day one: once per item, before it is first received. */
+    opening: (body: OpeningStockBody, o?: CommandOptions) =>
+      c.json('/stock/opening', StockEntryResponseSchema, { method: POST, body, ...extras(o) }),
+    wastage: (body: StockIssueBody, o?: CommandOptions) =>
+      c.json('/stock/wastage', StockEntryResponseSchema, { method: POST, body, ...extras(o) }),
+    adjust: (body: StockIssueBody, o?: CommandOptions) =>
+      c.json('/stock/adjustments', StockEntryResponseSchema, { method: POST, body, ...extras(o) }),
+    /** Newest first; pass the page's `nextCursor` as `before` for older ones. */
+    movements: (filter: StockMovementsFilter) =>
+      c.json('/stock/movements', StockMovementsResponseSchema, { query: { ...filter } }),
+    alerts: () => c.json('/stock/alerts', StockAlertsSchema),
+    counts: () => c.json('/stock-counts', StockCountsResponseSchema),
+    count: (id: string) => c.json(`/stock-counts/${id}`, StockCountSchema),
+    createCount: (body: { countType: StockCountType; notes?: string | null }) =>
+      c.json('/stock-counts', StockCountSchema, { method: POST, body }),
+    saveCountLines: (id: string, body: SaveCountLinesBody) =>
+      c.json(`/stock-counts/${id}/lines`, StockCountSchema, { method: PUT, body }),
+    /** Books every difference as an adjustment; the count can't change afterwards. */
+    postCount: (id: string, version: number) =>
+      c.json(`/stock-counts/${id}/post`, StockCountSchema, { method: POST, body: { version } }),
   },
   backups: {
     list: () => c.json('/backups', BackupsResponseSchema),

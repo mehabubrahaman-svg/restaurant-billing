@@ -22,6 +22,11 @@ import { InvoiceDetailPage } from '../portals/pos/invoice-detail-page';
 import { PosLayout } from '../portals/pos/pos-layout';
 import { ShiftPage, ShiftReportPage } from '../portals/pos/shift-page';
 import { QrMenuPage } from '../portals/qr-menu/qr-menu-page';
+import {
+  ADJUST_PERMISSION,
+  CONSUMPTION_PERMISSION,
+  InventoryLayout,
+} from '../portals/inventory/inventory-layout';
 import { ReportsLayout } from '../portals/reports/reports-layout';
 import { TokenDisplayPage } from '../portals/token-display/token-display-page';
 import { AppShell } from './layout/app-shell';
@@ -110,6 +115,27 @@ const DashboardPage = lazy(() =>
 const DayEndPage = lazy(() =>
   import('../portals/reports/day-end-page').then((m) => ({ default: m.DayEndPage })),
 );
+const ItemsPage = lazy(() =>
+  import('../portals/inventory/items-page').then((m) => ({ default: m.ItemsPage })),
+);
+const ItemDetailPage = lazy(() =>
+  import('../portals/inventory/item-detail-page').then((m) => ({ default: m.ItemDetailPage })),
+);
+const StockEntryPage = lazy(() =>
+  import('../portals/inventory/stock-entry-page').then((m) => ({ default: m.StockEntryPage })),
+);
+const CountsPage = lazy(() =>
+  import('../portals/inventory/counts-page').then((m) => ({ default: m.CountsPage })),
+);
+const CountSheetPage = lazy(() =>
+  import('../portals/inventory/count-sheet-page').then((m) => ({ default: m.CountSheetPage })),
+);
+const AlertsPage = lazy(() =>
+  import('../portals/inventory/alerts-page').then((m) => ({ default: m.AlertsPage })),
+);
+const ConsumptionPage = lazy(() =>
+  import('../portals/inventory/consumption-page').then((m) => ({ default: m.ConsumptionPage })),
+);
 const DevicesPage = lazy(() =>
   import('../features/devices/devices-page').then((m) => ({ default: m.DevicesPage })),
 );
@@ -181,6 +207,7 @@ const OWN_ROUTES: ReadonlySet<Portal['id']> = new Set([
   'tokenDisplay',
   'pos',
   'reports',
+  'inventory',
 ]);
 
 function adminRoutes(): RouteObject {
@@ -390,6 +417,67 @@ function reportsRoutes(): RouteObject {
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'day-end', element: <DayEndPage /> },
+      {
+        path: 'consumption',
+        element: (
+          <SectionGuard permission={CONSUMPTION_PERMISSION} labelKey="inventory.tabs.consumption">
+            <ConsumptionPage />
+          </SectionGuard>
+        ),
+      },
+    ],
+  };
+}
+
+/** Guard for one tab of a portal, named by its label. */
+function SectionGuard({
+  permission,
+  labelKey,
+  children,
+}: {
+  permission: PermissionRequirement;
+  labelKey: 'inventory.tabs.stock' | 'inventory.tabs.consumption';
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <RequirePermission permission={permission} name={t(labelKey)}>
+      {children}
+    </RequirePermission>
+  );
+}
+
+function inventoryRoutes(): RouteObject {
+  const inventory = portal('inventory');
+  return {
+    path: 'inventory',
+    element: (
+      <PortalGuard portal={inventory}>
+        <InventoryLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <ItemsPage /> },
+      { path: 'items/:itemId', element: <ItemDetailPage /> },
+      {
+        path: 'stock',
+        element: (
+          <SectionGuard permission={ADJUST_PERMISSION} labelKey="inventory.tabs.stock">
+            <StockEntryPage />
+          </SectionGuard>
+        ),
+      },
+      { path: 'counts', element: <CountsPage /> },
+      { path: 'counts/:countId', element: <CountSheetPage /> },
+      { path: 'alerts', element: <AlertsPage /> },
+      {
+        path: 'consumption',
+        element: (
+          <SectionGuard permission={CONSUMPTION_PERMISSION} labelKey="inventory.tabs.consumption">
+            <ConsumptionPage />
+          </SectionGuard>
+        ),
+      },
     ],
   };
 }
@@ -457,6 +545,7 @@ export const routes: RouteObject[] = [
           kitchenRoutes(),
           posRoutes(),
           reportsRoutes(),
+          inventoryRoutes(),
           ...PORTALS.filter((p) => !OWN_ROUTES.has(p.id)).map((p) => ({
             path: p.path,
             element: (

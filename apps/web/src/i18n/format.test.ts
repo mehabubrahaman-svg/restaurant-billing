@@ -1,7 +1,7 @@
 import { Money } from '@restroos/domain';
 import { describe, expect, it } from 'vitest';
 import { intlLocale } from './config';
-import { formatMoney, formatNumber } from './format';
+import { formatDecimal, formatMoney, formatNumber } from './format';
 
 const lakh = Money.ofPaise(1_00_000_00);
 
@@ -55,6 +55,18 @@ describe('formatNumber', () => {
     expect(formatNumber(312, 'en-IN')).toBe('312');
     expect(formatNumber(123456, 'en-IN')).toBe('1,23,456');
     expect(formatNumber(42, 'bn-IN', 'native')).toBe('৪২');
+  });
+});
+
+describe('formatDecimal', () => {
+  it('formats an exact decimal string with grouping, signs and native digits', () => {
+    expect(formatDecimal('28.35', 'en-IN')).toBe('28.35');
+    expect(formatDecimal('125000.5', 'en-IN')).toBe('1,25,000.5');
+    expect(formatDecimal('-0.5', 'hi-IN', 'native')).toBe('-०.५');
+    expect(formatDecimal('2.5', 'en-IN', 'latin', { signDisplay: 'exceptZero' })).toBe('+2.5');
+    expect(formatDecimal('9007199254740993.125', 'en-IN', 'latin', { useGrouping: false })).toBe(
+      '9007199254740993.125',
+    );
   });
 });
 
