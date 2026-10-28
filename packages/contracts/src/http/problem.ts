@@ -69,6 +69,8 @@ export const ERROR_STATUS = {
   STOCK_ALREADY_MOVED: 409,
   /** The unit measures something else (kg for an item kept in pieces). */
   UNIT_MISMATCH: 422,
+  /** Another vendor already has this code. */
+  VENDOR_CODE_TAKEN: 409,
   /** No active printer for this purpose is set up. */
   NO_PRINTER: 409,
   /** The printer didn't answer (off, out of paper, wrong address). */

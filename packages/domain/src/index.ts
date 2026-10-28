@@ -22,3 +22,4 @@ export * from './billing/tax-engine';
 export * from './billing/invoice';
 export * from './billing/credit-note';
 export * from './inventory/stock';
+export * from './purchasing/purchase';

@@ -6,6 +6,7 @@ import {
   CustomerService,
   InventoryProjector,
   InventoryService,
+  PurchasingService,
   PrintService,
   SalesChannelService,
   type RasterRenderer,
@@ -56,6 +57,8 @@ import {
   SqliteInventoryRepository,
   SqliteMenuLookup,
   SqliteProjectionLog,
+  SqlitePurchasingQueries,
+  SqlitePurchasingRepository,
   SqliteInvoiceRepository,
   SqliteShiftRepository,
   SqliteSalesChannelRepository,
@@ -133,6 +136,7 @@ export interface Cradle {
   backupService: BackupService;
   inventoryService: InventoryService;
   inventoryProjector: InventoryProjector;
+  purchasingService: PurchasingService;
 }
 
 export interface ContainerOverrides {
@@ -458,6 +462,19 @@ export function buildContainer(
               { err: error, seq: event.seq, eventType: event.type },
               'stock not moved for this event; skipped',
             ),
+        }),
+    ),
+    purchasingService: single(
+      (c) =>
+        new PurchasingService({
+          purchasing: new SqlitePurchasingRepository(c.db),
+          queries: new SqlitePurchasingQueries(c.db),
+          inventory: new SqliteInventoryRepository(c.db),
+          branches: new SqliteSettingsRepository(c.db),
+          calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
         }),
     ),
     hubNetwork: overrides.hubNetwork

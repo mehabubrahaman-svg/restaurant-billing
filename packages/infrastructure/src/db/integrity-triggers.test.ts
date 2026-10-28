@@ -60,6 +60,22 @@ describe('database integrity guards', () => {
     );
   });
 
+  it('allows removing GRN lines only while the GRN is a draft', () => {
+    t.db.exec(`
+      INSERT INTO vendors (id, organization_id, code, name, created_at, updated_at)
+        VALUES ('v1', '${TEST_ORG_ID}', 'V1', 'Fresh Farms', '${T}', '${T}');
+      INSERT INTO inventory_items (id, organization_id, sku, name, base_unit_code, created_at, updated_at)
+        VALUES ('rice', '${TEST_ORG_ID}', 'RICE', 'Basmati Rice', 'g', '${T}', '${T}');
+      INSERT INTO grns (id, branch_id, vendor_id, grn_no, business_date, created_at, created_by, updated_at)
+        VALUES ('g1', '${TEST_BRANCH_ID}', 'v1', 'GRN-1', '2026-10-28', '${T}', '${TEST_USER_ID}', '${T}');
+      INSERT INTO grn_lines (id, grn_id, inventory_item_id, unit_id, quantity_milli, unit_price)
+        VALUES ('l1', 'g1', 'rice', 'unit-kg', 25000, 9000), ('l2', 'g1', 'rice', 'unit-kg', 1000, 9000);
+    `);
+    expect(() => t.db.prepare("DELETE FROM grn_lines WHERE id = 'l1'").run()).not.toThrow();
+    t.db.prepare("UPDATE grns SET status = 'POSTED'").run();
+    expect(() => t.db.prepare("DELETE FROM grn_lines WHERE id = 'l2'").run()).toThrow(/DRAFT/);
+  });
+
   it('keeps payments append-only: no UPDATE, no DELETE', () => {
     t.db.exec(`
       INSERT INTO orders (id, branch_id, order_no, business_date, order_type, opened_at, created_at, created_by, updated_at)

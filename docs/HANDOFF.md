@@ -77,7 +77,18 @@ pc), costs are paise per 1000 base units (`units` table seeded in 0002).
    status; screenshots in `docs/screenshots/phase-2/`; extend `e2e/`.
 
 Then Phase 3 (vendors, PO → approval → GRN posts `PURCHASE` movements and
-batches, vendor payments, dues ageing) and Phase 4 (chart of accounts,
+batches, vendor payments, dues ageing). **Phase 3 backend is done**:
+migration `0011_purchasing.sql` (PO sent/cancel columns, GRN due date, notes,
+`input_tax_kind`, draft-only GRN line deletes, indexes); domain
+`packages/domain/src/purchasing/purchase.ts` (line amounts, PO status flow,
+unit conversion, input-tax kind, dues ageing); contracts
+`packages/contracts/src/http/purchasing.ts`; `PurchasingService` (GRN posting
+goes through the shared `StockLedger`); SQLite repository and queries; routes
+`apps/server/src/http/routes/purchasing.ts`; tests
+`apps/server/src/http/purchasing.test.ts`. Its web portal (`/purchase`) is
+still the placeholder.
+
+Then Phase 4 (chart of accounts,
 automatic journals from sales, purchases, payments and COGS, ledgers, P&L,
 balance sheet, cash flow, GST summaries).
 

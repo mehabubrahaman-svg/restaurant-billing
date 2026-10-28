@@ -80,3 +80,5 @@ export {
 } from './inventory/sqlite-inventory-repository';
 export { SqliteInventoryQueries } from './inventory/sqlite-inventory-queries';
 export { SqliteProjectionLog } from './events/sqlite-projection-log';
+export { SqlitePurchasingRepository } from './purchasing/sqlite-purchasing-repository';
+export { SqlitePurchasingQueries } from './purchasing/sqlite-purchasing-queries';

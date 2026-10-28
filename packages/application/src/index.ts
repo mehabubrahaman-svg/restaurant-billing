@@ -49,3 +49,5 @@ export * from './inventory/inventory-service';
 export * from './inventory/inventory-projector';
 export type * from './inventory/ports';
 export { addDays, StockLedger, type MovementContext } from './inventory/stock-ledger';
+export * from './purchasing/purchasing-service';
+export type * from './purchasing/ports';

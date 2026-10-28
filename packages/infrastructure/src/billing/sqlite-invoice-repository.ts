@@ -1,6 +1,7 @@
 import type { InvoiceRepository } from '@restroos/application';
 import { Invoice, type InvoiceState, type NewPayment } from '@restroos/domain';
 import type { SqliteDatabase } from '../db/connection';
+import { nextDocumentNumber } from '../db/document-sequences';
 import { assertVersionMatched } from '../db/optimistic';
 import { uuidv7Generator } from '../system/uuidv7-generator';
 
@@ -274,21 +275,7 @@ export class SqliteInvoiceRepository implements InvoiceRepository {
   ): string {
     const prefix =
       series === 'INV' ? `${branchCode}/${fiscalYear}/` : `${branchCode}/${series}/${fiscalYear}/`;
-    // Gapless: the counter moves inside the invoice's own transaction (BEGIN IMMEDIATE).
-    this.db
-      .prepare(
-        `INSERT INTO document_sequences (branch_id, series, fiscal_year, next_value, prefix) VALUES (?, ?, ?, 1, ?)
-         ON CONFLICT (branch_id, series, fiscal_year) DO NOTHING`,
-      )
-      .run(branchId, series, fiscalYear, prefix);
-    const row = this.db
-      .prepare<[string, string, string], { next_value: number; prefix: string }>(
-        `UPDATE document_sequences SET next_value = next_value + 1
-          WHERE branch_id = ? AND series = ? AND fiscal_year = ?
-          RETURNING next_value - 1 AS next_value, prefix`,
-      )
-      .get(branchId, series, fiscalYear)!;
-    return `${row.prefix}${String(row.next_value).padStart(6, '0')}`;
+    return nextDocumentNumber(this.db, branchId, series, fiscalYear, prefix);
   }
 
   private writePayments(invoice: Invoice): void {

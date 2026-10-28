@@ -25,6 +25,7 @@ import { inventoryRoutes } from './routes/inventory';
 import { kitchenRoutes } from './routes/kitchen';
 import { orderRoutes } from './routes/orders';
 import { printingRoutes } from './routes/printing';
+import { purchasingRoutes } from './routes/purchasing';
 import { reportRoutes } from './routes/reports';
 import { healthRoutes } from './routes/health';
 import { settingsRoutes } from './routes/settings';
@@ -112,6 +113,7 @@ export async function buildApp(
       await api.register(reportRoutes, { cradle });
       await api.register(backupRoutes, { cradle });
       await api.register(inventoryRoutes, { cradle });
+      await api.register(purchasingRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(
