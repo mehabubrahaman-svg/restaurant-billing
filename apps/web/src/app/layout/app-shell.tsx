@@ -20,23 +20,31 @@ export function AppShell() {
   const kind = useDeviceStore((s) => s.kind);
   const status = useAuthStore((s) => s.status);
 
+  const devicePath = FULL_SCREEN_PORTAL_PATH[kind];
+  // The token TV needs nobody signed in: send it to its screen before the sign-in check.
+  if (kind === 'TOKEN_DISPLAY' && devicePath !== undefined) {
+    return <Navigate to={devicePath} replace />;
+  }
+
   // Every staff screen needs a session; remember where the user was going.
   if (status !== 'authenticated') {
     return <Navigate to="/login" replace state={{ from: pathname }} />;
   }
 
-  const devicePath = FULL_SCREEN_PORTAL_PATH[kind];
   if (devicePath !== undefined) {
     // The device's own portal and its sub-pages (e.g. /kitchen/availability).
     if (pathname !== devicePath && !pathname.startsWith(`${devicePath}/`)) {
       return <Navigate to={devicePath} replace />;
     }
+    // The KDS board carries the pill in its own header; its sub-pages get a floating one.
     return (
       <div className="relative min-h-dvh">
-        <div className="fixed end-3 top-3 z-20">
-          <ConnectionPill />
-        </div>
-        <main id="main" className="min-h-dvh p-4 md:p-6">
+        {pathname !== devicePath && (
+          <div className="fixed end-3 top-3 z-20">
+            <ConnectionPill />
+          </div>
+        )}
+        <main id="main" className="min-h-dvh p-3 md:p-4">
           <Outlet />
         </main>
       </div>

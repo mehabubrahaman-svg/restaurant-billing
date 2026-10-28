@@ -135,6 +135,8 @@ export interface KotView {
   targetReadyAt: string;
   items: {
     id: string;
+    menuItemId: string;
+    variantId: string | null;
     name: string;
     variantName: string | null;
     foodType: FoodType;

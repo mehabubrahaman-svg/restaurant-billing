@@ -57,7 +57,22 @@ export interface RequestOptions {
   readonly approverToken?: string;
   /** Conditional GET: the ETag of the copy we already hold. */
   readonly ifNoneMatch?: string;
+  /** Makes a command safe to retry: the Hub answers a replay with the stored response. */
+  readonly idempotencyKey?: string;
   readonly signal?: AbortSignal;
+}
+
+/** Header the Hub's idempotency plugin reads (POST and PATCH). */
+export const IDEMPOTENCY_HEADER = 'idempotency-key';
+
+/** A fresh Idempotency-Key: 8–128 characters of [A-Za-z0-9_-]; a UUID qualifies. */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
@@ -163,6 +178,7 @@ export class ApiClient {
     if (token !== null) headers['authorization'] = `Bearer ${token}`;
     if (options.approverToken !== undefined) headers[APPROVER_HEADER] = options.approverToken;
     if (options.ifNoneMatch !== undefined) headers['if-none-match'] = options.ifNoneMatch;
+    if (options.idempotencyKey !== undefined) headers[IDEMPOTENCY_HEADER] = options.idempotencyKey;
 
     const init: RequestInit = {
       method: options.method ?? 'GET',

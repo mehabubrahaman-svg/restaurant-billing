@@ -27,8 +27,13 @@ interface AuthState {
   logout(): Promise<void>;
 }
 
+/** On start-up, while the Hub can't be reached at all, ask again this often. */
+export const RESTORE_RETRY_MS = 5_000;
+
 let timer: ReturnType<typeof setTimeout> | null = null;
 let inflight: Promise<RefreshOutcome> | null = null;
+/** The last refresh failed for lack of a network (not a Hub error). */
+let lastFailureWasNetwork = false;
 
 function schedule(delayMs: number) {
   if (timer !== null) clearTimeout(timer);
@@ -69,11 +74,15 @@ function adoptUserLocale(session: SessionResponse) {
 export function refreshSession(branchId?: string): Promise<RefreshOutcome> {
   if (inflight !== null && branchId === undefined) return inflight;
   const attempt: Promise<RefreshOutcome> = (async (): Promise<RefreshOutcome> => {
+    lastFailureWasNetwork = false;
     try {
       applySession(await api.auth.refresh(branchId));
       return 'ok';
     } catch (error) {
-      if (error instanceof NetworkError) return 'unreachable';
+      if (error instanceof NetworkError) {
+        lastFailureWasNetwork = true;
+        return 'unreachable';
+      }
       if (isApiError(error) && (error.status === 401 || error.status === 403)) {
         clearSession();
         return 'invalid';
@@ -91,7 +100,14 @@ export const useAuthStore = create<AuthState>()(() => ({
   status: 'restoring',
   session: null,
   async restore() {
-    const outcome = await refreshSession();
+    let outcome = await refreshSession();
+    // A tablet that boots while the Wi-Fi or Hub is down keeps its session (and
+    // its offline queue's owner) instead of dropping to the sign-in screen.
+    while (outcome === 'unreachable' && lastFailureWasNetwork) {
+      await new Promise((resolve) => setTimeout(resolve, RESTORE_RETRY_MS));
+      if (useAuthStore.getState().status !== 'restoring') return;
+      outcome = await refreshSession();
+    }
     if (outcome !== 'ok') clearSession();
   },
   async login(body) {

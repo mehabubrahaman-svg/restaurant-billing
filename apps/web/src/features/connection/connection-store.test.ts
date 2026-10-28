@@ -11,6 +11,7 @@ const base: ConnectionSnapshot = {
   hasConnected: true,
   transport: 'lan',
   queuedCount: 0,
+  live: 'open',
 };
 
 describe('deriveConnectionStatus', () => {
@@ -30,6 +31,12 @@ describe('deriveConnectionStatus', () => {
     expect(deriveConnectionStatus({ ...base, consecutiveFailures: OFFLINE_AFTER_FAILURES })).toBe(
       'offline',
     );
+  });
+
+  it('is reconnecting while the Hub answers but the live socket is down', () => {
+    expect(deriveConnectionStatus({ ...base, live: 'down' })).toBe('reconnecting');
+    expect(deriveConnectionStatus({ ...base, live: 'connecting' })).toBe('live');
+    expect(deriveConnectionStatus({ ...base, live: 'idle' })).toBe('live');
   });
 
   it('is offline at once when the browser loses the network', () => {

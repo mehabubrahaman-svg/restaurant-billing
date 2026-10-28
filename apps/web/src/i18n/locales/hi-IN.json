@@ -70,7 +70,7 @@
     "reconnecting": "फिर से जुड़ रहा है…",
     "bluetooth": "ब्लूटूथ मोड",
     "offline": "ऑफ़लाइन",
-    "queued": "{count, plural, one {# काम कतार में} other {# काम कतार में}}",
+    "queued": "{count, plural, one {# कतार में} other {# कतार में}}",
     "hint": {
       "live": "हब से जुड़ा है।",
       "reconnecting": "हब से जुड़ने की कोशिश हो रही है।",
@@ -160,7 +160,9 @@
     }
   },
   "time": {
-    "minutes": "{minutes, number} मिनट"
+    "minutes": "{minutes, number} मिनट",
+    "elapsedMinutes": "{minutes, number} मि",
+    "elapsedHours": "{hours, number} घं {minutes, number} मि"
   },
   "common": {
     "save": "सेव करें",
@@ -223,7 +225,13 @@
     "invalidStateTransition": "टेबल अभी यह स्टेटस नहीं ले सकती। शायद अभी-अभी बदली है: एक बार फिर देखें।",
     "deviceNotPaired": "यह डिवाइस हब से पेयर नहीं है, इसलिए यहाँ PIN से साइन इन बंद है।",
     "pairingCodeInvalid": "यह कोड गलत है, पहले इस्तेमाल हो चुका है या उसका समय खत्म हो गया है। एडमिन से नया कोड लें।",
-    "deviceMustRepair": "यह डिवाइस अनपेयर किया गया था। नए कोड से फिर से पेयर करें।"
+    "deviceMustRepair": "यह डिवाइस अनपेयर किया गया था। नए कोड से फिर से पेयर करें।",
+    "tableNotFree": "इस टेबल पर पहले से मेहमान हैं, बिल बना है, या यह बंद है।",
+    "orderNotOpen": "यह ऑर्डर बिल हो चुका है, भुगतान हो चुका है या रद्द है, इसलिए बदला नहीं जा सकता।",
+    "itemAlreadySent": "यह आइटम पहले ही किचन जा चुका है।",
+    "nothingToFire": "किचन भेजने के लिए कुछ नया नहीं है।",
+    "itemUnavailable": "कोई डिश स्टॉक में नहीं है (86) या मेन्यू में नहीं रही। उसे हटाकर फिर कोशिश करें।",
+    "inProgress": "हब अभी इस पर काम कर रहा है। थोड़ा रुकें।"
   },
   "validation": {
     "required": "ज़रूरी है।",
@@ -1059,11 +1067,6 @@
     }
   },
   "captain": {
-    "sections": "कैप्टन व्यू",
-    "tabs": {
-      "floor": "फ़्लोर",
-      "menu": "मेन्यू"
-    },
     "view": "व्यू",
     "viewPlan": "फ़्लोर प्लान",
     "viewList": "लिस्ट",
@@ -1084,7 +1087,35 @@
     "noStatusPermission": "आपके रोल को टेबल का स्टेटस बदलने की अनुमति नहीं है।",
     "statusChanged": "{label} अब {status} है।",
     "takeOrder": "ऑर्डर लें",
-    "takeOrderNext": "यहाँ से ऑर्डर लेना अगले अपडेट में आएगा।"
+    "newTakeaway": "टेकअवे",
+    "newDelivery": "डिलीवरी",
+    "filter": {
+      "label": "टेबल दिखाएँ",
+      "all": "सभी",
+      "mine": "मेरी",
+      "free": "खाली",
+      "empty": "इस फ़िल्टर में कोई टेबल नहीं है।"
+    },
+    "tileOrderLabel": "टेबल {label}, {status}, {minutes, plural, one {# मिनट} other {# मिनट}} से खुला, {amount}{ready, plural, =0 {} one {, # डिश तैयार} other {, # डिश तैयार}}",
+    "coversShort": "{covers, plural, one {# मेहमान} other {# मेहमान}}",
+    "readyCount": "{count, plural, one {# तैयार} other {# तैयार}}",
+    "tableActions": "टेबल {label} के विकल्प",
+    "counterOrders": "टेकअवे और डिलीवरी",
+    "counterMeta": "{type} · {elapsed}",
+    "openOrder": "ऑर्डर खोलें",
+    "transfer": {
+      "move": "टेबल बदलें",
+      "merge": "टेबल जोड़ें",
+      "moveTitle": "{label} को यहाँ ले जाएँ…",
+      "mergeTitle": "{label} को इसमें जोड़ें…",
+      "moveHint": "ऑर्डर किसी खाली टेबल पर चला जाता है। {label} खाली हो जाती है।",
+      "mergeHint": "इस ऑर्डर के आइटम चुनी गई टेबल के ऑर्डर में जुड़ जाते हैं।",
+      "target": "नई टेबल",
+      "noFree": "अभी कोई टेबल खाली नहीं है।",
+      "noOpen": "किसी और टेबल पर चालू ऑर्डर नहीं है।",
+      "moved": "{from} को {to} पर ले जाया गया।",
+      "merged": "{from} को {to} में जोड़ा गया।"
+    }
   },
   "devices": {
     "title": "डिवाइस",
@@ -1216,5 +1247,185 @@
     "continue": "आगे बढ़ें",
     "alreadyTitle": "पहले से पेयर है",
     "alreadyBody": "यह डिवाइस {name} ({kind}) के रूप में पेयर है। एडमिन कहें तभी दोबारा पेयर करें।"
+  },
+  "sound": {
+    "on": "आवाज़ चालू",
+    "off": "आवाज़ बंद"
+  },
+  "order": {
+    "number": "ऑर्डर #{orderNo}",
+    "token": "टोकन {token, number}",
+    "titleTable": "{label} · ऑर्डर #{orderNo}",
+    "titleToken": "{type} · टोकन {token, number} · #{orderNo}",
+    "backToFloor": "फ़्लोर पर वापस",
+    "closed": {
+      "OPEN": "यह ऑर्डर खुला है।",
+      "PENDING_APPROVAL": "यह QR ऑर्डर कैप्टन की पुष्टि का इंतज़ार कर रहा है।",
+      "BILLED": "इस ऑर्डर का बिल बन चुका है। बदलाव के लिए कैशियर से कहें।",
+      "PAID": "इस ऑर्डर का भुगतान हो चुका है और यह बंद है।",
+      "CANCELLED": "यह ऑर्डर रद्द कर दिया गया।",
+      "VOID": "यह ऑर्डर निरस्त कर दिया गया।"
+    },
+    "covers": {
+      "title": "टेबल {label}: कितने मेहमान?",
+      "description": "आप इसे बाद में बदल सकते हैं।",
+      "start": "ऑर्डर शुरू करें",
+      "label": "मेहमान",
+      "fewer": "एक मेहमान कम",
+      "more": "एक मेहमान ज़्यादा",
+      "unset": "मेहमान",
+      "count": "{covers, plural, one {# मेहमान} other {# मेहमान}}",
+      "change": "मेहमान बदलें"
+    },
+    "menu": {
+      "label": "मेन्यू",
+      "search": "डिश खोजें",
+      "tileAdd": "{name} जोड़ें, {price}",
+      "tileOptions": "{name}, {price} से: विकल्प चुनें",
+      "tileOut": "{name}: स्टॉक में नहीं",
+      "fromPrice": "{price} से",
+      "out": "86 (ख़त्म)"
+    },
+    "options": {
+      "size": "साइज़",
+      "limits": "{min, plural, =0 {({max, number} तक)} other {({min, number}–{max, number} चुनें)}}",
+      "addonPrice": "+{price}",
+      "chooseAtLeast": "{count, plural, one {कम से कम # विकल्प चुनें।} other {कम से कम # विकल्प चुनें।}}",
+      "fewer": "एक कम",
+      "more": "एक और",
+      "add": "जोड़ें · {amount}"
+    },
+    "note": {
+      "label": "किचन के लिए नोट",
+      "free": "दूसरा नोट",
+      "quick": {
+        "lessSpicy": "कम तीखा",
+        "noOnion": "प्याज़ नहीं",
+        "jain": "जैन"
+      },
+      "title": "नोट: {name}",
+      "add": "नोट",
+      "edit": "नोट बदलें"
+    },
+    "panel": {
+      "title": "ऑर्डर #{orderNo}"
+    },
+    "pad": {
+      "newTitle": "नया (नहीं भेजा)",
+      "empty": "जोड़ने के लिए मेन्यू में डिश पर टैप करें।",
+      "nothingNew": "कुछ नया नहीं। और जोड़ने के लिए डिश पर टैप करें।",
+      "subtotal": "उप-योग",
+      "saveFailed": "डिश नहीं जुड़ सकीं: {reason}"
+    },
+    "kot": {
+      "label": "KOT {kotNo, number}",
+      "title": "भेजा गया · KOT {kotNo, number}",
+      "titleStation": "भेजा गया · KOT {kotNo, number} · {station}",
+      "markServed": "KOT {kotNo, number} परोसा गया"
+    },
+    "line": {
+      "withVariant": "{name} ({variant})",
+      "addons": "+ {addons}",
+      "qty": "×{quantity, number}",
+      "qtyLong": "मात्रा {quantity, number}",
+      "cancelled": "रद्द",
+      "cancelledReason": "रद्द: {reason}",
+      "ready": "तैयार",
+      "queued": "कतार में: अभी हब पर नहीं",
+      "changeQueued": "बदलाव कतार में",
+      "fewer": "एक {name} कम",
+      "more": "एक {name} और",
+      "remove": "{name} हटाएँ"
+    },
+    "fire": {
+      "button": "किचन भेजें ({count, number})",
+      "sent": "{count, plural, =0 {किचन भेजा गया।} one {किचन भेजा गया: KOT {kots}।} other {किचन भेजा गया: KOT {kots}।}}",
+      "queued": "इस टैबलेट पर सेव है। किचन को अभी सूचना नहीं गई।",
+      "notNotifiedTitle": "किचन को अभी सूचना नहीं गई",
+      "notNotified": "हब से कनेक्शन नहीं है। कनेक्शन लौटते ही ऑर्डर किचन चला जाएगा। मेहमान को बताएँ कि थोड़ा ज़्यादा समय लग सकता है।"
+    },
+    "cancel": {
+      "itemAction": "{name} रद्द करें",
+      "itemTitle": "{name} ×{quantity, number} रद्द करें?",
+      "itemHint": "यह किचन जा चुका है। मैनेजर की मंज़ूरी लग सकती है।",
+      "itemConfirm": "आइटम रद्द करें",
+      "keep": "आइटम रखें",
+      "reason": "कारण",
+      "reasonOther": "कारण (कम से कम 3 अक्षर)",
+      "itemReasons": {
+        "guestChanged": "मेहमान ने मन बदला",
+        "wrongItem": "गलत आइटम दर्ज हुआ",
+        "tooSlow": "बहुत देर हुई",
+        "kitchenOut": "किचन में ख़त्म"
+      },
+      "wastage": "खाना बन चुका था (बर्बादी)",
+      "wastageHint": "स्टॉक रिपोर्ट में बर्बादी गिना जाता है।",
+      "orderAction": "ऑर्डर रद्द करें",
+      "orderTitle": "ऑर्डर #{orderNo} रद्द करें?",
+      "orderHint": "अभी कुछ भी किचन नहीं गया है। टेबल खाली हो जाएगी।",
+      "orderSentHint": "कुछ डिश किचन जा चुकी हैं। मैनेजर की मंज़ूरी लग सकती है।",
+      "orderConfirm": "ऑर्डर रद्द करें",
+      "keepOrder": "ऑर्डर रखें",
+      "orderReasons": {
+        "guestLeft": "मेहमान चले गए",
+        "duplicate": "दोहरा ऑर्डर",
+        "wrongTable": "गलत टेबल पर खोला"
+      },
+      "orderDone": "ऑर्डर #{orderNo} रद्द हुआ।"
+    },
+    "attention": {
+      "addItems": "डिश नहीं जुड़ीं: ध्यान दें",
+      "updateItem": "बदलाव सेव नहीं हुआ: ध्यान दें",
+      "cancelItem": "हटाना सेव नहीं हुआ: ध्यान दें",
+      "fire": "KOT नहीं गया: ध्यान दें",
+      "body": "हब ने कतार का यह बदलाव नहीं माना: {reason}",
+      "discard": "हटा दें"
+    },
+    "ready": {
+      "title": "{where} · KOT {kotNo, number} तैयार",
+      "item": "{name} ×{quantity, number}",
+      "open": "ऑर्डर खोलें"
+    }
+  },
+  "kds": {
+    "title": "किचन",
+    "station": "स्टेशन",
+    "allStations": "सभी स्टेशन",
+    "metrics": {
+      "label": "आज का किचन",
+      "pending": "बाकी",
+      "avg": "औसत समय",
+      "none": "–",
+      "delayed": "देरी"
+    },
+    "column": "{status} ({count, number})",
+    "empty": "यहाँ कुछ नहीं।",
+    "kotTitle": "KOT {kotNo, number} · {where}",
+    "readyFor": "तैयार {elapsed}",
+    "late": "तय समय निकल गया",
+    "chef": "शेफ़: {name}",
+    "chefNone": "शेफ़: तय नहीं",
+    "assign": "सौंपें",
+    "reassign": "बदलें",
+    "assignTitle": "KOT {kotNo, number} किसे सौंपें",
+    "unassign": "शेफ़ हटाएँ",
+    "addon": "+ {name}{quantity, plural, =1 {} other { ×#}}",
+    "note": "नोट",
+    "bump": "{quantity, number} {name} तैयार करें",
+    "action": {
+      "accept": "स्वीकारें",
+      "start": "शुरू करें",
+      "ready": "तैयार",
+      "served": "परोसा गया"
+    }
+  },
+  "tokens": {
+    "title": "ऑर्डर टोकन",
+    "preparing": "बन रहा है",
+    "ready": "तैयार",
+    "none": "–",
+    "connecting": "हब से जुड़ रहे हैं…",
+    "unavailable": "अभी टोकन नहीं दिख सकते। फिर से जाँच रहे हैं…",
+    "enableSound": "आवाज़ चालू करने के लिए टैप करें"
   }
 }

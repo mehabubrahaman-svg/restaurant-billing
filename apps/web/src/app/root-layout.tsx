@@ -1,5 +1,5 @@
 import { Button, Spinner, Store } from '@restroos/ui';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation } from 'react-router';
@@ -7,12 +7,16 @@ import { api } from '../api/endpoints';
 import { ApprovalDialog } from '../features/approval/approval-dialog';
 import { useAuthStore } from '../features/auth/auth-store';
 import { useConnectionMonitor } from '../features/connection/use-connection-monitor';
+import { useLiveConnection } from '../features/live/use-live-connection';
+import { startCommandQueue } from '../features/offline/command-queue';
 import { applyTheme, effectiveTheme, useThemeStore } from '../features/theme/theme-store';
 import { Toaster } from '../features/toast/toaster';
 import { DEVICE_ME_KEY, fetchThisDevice } from '../features/devices/this-device';
 import { useDeviceStore } from '../stores/device-store';
 
 export const SETUP_STATUS_KEY = ['setup', 'status'] as const;
+/** While the Hub can't be reached at start-up, ask again this often. */
+export const BOOT_RETRY_MS = 5_000;
 
 function Splash({ children }: { children: React.ReactNode }) {
   return (
@@ -28,7 +32,8 @@ function Splash({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Wraps the staff app: connection polling, theme, approval dialog, toasts, and
+ * Wraps the staff app: connection polling, the live WebSocket, the offline
+ * command queue, theme, approval dialog, toasts, and
  * the start-up order: (1) an un-set-up Hub goes to /setup; (2) the session is
  * restored from the refresh cookie; (3) only then do routes render.
  */
@@ -36,6 +41,10 @@ export function RootLayout() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   useConnectionMonitor();
+  useLiveConnection();
+  const queryClient = useQueryClient();
+  // Commands queued offline (captain tablets) replay from here, whatever screen is open.
+  useEffect(() => startCommandQueue(queryClient), [queryClient]);
   const preference = useThemeStore((s) => s.preference);
   const kind = useDeviceStore((s) => s.kind);
   const authStatus = useAuthStore((s) => s.status);
@@ -61,6 +70,9 @@ export function RootLayout() {
     queryFn: api.setup.status,
     staleTime: Number.POSITIVE_INFINITY,
     retry: 1,
+    // A tablet that starts while the Hub is unreachable keeps trying on its own
+    // (its offline queue replays as soon as the Hub answers), not only on "Try again".
+    refetchInterval: (query) => (query.state.status === 'error' ? BOOT_RETRY_MS : false),
   });
 
   if (setup.isError) {

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../api/endpoints';
 import { json, mockHub, problem } from '../../test/mock-hub';
 import { makeSession } from '../../test/session';
-import { refreshSession, REFRESH_LEAD_MS, useAuthStore } from './auth-store';
+import { refreshSession, REFRESH_LEAD_MS, RESTORE_RETRY_MS, useAuthStore } from './auth-store';
 
 beforeEach(() => {
   useAuthStore.setState({ status: 'restoring', session: null });
@@ -26,6 +26,24 @@ describe('auth store', () => {
     mockHub({ 'POST /auth/refresh': () => problem(401, 'UNAUTHENTICATED') });
     await useAuthStore.getState().restore();
     expect(useAuthStore.getState()).toMatchObject({ status: 'anonymous', session: null });
+  });
+
+  it('keeps restoring while the Hub is unreachable at start-up, then signs back in', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let up = false;
+    mockHub({
+      'POST /auth/refresh': () => {
+        if (!up) throw new TypeError('Failed to fetch');
+        return json(makeSession());
+      },
+    });
+    const restoring = useAuthStore.getState().restore();
+    await vi.advanceTimersByTimeAsync(RESTORE_RETRY_MS);
+    expect(useAuthStore.getState().status).toBe('restoring');
+    up = true;
+    await vi.advanceTimersByTimeAsync(RESTORE_RETRY_MS);
+    await restoring;
+    expect(useAuthStore.getState().status).toBe('authenticated');
   });
 
   it('never writes the access token to storage', async () => {

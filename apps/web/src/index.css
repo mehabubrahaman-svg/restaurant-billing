@@ -13,3 +13,40 @@
     color: #000;
   }
 }
+
+/* KDS: a late KOT pulses its outline (wireframes §6); a new one slides in. */
+@keyframes kds-late {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--state-danger) 70%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--state-danger) 0%, transparent);
+  }
+}
+@keyframes kds-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes token-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kds-late {
+    animation: kds-late 1.6s ease-in-out infinite;
+  }
+  .kds-enter {
+    animation: kds-in 200ms ease-out;
+  }
+  .token-fresh {
+    animation: token-pulse 1.2s ease-in-out 5;
+  }
+}

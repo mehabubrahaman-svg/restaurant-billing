@@ -5,6 +5,9 @@ import { KotStatusSchema, OpenOrderTypeSchema, OrderItemStatusSchema } from './o
 
 export const KotItemSchema = z.object({
   id: IdSchema,
+  /** To show the dish in the cook's language from the cached menu; `name` is the English copy. */
+  menuItemId: IdSchema,
+  variantId: IdSchema.nullable(),
   name: z.string(),
   variantName: z.string().nullable(),
   foodType: FoodTypeSchema,

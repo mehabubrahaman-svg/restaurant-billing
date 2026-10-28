@@ -70,7 +70,7 @@
     "reconnecting": "আবার সংযোগ হচ্ছে…",
     "bluetooth": "ব্লুটুথ মোড",
     "offline": "অফলাইন",
-    "queued": "{count, plural, one {#টি কাজ অপেক্ষায়} other {#টি কাজ অপেক্ষায়}}",
+    "queued": "{count, plural, one {# অপেক্ষায়} other {# অপেক্ষায়}}",
     "hint": {
       "live": "হাবের সঙ্গে যুক্ত।",
       "reconnecting": "হাবের সঙ্গে যোগাযোগের চেষ্টা চলছে।",
@@ -160,7 +160,9 @@
     }
   },
   "time": {
-    "minutes": "{minutes, number} মিনিট"
+    "minutes": "{minutes, number} মিনিট",
+    "elapsedMinutes": "{minutes, number} মি",
+    "elapsedHours": "{hours, number} ঘ {minutes, number} মি"
   },
   "common": {
     "save": "সেভ করুন",
@@ -223,7 +225,13 @@
     "invalidStateTransition": "টেবিলটা এখন এই স্ট্যাটাসে যেতে পারবে না। হয়তো এইমাত্র বদলেছে: আরেকবার দেখে নিন।",
     "deviceNotPaired": "এই ডিভাইসটি হাবের সঙ্গে পেয়ার করা নেই, তাই এখানে PIN দিয়ে সাইন ইন বন্ধ।",
     "pairingCodeInvalid": "কোডটা ভুল, আগেই ব্যবহার হয়ে গেছে, নয়তো মেয়াদ শেষ। অ্যাডমিনের কাছ থেকে নতুন কোড নিন।",
-    "deviceMustRepair": "এই ডিভাইসটি আনপেয়ার করা হয়েছিল। নতুন কোড দিয়ে আবার পেয়ার করুন।"
+    "deviceMustRepair": "এই ডিভাইসটি আনপেয়ার করা হয়েছিল। নতুন কোড দিয়ে আবার পেয়ার করুন।",
+    "tableNotFree": "এই টেবিলে আগে থেকেই অতিথি আছেন, বিল হয়েছে, বা টেবিলটি বন্ধ।",
+    "orderNotOpen": "এই অর্ডারের বিল হয়ে গেছে, টাকা দেওয়া হয়ে গেছে বা বাতিল হয়েছে, তাই বদলানো যাবে না।",
+    "itemAlreadySent": "এই আইটেম আগেই রান্নাঘরে চলে গেছে।",
+    "nothingToFire": "রান্নাঘরে পাঠানোর মতো নতুন কিছু নেই।",
+    "itemUnavailable": "কোনো ডিশ স্টকে নেই (86) বা মেনুতে আর নেই। সেটি সরিয়ে আবার চেষ্টা করুন।",
+    "inProgress": "হাব এখনও এটি নিয়ে কাজ করছে। একটু অপেক্ষা করুন।"
   },
   "validation": {
     "required": "এটা দিতেই হবে।",
@@ -1059,11 +1067,6 @@
     }
   },
   "captain": {
-    "sections": "ক্যাপ্টেন ভিউ",
-    "tabs": {
-      "floor": "ফ্লোর",
-      "menu": "মেনু"
-    },
     "view": "ভিউ",
     "viewPlan": "ফ্লোর প্ল্যান",
     "viewList": "তালিকা",
@@ -1084,7 +1087,35 @@
     "noStatusPermission": "আপনার রোলে টেবিলের স্ট্যাটাস বদলানোর অনুমতি নেই।",
     "statusChanged": "{label} এখন {status}।",
     "takeOrder": "অর্ডার নিন",
-    "takeOrderNext": "এখান থেকে অর্ডার নেওয়া আসছে পরের আপডেটে।"
+    "newTakeaway": "টেকঅ্যাওয়ে",
+    "newDelivery": "ডেলিভারি",
+    "filter": {
+      "label": "টেবিল দেখান",
+      "all": "সব",
+      "mine": "আমার",
+      "free": "খালি",
+      "empty": "এই ফিল্টারে কোনো টেবিল নেই।"
+    },
+    "tileOrderLabel": "টেবিল {label}, {status}, {minutes, plural, one {# মিনিট} other {# মিনিট}} ধরে খোলা, {amount}{ready, plural, =0 {} one {, # ডিশ তৈরি} other {, # ডিশ তৈরি}}",
+    "coversShort": "{covers, plural, one {# অতিথি} other {# অতিথি}}",
+    "readyCount": "{count, plural, one {# তৈরি} other {# তৈরি}}",
+    "tableActions": "টেবিল {label}-এর বিকল্প",
+    "counterOrders": "টেকঅ্যাওয়ে ও ডেলিভারি",
+    "counterMeta": "{type} · {elapsed}",
+    "openOrder": "অর্ডার খুলুন",
+    "transfer": {
+      "move": "টেবিল বদলান",
+      "merge": "টেবিল জুড়ুন",
+      "moveTitle": "{label} সরান…",
+      "mergeTitle": "{label} জুড়ুন…",
+      "moveHint": "অর্ডারটি একটি খালি টেবিলে যাবে। {label} খালি হয়ে যাবে।",
+      "mergeHint": "এই অর্ডারের আইটেম বেছে নেওয়া টেবিলের অর্ডারে যোগ হবে।",
+      "target": "নতুন টেবিল",
+      "noFree": "এখন কোনো টেবিল খালি নেই।",
+      "noOpen": "অন্য কোনো টেবিলে চালু অর্ডার নেই।",
+      "moved": "{from} থেকে {to}-তে সরানো হয়েছে।",
+      "merged": "{from} {to}-এর সঙ্গে জোড়া হয়েছে।"
+    }
   },
   "devices": {
     "title": "ডিভাইস",
@@ -1216,5 +1247,185 @@
     "continue": "এগিয়ে যান",
     "alreadyTitle": "আগে থেকেই পেয়ার করা",
     "alreadyBody": "এই ডিভাইস {name} ({kind}) হিসেবে পেয়ার করা আছে। অ্যাডমিন বললে তবেই আবার পেয়ার করুন।"
+  },
+  "sound": {
+    "on": "শব্দ চালু",
+    "off": "শব্দ বন্ধ"
+  },
+  "order": {
+    "number": "অর্ডার #{orderNo}",
+    "token": "টোকেন {token, number}",
+    "titleTable": "{label} · অর্ডার #{orderNo}",
+    "titleToken": "{type} · টোকেন {token, number} · #{orderNo}",
+    "backToFloor": "ফ্লোরে ফিরুন",
+    "closed": {
+      "OPEN": "এই অর্ডারটি খোলা আছে।",
+      "PENDING_APPROVAL": "এই QR অর্ডারটি ক্যাপ্টেনের নিশ্চিতকরণের অপেক্ষায়।",
+      "BILLED": "এই অর্ডারের বিল হয়ে গেছে। বদলের জন্য ক্যাশিয়ারকে বলুন।",
+      "PAID": "এই অর্ডারের টাকা দেওয়া হয়েছে, অর্ডার বন্ধ।",
+      "CANCELLED": "এই অর্ডার বাতিল হয়েছে।",
+      "VOID": "এই অর্ডার বাতিল (ভয়েড) করা হয়েছে।"
+    },
+    "covers": {
+      "title": "টেবিল {label}: কতজন অতিথি?",
+      "description": "পরে বদলানো যাবে।",
+      "start": "অর্ডার শুরু করুন",
+      "label": "অতিথি",
+      "fewer": "একজন অতিথি কম",
+      "more": "একজন অতিথি বেশি",
+      "unset": "অতিথি",
+      "count": "{covers, plural, one {# অতিথি} other {# অতিথি}}",
+      "change": "অতিথির সংখ্যা বদলান"
+    },
+    "menu": {
+      "label": "মেনু",
+      "search": "ডিশ খুঁজুন",
+      "tileAdd": "{name} যোগ করুন, {price}",
+      "tileOptions": "{name}, {price} থেকে: বিকল্প বাছুন",
+      "tileOut": "{name}: স্টকে নেই",
+      "fromPrice": "{price} থেকে",
+      "out": "86 (শেষ)"
+    },
+    "options": {
+      "size": "সাইজ",
+      "limits": "{min, plural, =0 {({max, number}টি পর্যন্ত)} other {({min, number}–{max, number}টি বাছুন)}}",
+      "addonPrice": "+{price}",
+      "chooseAtLeast": "{count, plural, one {অন্তত #টি বিকল্প বাছুন।} other {অন্তত #টি বিকল্প বাছুন।}}",
+      "fewer": "একটি কম",
+      "more": "আরও একটি",
+      "add": "যোগ করুন · {amount}"
+    },
+    "note": {
+      "label": "রান্নাঘরের জন্য নোট",
+      "free": "অন্য নোট",
+      "quick": {
+        "lessSpicy": "কম ঝাল",
+        "noOnion": "পেঁয়াজ ছাড়া",
+        "jain": "জৈন"
+      },
+      "title": "নোট: {name}",
+      "add": "নোট",
+      "edit": "নোট বদলান"
+    },
+    "panel": {
+      "title": "অর্ডার #{orderNo}"
+    },
+    "pad": {
+      "newTitle": "নতুন (পাঠানো হয়নি)",
+      "empty": "যোগ করতে মেনুর ডিশে ট্যাপ করুন।",
+      "nothingNew": "নতুন কিছু নেই। আরও যোগ করতে ডিশে ট্যাপ করুন।",
+      "subtotal": "উপমোট",
+      "saveFailed": "ডিশ যোগ করা গেল না: {reason}"
+    },
+    "kot": {
+      "label": "KOT {kotNo, number}",
+      "title": "পাঠানো · KOT {kotNo, number}",
+      "titleStation": "পাঠানো · KOT {kotNo, number} · {station}",
+      "markServed": "KOT {kotNo, number} পরিবেশিত"
+    },
+    "line": {
+      "withVariant": "{name} ({variant})",
+      "addons": "+ {addons}",
+      "qty": "×{quantity, number}",
+      "qtyLong": "পরিমাণ {quantity, number}",
+      "cancelled": "বাতিল",
+      "cancelledReason": "বাতিল: {reason}",
+      "ready": "তৈরি",
+      "queued": "অপেক্ষায়: এখনও হাবে পৌঁছায়নি",
+      "changeQueued": "বদল অপেক্ষায়",
+      "fewer": "একটি {name} কম",
+      "more": "আরও একটি {name}",
+      "remove": "{name} সরান"
+    },
+    "fire": {
+      "button": "রান্নাঘরে পাঠান ({count, number})",
+      "sent": "{count, plural, =0 {রান্নাঘরে পাঠানো হয়েছে।} one {রান্নাঘরে পাঠানো হয়েছে: KOT {kots}।} other {রান্নাঘরে পাঠানো হয়েছে: KOT {kots}।}}",
+      "queued": "এই ট্যাবলেটে সেভ আছে। রান্নাঘরকে এখনও জানানো হয়নি।",
+      "notNotifiedTitle": "রান্নাঘরকে এখনও জানানো হয়নি",
+      "notNotified": "হাবের সঙ্গে সংযোগ নেই। সংযোগ ফিরলেই অর্ডার রান্নাঘরে যাবে। অতিথিকে বলুন একটু বেশি সময় লাগতে পারে।"
+    },
+    "cancel": {
+      "itemAction": "{name} বাতিল করুন",
+      "itemTitle": "{name} ×{quantity, number} বাতিল করবেন?",
+      "itemHint": "এটি রান্নাঘরে চলে গেছে। ম্যানেজারের অনুমোদন লাগতে পারে।",
+      "itemConfirm": "আইটেম বাতিল করুন",
+      "keep": "আইটেম রাখুন",
+      "reason": "কারণ",
+      "reasonOther": "কারণ (অন্তত ৩টি অক্ষর)",
+      "itemReasons": {
+        "guestChanged": "অতিথি মত বদলেছেন",
+        "wrongItem": "ভুল আইটেম লেখা হয়েছে",
+        "tooSlow": "খুব দেরি হয়েছে",
+        "kitchenOut": "রান্নাঘরে শেষ"
+      },
+      "wastage": "খাবার তৈরি হয়ে গিয়েছিল (অপচয়)",
+      "wastageHint": "স্টক রিপোর্টে অপচয় হিসেবে ধরা হয়।",
+      "orderAction": "অর্ডার বাতিল",
+      "orderTitle": "অর্ডার #{orderNo} বাতিল করবেন?",
+      "orderHint": "এখনও কিছু রান্নাঘরে যায়নি। টেবিল খালি হয়ে যাবে।",
+      "orderSentHint": "কিছু ডিশ রান্নাঘরে চলে গেছে। ম্যানেজারের অনুমোদন লাগতে পারে।",
+      "orderConfirm": "অর্ডার বাতিল করুন",
+      "keepOrder": "অর্ডার রাখুন",
+      "orderReasons": {
+        "guestLeft": "অতিথি চলে গেছেন",
+        "duplicate": "একই অর্ডার দুবার",
+        "wrongTable": "ভুল টেবিলে খোলা হয়েছে"
+      },
+      "orderDone": "অর্ডার #{orderNo} বাতিল হয়েছে।"
+    },
+    "attention": {
+      "addItems": "ডিশ যোগ হয়নি: দেখা দরকার",
+      "updateItem": "বদল সেভ হয়নি: দেখা দরকার",
+      "cancelItem": "সরানো সেভ হয়নি: দেখা দরকার",
+      "fire": "KOT যায়নি: দেখা দরকার",
+      "body": "হাব অপেক্ষায় থাকা এই বদলটি নেয়নি: {reason}",
+      "discard": "বাদ দিন"
+    },
+    "ready": {
+      "title": "{where} · KOT {kotNo, number} তৈরি",
+      "item": "{name} ×{quantity, number}",
+      "open": "অর্ডার খুলুন"
+    }
+  },
+  "kds": {
+    "title": "রান্নাঘর",
+    "station": "স্টেশন",
+    "allStations": "সব স্টেশন",
+    "metrics": {
+      "label": "আজ রান্নাঘরে",
+      "pending": "বাকি",
+      "avg": "গড় সময়",
+      "none": "–",
+      "delayed": "দেরি"
+    },
+    "column": "{status} ({count, number})",
+    "empty": "এখানে কিছু নেই।",
+    "kotTitle": "KOT {kotNo, number} · {where}",
+    "readyFor": "তৈরি {elapsed}",
+    "late": "নির্ধারিত সময় পেরিয়ে গেছে",
+    "chef": "শেফ: {name}",
+    "chefNone": "শেফ: ঠিক হয়নি",
+    "assign": "দিন",
+    "reassign": "বদলান",
+    "assignTitle": "KOT {kotNo, number} কাকে দেবেন",
+    "unassign": "শেফ সরান",
+    "addon": "+ {name}{quantity, plural, =1 {} other { ×#}}",
+    "note": "নোট",
+    "bump": "{quantity, number} {name} তৈরি করুন",
+    "action": {
+      "accept": "গ্রহণ",
+      "start": "শুরু",
+      "ready": "তৈরি",
+      "served": "পরিবেশিত"
+    }
+  },
+  "tokens": {
+    "title": "অর্ডার টোকেন",
+    "preparing": "তৈরি হচ্ছে",
+    "ready": "তৈরি",
+    "none": "–",
+    "connecting": "হাবের সঙ্গে যুক্ত হচ্ছে…",
+    "unavailable": "এখন টোকেন দেখানো যাচ্ছে না। আবার দেখা হচ্ছে…",
+    "enableSound": "শব্দ চালু করতে ট্যাপ করুন"
   }
 }

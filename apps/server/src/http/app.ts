@@ -55,7 +55,10 @@ export async function buildApp(
     try {
       done(null, JSON.parse(text) as unknown);
     } catch {
-      done(Object.assign(new Error('the request body is not valid JSON'), { statusCode: 400 }), undefined);
+      done(
+        Object.assign(new Error('the request body is not valid JSON'), { statusCode: 400 }),
+        undefined,
+      );
     }
   });
   app.addHook('onSend', async (request, reply, payload) => {

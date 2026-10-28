@@ -6,6 +6,7 @@ export { FoodMark, type FoodMarkProps, type FoodMarkType } from './components/fo
 export { Field, type FieldControlProps, type FieldProps } from './components/field';
 export { Select } from './components/select';
 export { Spinner } from './components/spinner';
+export { Stepper, type StepperProps } from './components/stepper';
 export { Switch, type SwitchProps } from './components/switch';
 export { Table, TBody, Td, Th, THead, Tr } from './components/table';
 export { Textarea } from './components/textarea';

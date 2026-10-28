@@ -6,7 +6,9 @@ import { AdminLayout } from '../features/admin/admin-layout';
 import type { PermissionRequirement } from '../features/auth/permissions';
 import { LoginPage } from '../features/auth/login-page';
 import { AvailabilityPage } from '../features/menu/availability-page';
+import { CaptainLayout } from '../portals/captain/captain-layout';
 import { CaptainPage } from '../portals/captain/captain-page';
+import { OrderPadPage } from '../portals/captain/order-pad/order-pad-page';
 import {
   AVAILABILITY_PERMISSIONS,
   KitchenHome,
@@ -15,6 +17,7 @@ import {
 import { PortalPlaceholder } from '../portals/portal-placeholder';
 import { PosPage } from '../portals/pos/pos-page';
 import { QrMenuPage } from '../portals/qr-menu/qr-menu-page';
+import { TokenDisplayPage } from '../portals/token-display/token-display-page';
 import { AppShell } from './layout/app-shell';
 import { RequirePermission } from './layout/require-permission';
 import { StatusPage } from './layout/status-page';
@@ -134,6 +137,15 @@ function AdminGuard({
 
 const portal = (id: Portal['id']) => PORTALS.find((p) => p.id === id)!;
 
+/** Portals with their own route trees (the rest get a simple guarded page). */
+const OWN_ROUTES: ReadonlySet<Portal['id']> = new Set([
+  'qrMenu',
+  'admin',
+  'captain',
+  'kitchen',
+  'tokenDisplay',
+]);
+
 function adminRoutes(): RouteObject {
   const admin = portal('admin');
   return {
@@ -237,6 +249,22 @@ function adminRoutes(): RouteObject {
   };
 }
 
+function captainRoutes(): RouteObject {
+  const captain = portal('captain');
+  return {
+    path: 'captain',
+    element: (
+      <PortalGuard portal={captain}>
+        <CaptainLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <CaptainPage portal={captain} /> },
+      { path: 'orders/:orderId', element: <OrderPadPage /> },
+    ],
+  };
+}
+
 function kitchenRoutes(): RouteObject {
   const kitchen = portal('kitchen');
   return {
@@ -277,6 +305,8 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/setup', element: <SetupWizard /> },
       { path: '/login', element: <LoginPage /> },
+      // The customer TV: full screen, works on a paired device with nobody signed in.
+      { path: '/token-display', element: <TokenDisplayPage /> },
       // Public: a new tablet opens this from the admin's pairing QR.
       { path: '/pair', element: <PairPage /> },
       {
@@ -285,23 +315,16 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <HomeRedirect /> },
           adminRoutes(),
+          captainRoutes(),
           kitchenRoutes(),
-          ...PORTALS.filter((p) => p.id !== 'qrMenu' && p.id !== 'admin' && p.id !== 'kitchen').map(
-            (p) => ({
-              path: p.path,
-              element: (
-                <PortalGuard portal={p}>
-                  {p.id === 'pos' ? (
-                    <PosPage portal={p} />
-                  ) : p.id === 'captain' ? (
-                    <CaptainPage portal={p} />
-                  ) : (
-                    <PortalPlaceholder portal={p} />
-                  )}
-                </PortalGuard>
-              ),
-            }),
-          ),
+          ...PORTALS.filter((p) => !OWN_ROUTES.has(p.id)).map((p) => ({
+            path: p.path,
+            element: (
+              <PortalGuard portal={p}>
+                {p.id === 'pos' ? <PosPage portal={p} /> : <PortalPlaceholder portal={p} />}
+              </PortalGuard>
+            ),
+          })),
           { path: 'account', element: <AccountPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],

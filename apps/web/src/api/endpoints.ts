@@ -6,6 +6,14 @@ import {
   AuditLogPageSchema,
   AuditVerifyResponseSchema,
   BranchSettingsSchema,
+  ChefsResponseSchema,
+  FireKotsResponseSchema,
+  KitchenMetricsSchema,
+  KotSchema,
+  KotsResponseSchema,
+  OrderSchema,
+  OrdersResponseSchema,
+  TokenBoardSchema,
   CategoriesResponseSchema,
   CategorySchema,
   DeviceSchema,
@@ -46,6 +54,8 @@ import {
   type DeviceKind,
   type Peripheral,
   type LoginRequest,
+  type NewOrderItem,
+  type OpenOrderRequest,
   type PinLoginRequest,
   type SetupRequest,
   type UpdateBranchSettingsRequest,
@@ -198,6 +208,39 @@ export interface AuditFilter {
   to?: string;
 }
 
+export interface UpdateOrderBody {
+  version: number;
+  covers?: number | null;
+  notes?: string | null;
+}
+export interface UpdateOrderItemBody {
+  version: number;
+  quantity?: number;
+  specialNote?: string | null;
+  course?: number;
+}
+export interface CancelOrderItemBody {
+  version: number;
+  reason?: string;
+  isWastage: boolean;
+}
+export interface CancelOrderBody {
+  version: number;
+  reason: string;
+}
+export type TransferMode = 'MOVE' | 'MERGE';
+export type KotTarget = 'ACCEPTED' | 'COOKING' | 'READY' | 'SERVED';
+
+/** Per-call extras for commands: a retry-safe key and a manager's approval. */
+export interface CommandOptions {
+  readonly idempotencyKey?: string;
+  readonly approverToken?: string;
+}
+const extras = (o: CommandOptions = {}) => ({
+  ...(o.idempotencyKey === undefined ? {} : { idempotencyKey: o.idempotencyKey }),
+  ...(o.approverToken === undefined ? {} : { approverToken: o.approverToken }),
+});
+
 const POST = 'POST' as const;
 const PATCH = 'PATCH' as const;
 const PUT = 'PUT' as const;
@@ -347,7 +390,56 @@ export const api = {
         body: { status, version },
       }),
     qr: (id: string) => c.json(`/tables/${id}/qr`, TableQrResponseSchema),
+    /** MOVE to a free table, or MERGE into the open order on the target. Returns the resulting order. */
+    transfer: (id: string, targetTableId: string, mode: TransferMode, o?: CommandOptions) =>
+      c.json(`/tables/${id}/transfer`, OrderSchema, {
+        method: POST,
+        body: { targetTableId, mode },
+        ...extras(o),
+      }),
     rotateQr: (id: string) => c.json(`/tables/${id}/qr`, TableQrResponseSchema, { method: POST }),
+  },
+  orders: {
+    open: (body: OpenOrderRequest, o?: CommandOptions) =>
+      c.json('/orders', OrderSchema, { method: POST, body, ...extras(o) }),
+    listOpen: () => c.json('/orders', OrdersResponseSchema, { query: { status: 'OPEN' } }),
+    get: (id: string) => c.json(`/orders/${id}`, OrderSchema),
+    update: (id: string, body: UpdateOrderBody, o?: CommandOptions) =>
+      c.json(`/orders/${id}`, OrderSchema, { method: PATCH, body, ...extras(o) }),
+    addItems: (id: string, items: NewOrderItem[], o?: CommandOptions) =>
+      c.json(`/orders/${id}/items`, OrderSchema, { method: POST, body: { items }, ...extras(o) }),
+    updateItem: (id: string, itemId: string, body: UpdateOrderItemBody, o?: CommandOptions) =>
+      c.json(`/orders/${id}/items/${itemId}`, OrderSchema, { method: PATCH, body, ...extras(o) }),
+    cancelItem: (id: string, itemId: string, body: CancelOrderItemBody, o?: CommandOptions) =>
+      c.json(`/orders/${id}/items/${itemId}/cancel`, OrderSchema, {
+        method: POST,
+        body,
+        ...extras(o),
+      }),
+    /** Sends every PENDING item to the kitchen: one KOT per station. */
+    fire: (id: string, o?: CommandOptions) =>
+      c.json(`/orders/${id}/kots`, FireKotsResponseSchema, { method: POST, ...extras(o) }),
+    cancel: (id: string, body: CancelOrderBody, o?: CommandOptions) =>
+      c.json(`/orders/${id}/cancel`, OrderSchema, { method: POST, body, ...extras(o) }),
+  },
+  kitchen: {
+    /** Active KOTs (NEW → READY); all stations when `stationId` is null. */
+    kots: (stationId: string | null) =>
+      c.json('/kitchen/kots', KotsResponseSchema, {
+        query: { station: stationId ?? undefined },
+      }),
+    setStatus: (id: string, to: KotTarget, version: number) =>
+      c.json(`/kitchen/kots/${id}/status`, KotSchema, { method: POST, body: { to, version } }),
+    bumpItem: (id: string, itemId: string) =>
+      c.json(`/kitchen/kots/${id}/items/${itemId}/ready`, KotSchema, { method: POST }),
+    assign: (id: string, chefId: string | null, version: number) =>
+      c.json(`/kitchen/kots/${id}/assign`, KotSchema, { method: POST, body: { chefId, version } }),
+    chefs: () => c.json('/kitchen/chefs', ChefsResponseSchema),
+    metrics: () => c.json('/kitchen/metrics', KitchenMetricsSchema),
+  },
+  tokens: {
+    /** Public: the token display TV works without anyone signed in. */
+    board: () => c.json('/tokens', TokenBoardSchema, { auth: false }),
   },
   hub: {
     info: () => c.json('/hub/info', HubInfoSchema, { auth: false }),

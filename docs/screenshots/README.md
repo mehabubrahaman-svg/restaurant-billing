@@ -337,3 +337,143 @@ Files starting `real-hub-` were taken against a running Hub during verification.
 **Table qr · Hindi · 768 × 1024**
 
 ![Table qr · Hindi · 768 × 1024](sprint-3/table-qr-768x1024-hi-IN.png)
+
+## Sprint 4 — order pad, kitchen display, token display, offline queue
+
+Files starting `real-hub-` were taken against a running Hub during verification, in the order of the flow: table → options sheet → send → KDS → ready alert → cancel with approval → offline queue and replay → token display. The rest use mocked data in Hindi (768 px) and Bengali (1366 px); the KDS also at 1920 px.
+
+**Captain floor · English · 768 px**
+
+![Captain floor · English · 768 px](sprint-4/real-hub-01-captain-floor-en-768.png)
+
+**Options sheet · English · 768 px**
+
+![Options sheet · English · 768 px](sprint-4/real-hub-02-options-sheet-en-768.png)
+
+**Order pad pending · English · 768 px**
+
+![Order pad pending · English · 768 px](sprint-4/real-hub-03-order-pad-pending-en-768.png)
+
+**Order pad sent · English · 768 px**
+
+![Order pad sent · English · 768 px](sprint-4/real-hub-04-order-pad-sent-en-768.png)
+
+**Kds new kots · English · 1920 px**
+
+![Kds new kots · English · 1920 px](sprint-4/real-hub-05-kds-new-kots-en-1920.png)
+
+**Captain ready toast · English · 768 px**
+
+![Captain ready toast · English · 768 px](sprint-4/real-hub-06-captain-ready-toast-en-768.png)
+
+**Kds ready · English · 1920 px**
+
+![Kds ready · English · 1920 px](sprint-4/real-hub-07-kds-ready-en-1920.png)
+
+**Cancel approval · English · 768 px**
+
+![Cancel approval · English · 768 px](sprint-4/real-hub-08-cancel-approval-en-768.png)
+
+**Cancelled line · English · 768 px**
+
+![Cancelled line · English · 768 px](sprint-4/real-hub-09-cancelled-line-en-768.png)
+
+**Offline queued · English · 768 px**
+
+![Offline queued · English · 768 px](sprint-4/real-hub-10-offline-queued-en-768.png)
+
+**Offline replayed · English · 768 px**
+
+![Offline replayed · English · 768 px](sprint-4/real-hub-11-offline-replayed-en-768.png)
+
+**Captain floor after · English · 768 px**
+
+![Captain floor after · English · 768 px](sprint-4/real-hub-12-captain-floor-after-en-768.png)
+
+**Token display · Bengali · 1366 px**
+
+![Token display · Bengali · 1366 px](sprint-4/real-hub-13-token-display-bn-1366.png)
+
+**Order pad · Hindi · 768 px**
+
+![Order pad · Hindi · 768 px](sprint-4/real-hub-14-order-pad-hi-768.png)
+
+**Captain floor · Bengali · 1366 px**
+
+![Captain floor · Bengali · 1366 px](sprint-4/real-hub-15-captain-floor-bn-1366.png)
+
+**Kds · Hindi · 1366 px**
+
+![Kds · Hindi · 1366 px](sprint-4/real-hub-16-kds-hi-1366.png)
+
+**Reload while hub down · English · 768 px**
+
+![Reload while hub down · English · 768 px](sprint-4/real-hub-17-reload-while-hub-down-en-768.png)
+
+**After reload replay · English · 768 px**
+
+![After reload replay · English · 768 px](sprint-4/real-hub-18-after-reload-replay-en-768.png)
+
+**Kds after resume · English · 1366 px**
+
+![Kds after resume · English · 1366 px](sprint-4/real-hub-19-kds-after-resume-en-1366.png)
+
+**Cancel approval · Bengali · 1366 px**
+
+![Cancel approval · Bengali · 1366 px](sprint-4/cancel-approval-bn-IN-1366.png)
+
+**Cancel approval · Hindi · 768 px**
+
+![Cancel approval · Hindi · 768 px](sprint-4/cancel-approval-hi-IN-768.png)
+
+**Captain floor · Bengali · 1366 px**
+
+![Captain floor · Bengali · 1366 px](sprint-4/captain-floor-bn-IN-1366.png)
+
+**Captain floor · Hindi · 768 px**
+
+![Captain floor · Hindi · 768 px](sprint-4/captain-floor-hi-IN-768.png)
+
+**Kds · Bengali · 1366 px**
+
+![Kds · Bengali · 1366 px](sprint-4/kds-bn-IN-1366.png)
+
+**Kds · English · 1920 px**
+
+![Kds · English · 1920 px](sprint-4/kds-en-IN-1920.png)
+
+**Kds · Hindi · 768 px**
+
+![Kds · Hindi · 768 px](sprint-4/kds-hi-IN-768.png)
+
+**Offline queued · Bengali · 1366 px**
+
+![Offline queued · Bengali · 1366 px](sprint-4/offline-queued-bn-IN-1366.png)
+
+**Offline queued · Hindi · 768 px**
+
+![Offline queued · Hindi · 768 px](sprint-4/offline-queued-hi-IN-768.png)
+
+**Options sheet · Bengali · 1366 px**
+
+![Options sheet · Bengali · 1366 px](sprint-4/options-sheet-bn-IN-1366.png)
+
+**Options sheet · Hindi · 768 px**
+
+![Options sheet · Hindi · 768 px](sprint-4/options-sheet-hi-IN-768.png)
+
+**Order pad · Bengali · 1366 px**
+
+![Order pad · Bengali · 1366 px](sprint-4/order-pad-bn-IN-1366.png)
+
+**Order pad · Hindi · 768 px**
+
+![Order pad · Hindi · 768 px](sprint-4/order-pad-hi-IN-768.png)
+
+**Token display · Bengali · 1366 px**
+
+![Token display · Bengali · 1366 px](sprint-4/token-display-bn-IN-1366.png)
+
+**Token display · Hindi · 768 px**
+
+![Token display · Hindi · 768 px](sprint-4/token-display-hi-IN-768.png)

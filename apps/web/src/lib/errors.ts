@@ -43,6 +43,13 @@ const CODE_KEYS = {
   DEVICE_NOT_PAIRED: 'errors.deviceNotPaired',
   PAIRING_CODE_INVALID: 'errors.pairingCodeInvalid',
   DEVICE_MUST_REPAIR: 'errors.deviceMustRepair',
+  TABLE_NOT_FREE: 'errors.tableNotFree',
+  ORDER_NOT_OPEN: 'errors.orderNotOpen',
+  ITEM_ALREADY_SENT: 'errors.itemAlreadySent',
+  NOTHING_TO_FIRE: 'errors.nothingToFire',
+  ITEM_UNAVAILABLE: 'errors.itemUnavailable',
+  IDEMPOTENCY_KEY_REUSED: 'errors.unknown',
+  IDEMPOTENCY_IN_PROGRESS: 'errors.inProgress',
   INTERNAL_ERROR: 'errors.unknown',
 } as const;
 

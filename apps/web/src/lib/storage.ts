@@ -16,6 +16,10 @@ export const STORAGE_KEYS = {
   deviceKindOverride: 'restroos.device-kind-override',
   /** Random id this browser sends when pairing, so the Hub recognises a re-pair. Not a secret. */
   deviceFingerprint: 'restroos.device-fingerprint',
+  /** Chimes (new KOT, ready alert, token ready) switched off on this device. */
+  soundMuted: 'restroos.sound-muted',
+  /** The KDS station this screen shows ("all" or a station id). */
+  kdsStation: 'restroos.kds-station',
 } as const;
 
 export function readStorage(key: string): string | null {

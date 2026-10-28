@@ -70,7 +70,7 @@
     "reconnecting": "Reconnecting…",
     "bluetooth": "Bluetooth mode",
     "offline": "Offline",
-    "queued": "{count, plural, one {# action queued} other {# actions queued}}",
+    "queued": "{count, plural, one {# queued} other {# queued}}",
     "hint": {
       "live": "Connected to the Hub.",
       "reconnecting": "Trying to reach the Hub.",
@@ -160,7 +160,9 @@
     }
   },
   "time": {
-    "minutes": "{minutes, number} min"
+    "minutes": "{minutes, number} min",
+    "elapsedMinutes": "{minutes, number}m",
+    "elapsedHours": "{hours, number}h {minutes, number}m"
   },
   "errors": {
     "network": "Cannot reach the Hub. Check the Wi-Fi and try again.",
@@ -201,7 +203,13 @@
     "invalidStateTransition": "The table can’t change to that status right now. It may have just changed: check it again.",
     "deviceNotPaired": "This device is not paired with the Hub, so PIN sign-in is off here.",
     "pairingCodeInvalid": "This code is wrong, already used or expired. Ask the admin for a new one.",
-    "deviceMustRepair": "This device was unpaired. Pair it again with a new code."
+    "deviceMustRepair": "This device was unpaired. Pair it again with a new code.",
+    "tableNotFree": "This table already has guests, a bill, or is blocked.",
+    "orderNotOpen": "This order is billed, paid or cancelled, so it can’t change.",
+    "itemAlreadySent": "This item has already gone to the kitchen.",
+    "nothingToFire": "There is nothing new to send to the kitchen.",
+    "itemUnavailable": "A dish is out of stock (86) or no longer on the menu. Remove it and try again.",
+    "inProgress": "The Hub is still working on this. Wait a moment."
   },
   "common": {
     "save": "Save",
@@ -1059,11 +1067,6 @@
     }
   },
   "captain": {
-    "sections": "Captain views",
-    "tabs": {
-      "floor": "Floor",
-      "menu": "Menu"
-    },
     "view": "View",
     "viewPlan": "Floor plan",
     "viewList": "List",
@@ -1084,7 +1087,35 @@
     "noStatusPermission": "Your role cannot change table status.",
     "statusChanged": "{label} is now {status}.",
     "takeOrder": "Take order",
-    "takeOrderNext": "Taking orders from here comes in the next update."
+    "newTakeaway": "Takeaway",
+    "newDelivery": "Delivery",
+    "filter": {
+      "label": "Show tables",
+      "all": "All",
+      "mine": "Mine",
+      "free": "Free",
+      "empty": "No tables match this filter."
+    },
+    "tileOrderLabel": "Table {label}, {status}, open {minutes, plural, one {# minute} other {# minutes}}, {amount}{ready, plural, =0 {} one {, # dish ready} other {, # dishes ready}}",
+    "coversShort": "{covers, plural, one {# guest} other {# guests}}",
+    "readyCount": "{count, plural, one {# ready} other {# ready}}",
+    "tableActions": "Actions for table {label}",
+    "counterOrders": "Takeaway and delivery",
+    "counterMeta": "{type} · {elapsed}",
+    "openOrder": "Open order",
+    "transfer": {
+      "move": "Move table",
+      "merge": "Merge tables",
+      "moveTitle": "Move {label} to…",
+      "mergeTitle": "Merge {label} into…",
+      "moveHint": "The order moves to a free table. {label} becomes free.",
+      "mergeHint": "This order’s items join the order on the table you pick.",
+      "target": "Target table",
+      "noFree": "No free table right now.",
+      "noOpen": "No other table has a running order.",
+      "moved": "Moved {from} to {to}.",
+      "merged": "Merged {from} into {to}."
+    }
   },
   "devices": {
     "title": "Devices",
@@ -1216,5 +1247,185 @@
     "continue": "Continue",
     "alreadyTitle": "Already paired",
     "alreadyBody": "This device is paired as {name} ({kind}). Pair it again only if the admin asked you to."
+  },
+  "sound": {
+    "on": "Sound on",
+    "off": "Sound off"
+  },
+  "order": {
+    "number": "Order #{orderNo}",
+    "token": "Token {token, number}",
+    "titleTable": "{label} · Order #{orderNo}",
+    "titleToken": "{type} · Token {token, number} · #{orderNo}",
+    "backToFloor": "Back to floor",
+    "closed": {
+      "OPEN": "This order is open.",
+      "PENDING_APPROVAL": "This QR order waits for a captain to confirm it.",
+      "BILLED": "This order is billed. Ask the cashier to make changes.",
+      "PAID": "This order is paid and closed.",
+      "CANCELLED": "This order was cancelled.",
+      "VOID": "This order was voided."
+    },
+    "covers": {
+      "title": "Table {label}: how many guests?",
+      "description": "You can change this later.",
+      "start": "Start order",
+      "label": "Guests",
+      "fewer": "One guest fewer",
+      "more": "One guest more",
+      "unset": "Guests",
+      "count": "{covers, plural, one {# guest} other {# guests}}",
+      "change": "Change guests"
+    },
+    "menu": {
+      "label": "Menu",
+      "search": "Search dishes",
+      "tileAdd": "Add {name}, {price}",
+      "tileOptions": "{name}, from {price}: choose options",
+      "tileOut": "{name}: out of stock",
+      "fromPrice": "from {price}",
+      "out": "86’d"
+    },
+    "options": {
+      "size": "Size",
+      "limits": "{min, plural, =0 {(up to {max, number})} other {(choose {min, number}–{max, number})}}",
+      "addonPrice": "+{price}",
+      "chooseAtLeast": "{count, plural, one {Choose at least # option.} other {Choose at least # options.}}",
+      "fewer": "One less",
+      "more": "One more",
+      "add": "Add · {amount}"
+    },
+    "note": {
+      "label": "Note for the kitchen",
+      "free": "Other note",
+      "quick": {
+        "lessSpicy": "Less spicy",
+        "noOnion": "No onion",
+        "jain": "Jain"
+      },
+      "title": "Note: {name}",
+      "add": "Note",
+      "edit": "Edit note"
+    },
+    "panel": {
+      "title": "Order #{orderNo}"
+    },
+    "pad": {
+      "newTitle": "New (not sent)",
+      "empty": "Tap dishes on the menu to add them.",
+      "nothingNew": "Nothing new. Tap dishes to add more.",
+      "subtotal": "Subtotal",
+      "saveFailed": "Couldn’t add dishes: {reason}"
+    },
+    "kot": {
+      "label": "KOT {kotNo, number}",
+      "title": "Sent · KOT {kotNo, number}",
+      "titleStation": "Sent · KOT {kotNo, number} · {station}",
+      "markServed": "Mark KOT {kotNo, number} served"
+    },
+    "line": {
+      "withVariant": "{name} ({variant})",
+      "addons": "+ {addons}",
+      "qty": "×{quantity, number}",
+      "qtyLong": "Quantity {quantity, number}",
+      "cancelled": "Cancelled",
+      "cancelledReason": "Cancelled: {reason}",
+      "ready": "Ready",
+      "queued": "Queued: not on the Hub yet",
+      "changeQueued": "Change queued",
+      "fewer": "One less {name}",
+      "more": "One more {name}",
+      "remove": "Remove {name}"
+    },
+    "fire": {
+      "button": "Send to kitchen ({count, number})",
+      "sent": "{count, plural, =0 {Sent to the kitchen.} one {Sent to the kitchen: KOT {kots}.} other {Sent to the kitchen: KOTs {kots}.}}",
+      "queued": "Saved on this tablet. The kitchen is not notified yet.",
+      "notNotifiedTitle": "Kitchen not notified yet",
+      "notNotified": "No connection to the Hub. The order will go to the kitchen as soon as the connection is back. Tell the guest it may take a little longer."
+    },
+    "cancel": {
+      "itemAction": "Cancel {name}",
+      "itemTitle": "Cancel {name} ×{quantity, number}?",
+      "itemHint": "It has already gone to the kitchen. A manager may need to approve.",
+      "itemConfirm": "Cancel item",
+      "keep": "Keep item",
+      "reason": "Reason",
+      "reasonOther": "Reason (at least 3 letters)",
+      "itemReasons": {
+        "guestChanged": "Guest changed mind",
+        "wrongItem": "Wrong item entered",
+        "tooSlow": "Took too long",
+        "kitchenOut": "Kitchen ran out"
+      },
+      "wastage": "Food was already made (wastage)",
+      "wastageHint": "Counted as wastage in stock reports.",
+      "orderAction": "Cancel order",
+      "orderTitle": "Cancel order #{orderNo}?",
+      "orderHint": "Nothing has gone to the kitchen yet. The table becomes free.",
+      "orderSentHint": "Some dishes have gone to the kitchen. A manager may need to approve.",
+      "orderConfirm": "Cancel order",
+      "keepOrder": "Keep order",
+      "orderReasons": {
+        "guestLeft": "Guest left",
+        "duplicate": "Duplicate order",
+        "wrongTable": "Opened on the wrong table"
+      },
+      "orderDone": "Order #{orderNo} cancelled."
+    },
+    "attention": {
+      "addItems": "Dishes not added: needs attention",
+      "updateItem": "Change not saved: needs attention",
+      "cancelItem": "Removal not saved: needs attention",
+      "fire": "KOT not sent: needs attention",
+      "body": "The Hub refused this queued change: {reason}",
+      "discard": "Discard"
+    },
+    "ready": {
+      "title": "{where} · KOT {kotNo, number} ready",
+      "item": "{name} ×{quantity, number}",
+      "open": "Open order"
+    }
+  },
+  "kds": {
+    "title": "Kitchen",
+    "station": "Station",
+    "allStations": "All stations",
+    "metrics": {
+      "label": "Kitchen today",
+      "pending": "Pending",
+      "avg": "Avg cook",
+      "none": "–",
+      "delayed": "Delayed"
+    },
+    "column": "{status} ({count, number})",
+    "empty": "Nothing here.",
+    "kotTitle": "KOT {kotNo, number} · {where}",
+    "readyFor": "Ready {elapsed}",
+    "late": "Past target time",
+    "chef": "Chef: {name}",
+    "chefNone": "Chef: not assigned",
+    "assign": "Assign",
+    "reassign": "Change",
+    "assignTitle": "Assign KOT {kotNo, number} to",
+    "unassign": "Remove chef",
+    "addon": "+ {name}{quantity, plural, =1 {} other { ×#}}",
+    "note": "Note",
+    "bump": "Mark {quantity, number} {name} ready",
+    "action": {
+      "accept": "Accept",
+      "start": "Start",
+      "ready": "Ready",
+      "served": "Served"
+    }
+  },
+  "tokens": {
+    "title": "Order tokens",
+    "preparing": "Preparing",
+    "ready": "Ready",
+    "none": "–",
+    "connecting": "Connecting to the Hub…",
+    "unavailable": "Tokens can’t be shown right now. Checking again…",
+    "enableSound": "Tap to turn sound on"
   }
 }

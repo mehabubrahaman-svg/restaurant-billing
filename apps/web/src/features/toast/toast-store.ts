@@ -1,13 +1,27 @@
 import type { AlertTone } from '@restroos/ui';
 import { create } from 'zustand';
 
+export interface ToastAction {
+  readonly label: string;
+  readonly onClick: () => void;
+}
+
 export interface Toast {
   readonly id: number;
   readonly message: string;
   readonly tone: AlertTone;
+  readonly title?: string;
+  readonly action?: ToastAction;
 }
 
 const VISIBLE_MS = 4_000;
+
+export interface ToastOptions {
+  readonly title?: string;
+  readonly action?: ToastAction;
+  /** How long it stays; default 4 s. */
+  readonly durationMs?: number;
+}
 let nextId = 1;
 
 interface ToastState {
@@ -21,8 +35,19 @@ export const useToastStore = create<ToastState>()((set) => ({
 }));
 
 /** Short confirmation after an action ("User saved"). Errors stay inline instead. */
-export function toast(message: string, tone: AlertTone = 'success'): void {
+export function toast(
+  message: string,
+  tone: AlertTone = 'success',
+  { title, action, durationMs = VISIBLE_MS }: ToastOptions = {},
+): void {
   const id = nextId++;
-  useToastStore.setState((s) => ({ toasts: [...s.toasts, { id, message, tone }] }));
-  setTimeout(() => useToastStore.getState().dismiss(id), VISIBLE_MS);
+  const entry: Toast = {
+    id,
+    message,
+    tone,
+    ...(title === undefined ? {} : { title }),
+    ...(action === undefined ? {} : { action }),
+  };
+  useToastStore.setState((s) => ({ toasts: [...s.toasts, entry] }));
+  setTimeout(() => useToastStore.getState().dismiss(id), durationMs);
 }

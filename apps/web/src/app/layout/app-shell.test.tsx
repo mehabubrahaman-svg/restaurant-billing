@@ -103,7 +103,7 @@ describe('AppShell', () => {
     });
     const pill = screen.getAllByRole('status').find((el) => el.hasAttribute('data-status'))!;
     await waitFor(() => expect(pill).toHaveAttribute('data-status', 'offline'));
-    expect(pill).toHaveTextContent('3 actions queued');
+    expect(pill).toHaveTextContent('Offline3 queued');
     act(() => window.dispatchEvent(new Event('online')));
   });
 

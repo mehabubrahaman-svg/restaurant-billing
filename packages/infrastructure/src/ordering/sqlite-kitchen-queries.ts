@@ -152,7 +152,7 @@ export class SqliteKitchenQueries implements KitchenQueries {
     const ids = rows.map((r) => r.id);
     const items = this.db
       .prepare<string[], ItemRow>(
-        `SELECT i.kot_id AS kotId, i.id, i.item_name AS name, i.variant_name AS variantName, i.food_type AS foodType,
+        `SELECT i.kot_id AS kotId, i.id, i.menu_item_id AS menuItemId, i.variant_id AS variantId, i.item_name AS name, i.variant_name AS variantName, i.food_type AS foodType,
                 i.quantity, i.special_note AS specialNote, i.course, i.status, i.cancel_reason AS cancelReason,
                 coalesce((SELECT json_group_array(json_object('name', a.addon_name, 'quantity', a.quantity))
                             FROM order_item_addons a WHERE a.order_item_id = i.id), '[]') AS addons

@@ -214,7 +214,9 @@ describe('JSON bodies', () => {
   it('treats an empty JSON body as no body, and rejects broken JSON', async () => {
     server = await createTestServer({
       registerApiRoutes: (api) => {
-        api.post('/echo', { config: { public: true } }, async (request) => ({ body: request.body ?? null }));
+        api.post('/echo', { config: { public: true } }, async (request) => ({
+          body: request.body ?? null,
+        }));
       },
     });
     const empty = await server.app.inject({

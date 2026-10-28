@@ -1,5 +1,6 @@
 import type { ConnectionStatus } from '@restroos/ui';
 import { create } from 'zustand';
+import type { LiveStatus } from '../live/ws-client';
 
 /** Which link to the Hub is carrying traffic. Bluetooth fallback arrives in Phase 1.5. */
 export type Transport = 'lan' | 'bluetooth';
@@ -14,6 +15,8 @@ export interface ConnectionSnapshot {
   readonly transport: Transport;
   /** Commands waiting in the offline queue (filled by the captain app's IndexedDB queue). */
   readonly queuedCount: number;
+  /** The live-updates WebSocket; `idle` where none is open (signed out). */
+  readonly live: LiveStatus;
 }
 
 /** Three missed polls (~15 s) before "reconnecting" turns into "offline". */
@@ -23,7 +26,11 @@ export function deriveConnectionStatus(s: ConnectionSnapshot): ConnectionStatus 
   // Wi-Fi may be down while orders still flow over Bluetooth.
   if (s.transport === 'bluetooth') return 'bluetooth';
   if (!s.browserOnline) return 'offline';
-  if (s.consecutiveFailures === 0) return s.hasConnected ? 'live' : 'reconnecting';
+  if (s.consecutiveFailures === 0) {
+    if (!s.hasConnected) return 'reconnecting';
+    // The Hub answers, but live updates are not flowing: screens may be stale.
+    return s.live === 'down' ? 'reconnecting' : 'live';
+  }
   return s.consecutiveFailures >= OFFLINE_AFTER_FAILURES ? 'offline' : 'reconnecting';
 }
 
@@ -33,6 +40,7 @@ interface ConnectionState extends ConnectionSnapshot {
   setBrowserOnline(online: boolean): void;
   setTransport(transport: Transport): void;
   setQueuedCount(count: number): void;
+  setLive(live: LiveStatus): void;
 }
 
 export const useConnectionStore = create<ConnectionState>()((set) => ({
@@ -41,11 +49,13 @@ export const useConnectionStore = create<ConnectionState>()((set) => ({
   hasConnected: false,
   transport: 'lan',
   queuedCount: 0,
+  live: 'idle',
   reportSuccess: () => set({ consecutiveFailures: 0, hasConnected: true }),
   reportFailure: () => set((s) => ({ consecutiveFailures: s.consecutiveFailures + 1 })),
   setBrowserOnline: (browserOnline) => set({ browserOnline }),
   setTransport: (transport) => set({ transport }),
   setQueuedCount: (queuedCount) => set({ queuedCount }),
+  setLive: (live) => set({ live }),
 }));
 
 export function useConnectionStatus(): ConnectionStatus {
