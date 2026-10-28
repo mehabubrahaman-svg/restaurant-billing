@@ -351,6 +351,45 @@ export class Order extends AggregateRoot {
     return moved;
   }
 
+  /** Bill generated: nothing may change until the bill is paid or cancelled. */
+  markBilled(at: Date): void {
+    this.assertOpen();
+    if (this.pendingLines().length > 0) {
+      throw new DomainError(
+        'ORDER_HAS_UNSENT_ITEMS',
+        'send or remove the items still on the pad before billing',
+      );
+    }
+    if (this.live().length === 0)
+      throw new DomainError('NOTHING_TO_BILL', 'the order has no items to bill');
+    this.s.status = 'BILLED';
+    this.raise('OrderBilled', { subtotal: this.subtotal }, at);
+  }
+
+  /** The bill was cancelled before payment: the order can change again. */
+  reopen(at: Date): void {
+    if (this.s.status !== 'BILLED') {
+      throw new DomainError(
+        'INVALID_STATE_TRANSITION',
+        `a ${this.s.status.toLowerCase()} order can't be reopened`,
+      );
+    }
+    this.s.status = 'OPEN';
+    this.raise('OrderReopened', {}, at);
+  }
+
+  markPaid(at: Date): void {
+    if (this.s.status !== 'BILLED') {
+      throw new DomainError(
+        'INVALID_STATE_TRANSITION',
+        `a ${this.s.status.toLowerCase()} order can't be paid`,
+      );
+    }
+    this.s.status = 'PAID';
+    this.s.closedAt = at;
+    this.raise('OrderPaid', { tableId: this.s.tableId }, at);
+  }
+
   private live(): OrderLine[] {
     return this.s.lines.filter((l) => l.status !== 'CANCELLED');
   }

@@ -25,7 +25,10 @@ const CATALOG = new Set(['MenuItem', 'Category', 'AddonGroup', 'KitchenStation']
  * raises five events for one order sends one `ordering.order.updated`.
  */
 export function messagesFor(
-  cradle: Pick<Cradle, 'orderQueries' | 'kitchenQueries' | 'floorService' | 'calendar'>,
+  cradle: Pick<
+    Cradle,
+    'orderQueries' | 'kitchenQueries' | 'floorService' | 'calendar' | 'billingQueries'
+  >,
   event: EventRef,
 ): Outgoing[] {
   const base = {
@@ -72,6 +75,17 @@ export function messagesFor(
     case 'Order':
       orderUpdated(event.aggregateId);
       break;
+    case 'Invoice': {
+      const invoice = cradle.billingQueries.summary(event.branchId, event.aggregateId);
+      if (!invoice) break;
+      out.push({
+        key: `invoice:${invoice.id}`,
+        topics: ['floor'],
+        message: { ...base, type: 'billing.invoice.updated', data: { invoice } },
+      });
+      orderUpdated(invoice.orderId);
+      break;
+    }
     case 'Kot': {
       const kot = cradle.kitchenQueries.kot(event.branchId, event.aggregateId);
       if (!kot) break;

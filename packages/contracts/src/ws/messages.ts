@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IdSchema } from '../http/common';
+import { InvoiceSummarySchema } from '../http/billing';
 import { TableStatusSchema } from '../http/floor';
 import { KotSchema } from '../http/kitchen';
 import { KotStatusSchema, OrderSummarySchema } from '../http/ordering';
@@ -48,6 +49,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   envelope('kitchen.kot.delayed', z.object({ kotId: IdSchema, overdueSeconds: z.number().int() })),
   /** A takeaway token is ready: the token display shows and chimes it. */
   envelope('token.ready', z.object({ tokenNo: z.number().int(), orderId: IdSchema })),
+  /** An invoice was issued, paid, cancelled or refunded. */
+  envelope('billing.invoice.updated', z.object({ invoice: InvoiceSummarySchema })),
   /** Menu or availability changed: refetch GET /menu (it answers 304 if nothing did). */
   envelope('menu.changed', z.object({})),
 ]);
@@ -83,7 +86,7 @@ export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 
 /**
  * Which messages a connection receives depends on its permissions:
- * - `floor` (tables.view): table, order and KOT status messages, menu.changed
+ * - `floor` (tables.view, billing.create): table, order, invoice and KOT status messages, menu.changed
  * - `kitchen` (kds.view): every KOT message, delays, menu.changed
  * - `tokens` (anyone, including a paired TOKEN_DISPLAY device without a user): token.ready
  */

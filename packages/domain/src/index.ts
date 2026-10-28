@@ -18,3 +18,6 @@ export * from './catalog/menu-rules';
 export * from './floor/table-status';
 export * from './ordering/order';
 export * from './kitchen/kot';
+export * from './billing/tax-engine';
+export * from './billing/invoice';
+export * from './billing/credit-note';

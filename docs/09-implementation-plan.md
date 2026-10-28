@@ -53,6 +53,8 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 
 ## Sprint 5 — Billing & go-live hardening (2.5 wks)
 
+> **Status (2026-10-28)**: delivered in two halves. **5A (WP 5.1–5.4)**: backend done: tax engine (per-line GST/VAT, inclusive and exclusive prices, bill discounts spread before tax, taxed service charge, LIQ split, aggregator GST-by-operator, cash rounding; hand-computed table tests), gapless INV/LIQ/CN numbering, discounts with role limit and approval, coupons, complimentary, split payments with keyed card/UPI references, cash shifts with X/Z and per-terminal variances, cancellation and line/amount credit notes. POS screens in progress. **5B (WP 5.5–5.10)** follows.
+
 | WP | Deliverable |
 |---|---|
 | 5.1 | `TaxEngine`: GST (inclusive/exclusive, CGST/SGST/IGST, line-level) + liquor VAT (rate + surcharge), mixed-order split into `INV`/`LIQ` invoices, aggregator `gst_paid_by_operator`, round-off. Exhaustive table tests vs. invoices hand-computed with a CA |

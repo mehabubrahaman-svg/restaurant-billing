@@ -1,6 +1,10 @@
 import {
   AuthService,
+  BillingService,
   CatalogService,
+  CouponService,
+  ShiftService,
+  type BillingQueries,
   DeviceService,
   FloorService,
   KitchenService,
@@ -32,6 +36,10 @@ import {
   nodeTokenCodec,
   ScryptKeyDerivation,
   SqliteAuditQueries,
+  SqliteBillingQueries,
+  SqliteCouponRepository,
+  SqliteInvoiceRepository,
+  SqliteShiftRepository,
   SqliteBusinessCalendar,
   SqliteKitchenQueries,
   SqliteKotRepository,
@@ -92,6 +100,10 @@ export interface Cradle {
   kitchenQueries: KitchenQueries;
   orderService: OrderService;
   kitchenService: KitchenService;
+  billingQueries: BillingQueries;
+  billingService: BillingService;
+  couponService: CouponService;
+  shiftService: ShiftService;
 }
 
 export interface ContainerOverrides {
@@ -257,6 +269,56 @@ export function buildContainer(
           queries: c.kitchenQueries,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
+        }),
+    ),
+    billingQueries: single(
+      (c) =>
+        new SqliteBillingQueries(
+          c.db,
+          new SqliteInvoiceRepository(c.db, now, (b, at) => c.calendar.businessDate(b, at)),
+        ),
+    ),
+    billingService: single(
+      (c) =>
+        new BillingService({
+          invoices: new SqliteInvoiceRepository(c.db, now, (b, at) =>
+            c.calendar.businessDate(b, at),
+          ),
+          orders: new SqliteOrderRepository(c.db, now),
+          coupons: new SqliteCouponRepository(c.db),
+          shifts: new SqliteShiftRepository(c.db),
+          catalog: new SqliteCatalogRepository(c.db),
+          settings: new SqliteSettingsRepository(c.db),
+          floor: new SqliteFloorRepository(c.db),
+          calendar: c.calendar,
+          defaultTaxGroupId: () =>
+            c.db
+              .prepare<[], string | null>(
+                "SELECT json_extract(value_json, '$') FROM settings WHERE key = 'billing.default_tax_group_id' LIMIT 1",
+              )
+              .pluck()
+              .get() ?? null,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    couponService: single(
+      (c) =>
+        new CouponService({
+          coupons: new SqliteCouponRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    shiftService: single(
+      (c) =>
+        new ShiftService({
+          shifts: new SqliteShiftRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
         }),
     ),
     hubNetwork: overrides.hubNetwork

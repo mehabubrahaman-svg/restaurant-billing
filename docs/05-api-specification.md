@@ -132,16 +132,25 @@ Implemented in Sprint 4. Contracts: `packages/contracts/src/http/kitchen.ts`.
 | POST | `/kitchen/kots/{id}/reprint` | `kds.view` | Sprint 5, with printing (WP 5.5) |
 
 ### Billing (POS)
+Implemented in Sprint 5 (printing in 5B). Contracts: `packages/contracts/src/http/billing.ts`. Tax engine: `packages/domain/src/billing/tax-engine.ts`.
+
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| POST | `/orders/{id}/invoice` | `billing.create` | `{discounts?:[…], couponCode?, chargeRuleIds?, customerId?, customerTaxId?}` → **one or more** invoices (a separate `LIQ` invoice when liquor is billed separately), with GST/VAT breakup. Order → BILLED, table → BILLING |
-| POST | `/invoices/preview` | `billing.create` | Same body. Computes totals without persisting (live bill panel) |
-| POST | `/invoices/{id}/payments` | `billing.collect_payment` | `{payments:[{method, amount, tendered?, reference?, cardLast4?, terminalLabel?}]}`. Card/UPI are taken on the standalone terminal and the approval code / RRN is keyed in. Split payment = several entries. Fully paid → order PAID, table → CLEANING |
-| POST | `/invoices/{id}/print` | `billing.create` (first) / `billing.reprint` | `{printerId?, copy: CUSTOMER\|DUPLICATE}` |
-| POST | `/invoices/{id}/cancel` | `billing.cancel` + approver | Only if unpaid, or paid same-shift (auto-refunds) |
-| POST | `/invoices/{id}/refunds` | `billing.refund` + approver | `{lines?:[{invoiceLineId, quantity}], amount?, method, reason}` → credit note + negative payment |
-| GET | `/invoices?date=&status=` | `billing.create` | |
-| POST/GET | `/cash-shifts`, `/cash-shifts/{id}/close` | `cash.shift_manage` | `{openingFloat}` / `{countedCash, denominations, tenders:[{method, terminalLabel?, reportedAmount}]}` → X/Z report with per-terminal variance |
+| POST | `/orders/{id}/bill-preview` | `billing.create` | Body as below. Computes the bill(s) without saving: lines, discounts, charges, CGST/SGST (or VAT) per rate, round-off, total |
+| POST | `/orders/{id}/invoice` | `billing.create` (+ approvals below) | `{discount?:{kind: PERCENT\|FIXED, value, reason?}, couponCode?, complimentary?:{reason}, removeChargeRuleIds?, customer?:{name?, taxId?}}` → **one or two** invoices (a separate `LIQ` invoice when the branch bills liquor separately). Every item must have been sent (`409 ORDER_HAS_UNSENT_ITEMS`). Order → BILLED, table → BILLING. A discount above the branch limit (`discountLimitBp`, default 10%) needs `billing.discount_override`, complimentary needs `billing.complimentary`, otherwise `403 APPROVAL_REQUIRED` with the permission; `422 COUPON_INVALID` |
+| GET | `/orders/{id}/invoices` | `billing.create` | The order's invoices |
+| GET | `/invoices?date=&status=` | `billing.create` | Summaries; today's business date by default |
+| GET | `/invoices/{id}` | `billing.create` | Lines, taxes, discounts, charges, payments |
+| POST | `/invoices/{id}/payments` | `billing.collect_payment` | `{payments:[{method: CASH\|CARD\|UPI\|WALLET\|CREDIT\|AGGREGATOR, amount, tendered?, reference?, cardLast4?, terminalLabel?}]}`. Card/UPI are taken on the standalone terminal and the approval code / RRN keyed in. Split payment = several entries (`409 OVERPAYMENT` beyond the balance). Cash needs an open shift on this counter (`409 SHIFT_NOT_OPEN`). CREDIT needs `billing.credit_sale` and a customer name. All of an order's invoices settled → order PAID, table CLEANING |
+| POST | `/invoices/{id}/cancel` | `billing.cancel` or approval | `{version, reason}`. Cancels the bill and its INV/LIQ sibling; the number stays used. Payments taken in the current shift are reversed; older ones need a refund. The order reopens |
+| POST | `/invoices/{id}/refunds` | `billing.refund` or approval | `{lines?:[{invoiceLineId, quantity}] \| amount?, method, reference?, reason}` → `{creditNote, invoice}`. The credit note (`CN` series) reverses tax in proportion; refunding everything left also returns charges and round-off. Paid out at once as a negative payment |
+| POST | `/invoices/{id}/print` | `billing.create` / `billing.reprint` | Sprint 5B |
+| POST | `/cash-shifts` | `cash.shift_manage` | `{openingFloat}`; one open shift per paired device (or per user on an unpaired browser), `409 SHIFT_ALREADY_OPEN` |
+| GET | `/cash-shifts/current`, `/cash-shifts/{id}` | `cash.shift_manage` | X report while open, Z report once closed: expected cash, sales, refunds, per-method and per-terminal tenders |
+| POST | `/cash-shifts/{id}/close` | `cash.shift_manage` | `{version, countedCash, denominations?, tenders:[{method, terminalLabel, reportedAmount}], notes?}` → Z report with variances (stored in `shift_tender_counts`) |
+| GET/POST/PATCH | `/coupons` | `settings.manage` | `{code, kind: PERCENT\|FIXED, value, maxDiscount?, minBill, validFrom?, validTo?, usageLimit?}` |
+
+Invoice numbers are gapless per branch, series and financial year (`KOL1/2026-27/000123`, `KOL1/LIQ/…`, `KOL1/CN/…`), taken from `document_sequences` inside the invoice's transaction. Restaurant service is supplied where the restaurant is, so bills always carry CGST + SGST (IGST is supported by the engine). Tax is per line with banker's rounding, bill discounts are spread over lines before tax, and the total is rounded to the branch's cash rounding (`roundOff`).
 
 ### Customers
 `GET /customers?phone=` · `POST /customers` · `GET /customers/{id}` (history, favourites, LTV, points) · `POST /customers/{id}/loyalty-adjustments` [`loyalty.adjust`]

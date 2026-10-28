@@ -29,3 +29,7 @@ export type * from './floor/ports';
 export * from './ordering/kitchen-service';
 export * from './ordering/order-service';
 export type * from './ordering/ports';
+export * from './billing/billing-service';
+export type * from './billing/ports';
+export * from './billing/shift-service';
+export * from './billing/coupon-service';

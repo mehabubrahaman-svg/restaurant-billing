@@ -14,6 +14,7 @@ import { idempotencyPlugin } from './plugins/idempotency';
 import { errorHandler, problem, sendProblem } from './problem';
 import { auditRoutes } from './routes/audit';
 import { authRoutes } from './routes/auth';
+import { billingRoutes } from './routes/billing';
 import { catalogRoutes } from './routes/catalog';
 import { deviceRoutes } from './routes/devices';
 import { floorRoutes } from './routes/floor';
@@ -90,6 +91,7 @@ export async function buildApp(
       await api.register(deviceRoutes, { cradle });
       await api.register(orderRoutes, { cradle });
       await api.register(kitchenRoutes, { cradle });
+      await api.register(billingRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(

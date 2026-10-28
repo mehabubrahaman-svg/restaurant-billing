@@ -45,6 +45,14 @@ export const ERROR_STATUS = {
   NOTHING_TO_FIRE: 409,
   /** 86'd in this branch, or retired. */
   ITEM_UNAVAILABLE: 409,
+  /** Send or remove items still on the pad before billing. */
+  ORDER_HAS_UNSENT_ITEMS: 409,
+  /** The payments add up to more than is owed. */
+  OVERPAYMENT: 409,
+  /** Cash needs an open cash shift on this device. */
+  SHIFT_NOT_OPEN: 409,
+  SHIFT_ALREADY_OPEN: 409,
+  COUPON_INVALID: 422,
   IDEMPOTENCY_IN_PROGRESS: 409,
   IDEMPOTENCY_KEY_REUSED: 422,
   VALIDATION_FAILED: 422,

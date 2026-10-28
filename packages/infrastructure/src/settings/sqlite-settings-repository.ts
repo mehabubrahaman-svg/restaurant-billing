@@ -13,6 +13,7 @@ const BRANCH_SETTING_KEYS = {
   liquorEnabled: 'billing.liquor_enabled',
   liquorInvoice: 'billing.liquor_invoice',
   dayStartsAt: 'business.day_starts_at',
+  discountLimitBp: 'billing.discount_limit_bp',
   receiptHeader: 'receipt.header',
   receiptFooter: 'receipt.footer',
 } as const;
@@ -21,6 +22,7 @@ const DEFAULTS = {
   liquorEnabled: false,
   liquorInvoice: 'SAME',
   dayStartsAt: '04:00',
+  discountLimitBp: 1000,
   receiptHeader: '',
   receiptFooter: '',
 } as const;
@@ -77,6 +79,7 @@ export class SqliteSettingsRepository implements SettingsRepository {
       receiptHeader: get('receiptHeader'),
       receiptFooter: get('receiptFooter'),
       dayStartsAt: get('dayStartsAt'),
+      discountLimitBp: get('discountLimitBp'),
       version: row.version,
     };
   }

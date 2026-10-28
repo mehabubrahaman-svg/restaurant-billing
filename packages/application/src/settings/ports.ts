@@ -12,6 +12,8 @@ export interface BranchSettingsRecord {
   liquorEnabled: boolean;
   liquorInvoice: 'SAME' | 'SEPARATE';
   cashRounding: number;
+  /** billing.discount_limit_bp: the most staff may discount without a manager (default 10%). */
+  discountLimitBp: number;
   defaultLocale: string;
   receiptLanguages: string[];
   receiptHeader: string;

@@ -23,6 +23,8 @@ export const BranchSettingsSchema = z.object({
   liquorInvoice: z.enum(['SAME', 'SEPARATE']),
   /** Bill total rounding, in paise: 100 = nearest rupee, 1 = no rounding. */
   cashRounding: PaiseSchema.positive(),
+  /** Largest bill discount, in basis points, staff with billing.discount may give without a manager. */
+  discountLimitBp: z.number().int(),
   defaultLocale: LocaleSchema,
   receiptLanguages: z.array(ReceiptLanguageSchema),
   receiptHeader: z.string(),
@@ -43,6 +45,7 @@ export const UpdateBranchSettingsRequestSchema = z.object({
   exciseLicenceNo: z.string().trim().max(40).nullable().optional(),
   liquorInvoice: z.enum(['SAME', 'SEPARATE']).optional(),
   cashRounding: z.union([z.literal(1), z.literal(50), z.literal(100)]).optional(),
+  discountLimitBp: z.number().int().min(0).max(10_000).optional(),
   defaultLocale: LocaleSchema.optional(),
   receiptLanguages: z.array(ReceiptLanguageSchema).min(1).max(2).optional(),
   receiptHeader: z.string().max(500).optional(),
