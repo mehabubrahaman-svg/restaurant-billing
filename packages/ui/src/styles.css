@@ -1,0 +1,278 @@
+/*
+ * RestroOS design tokens.
+ *
+ * Import after `@import 'tailwindcss'` in the app stylesheet. Themes switch by
+ * setting `data-theme` on <html> to `light`, `dark` or `high-contrast`; with no
+ * attribute the OS `prefers-color-scheme` decides between light and dark.
+ *
+ * Components only use the semantic utilities defined in `@theme inline` below
+ * (bg-surface, text-muted-foreground, text-state-occupied-fg, ...), never raw
+ * palette colours, so a theme is just a different set of variable values.
+ */
+
+/* Let Tailwind find the classes used by the components in this package. */
+@source './';
+
+/* ---------- Light (front of house, default) ---------- */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --background: oklch(98.5% 0.003 247);
+  --foreground: oklch(21% 0.034 264.7);
+  --surface: oklch(100% 0 0);
+  --surface-foreground: oklch(21% 0.034 264.7);
+  --muted: oklch(96.7% 0.003 264.5);
+  --muted-foreground: oklch(44.6% 0.03 256.8);
+  --border: oklch(92.8% 0.006 264.5);
+  --input: oklch(87.2% 0.01 258.3);
+  --ring: oklch(55.3% 0.195 38.4);
+
+  /* Brand: a warm saffron-terracotta. White text on it passes WCAG AA. */
+  --primary: oklch(55.3% 0.195 38.4);
+  --primary-foreground: oklch(100% 0 0);
+  --secondary: oklch(96.7% 0.003 264.5);
+  --secondary-foreground: oklch(21% 0.034 264.7);
+  --accent: oklch(95.4% 0.038 75.2);
+  --accent-foreground: oklch(40.8% 0.123 38.2);
+  --destructive: oklch(50.5% 0.213 27.5);
+  --destructive-foreground: oklch(100% 0 0);
+
+  /* State colours (wireframes §1). Base = icon/border, -fg = readable text. */
+  --state-available: oklch(72.3% 0.219 149.6);
+  --state-available-fg: oklch(52.7% 0.154 150.1);
+  --state-occupied: oklch(62.3% 0.214 259.8);
+  --state-occupied-fg: oklch(48.8% 0.243 264.4);
+  --state-billing: oklch(60.6% 0.25 292.7);
+  --state-billing-fg: oklch(49.1% 0.27 292.6);
+  --state-reserved: oklch(76.9% 0.188 70.1);
+  --state-reserved-fg: oklch(55.5% 0.163 49);
+  --state-cleaning: oklch(70.4% 0.04 256.8);
+  --state-cleaning-fg: oklch(44.6% 0.043 257.3);
+  --state-danger: oklch(63.7% 0.237 25.3);
+  --state-danger-fg: oklch(50.5% 0.213 27.5);
+  --state-tint: 12%;
+}
+
+/* ---------- Dark (default on KDS: less glare in the kitchen) ---------- */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --background: oklch(16% 0.02 264);
+  --foreground: oklch(96.7% 0.003 264.5);
+  --surface: oklch(21% 0.025 264.7);
+  --surface-foreground: oklch(96.7% 0.003 264.5);
+  --muted: oklch(27.8% 0.03 256.8);
+  --muted-foreground: oklch(75% 0.02 256.8);
+  --border: oklch(32% 0.03 260);
+  --input: oklch(40% 0.03 257);
+  --ring: oklch(75% 0.16 55);
+
+  --primary: oklch(75% 0.16 55);
+  --primary-foreground: oklch(21% 0.034 264.7);
+  --secondary: oklch(27.8% 0.03 256.8);
+  --secondary-foreground: oklch(96.7% 0.003 264.5);
+  --accent: oklch(30% 0.05 50);
+  --accent-foreground: oklch(90% 0.08 70);
+  --destructive: oklch(63.7% 0.237 25.3);
+  --destructive-foreground: oklch(100% 0 0);
+
+  --state-available-fg: oklch(87.1% 0.15 154.4);
+  --state-occupied-fg: oklch(80.9% 0.105 251.8);
+  --state-billing-fg: oklch(81.1% 0.111 293.6);
+  --state-reserved-fg: oklch(87.9% 0.169 91.6);
+  --state-cleaning-fg: oklch(86.9% 0.022 252.9);
+  --state-danger-fg: oklch(80.8% 0.114 19.6);
+  --state-tint: 18%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --background: oklch(16% 0.02 264);
+    --foreground: oklch(96.7% 0.003 264.5);
+    --surface: oklch(21% 0.025 264.7);
+    --surface-foreground: oklch(96.7% 0.003 264.5);
+    --muted: oklch(27.8% 0.03 256.8);
+    --muted-foreground: oklch(75% 0.02 256.8);
+    --border: oklch(32% 0.03 260);
+    --input: oklch(40% 0.03 257);
+    --ring: oklch(75% 0.16 55);
+
+    --primary: oklch(75% 0.16 55);
+    --primary-foreground: oklch(21% 0.034 264.7);
+    --secondary: oklch(27.8% 0.03 256.8);
+    --secondary-foreground: oklch(96.7% 0.003 264.5);
+    --accent: oklch(30% 0.05 50);
+    --accent-foreground: oklch(90% 0.08 70);
+    --destructive: oklch(63.7% 0.237 25.3);
+    --destructive-foreground: oklch(100% 0 0);
+
+    --state-available-fg: oklch(87.1% 0.15 154.4);
+    --state-occupied-fg: oklch(80.9% 0.105 251.8);
+    --state-billing-fg: oklch(81.1% 0.111 293.6);
+    --state-reserved-fg: oklch(87.9% 0.169 91.6);
+    --state-cleaning-fg: oklch(86.9% 0.022 252.9);
+    --state-danger-fg: oklch(80.8% 0.114 19.6);
+    --state-tint: 18%;
+  }
+}
+
+/* ---------- High contrast: pure black/white, yellow focus, no subtle greys ---------- */
+[data-theme='high-contrast'] {
+  color-scheme: dark;
+
+  --background: oklch(0% 0 0);
+  --foreground: oklch(100% 0 0);
+  --surface: oklch(0% 0 0);
+  --surface-foreground: oklch(100% 0 0);
+  --muted: oklch(22% 0 0);
+  --muted-foreground: oklch(100% 0 0);
+  --border: oklch(100% 0 0);
+  --input: oklch(100% 0 0);
+  --ring: oklch(92% 0.19 103);
+
+  --primary: oklch(92% 0.19 103);
+  --primary-foreground: oklch(0% 0 0);
+  --secondary: oklch(0% 0 0);
+  --secondary-foreground: oklch(100% 0 0);
+  --accent: oklch(30% 0 0);
+  --accent-foreground: oklch(100% 0 0);
+  --destructive: oklch(70% 0.2 25);
+  --destructive-foreground: oklch(0% 0 0);
+
+  --state-available: oklch(87.1% 0.15 154.4);
+  --state-available-fg: oklch(92.5% 0.084 155.9);
+  --state-occupied: oklch(80.9% 0.105 251.8);
+  --state-occupied-fg: oklch(88.2% 0.059 254.1);
+  --state-billing: oklch(81.1% 0.111 293.6);
+  --state-billing-fg: oklch(89.4% 0.057 293.3);
+  --state-reserved: oklch(87.9% 0.169 91.6);
+  --state-reserved-fg: oklch(94.5% 0.129 101.5);
+  --state-cleaning: oklch(86.9% 0.022 252.9);
+  --state-cleaning-fg: oklch(92.9% 0.013 255.5);
+  --state-danger: oklch(80.8% 0.114 19.6);
+  --state-danger-fg: oklch(88.5% 0.062 18.3);
+  --state-tint: 0%;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-state-available: var(--state-available);
+  --color-state-available-fg: var(--state-available-fg);
+  --color-state-available-soft: color-mix(
+    in oklab,
+    var(--state-available) var(--state-tint),
+    transparent
+  );
+  --color-state-occupied: var(--state-occupied);
+  --color-state-occupied-fg: var(--state-occupied-fg);
+  --color-state-occupied-soft: color-mix(
+    in oklab,
+    var(--state-occupied) var(--state-tint),
+    transparent
+  );
+  --color-state-billing: var(--state-billing);
+  --color-state-billing-fg: var(--state-billing-fg);
+  --color-state-billing-soft: color-mix(
+    in oklab,
+    var(--state-billing) var(--state-tint),
+    transparent
+  );
+  --color-state-reserved: var(--state-reserved);
+  --color-state-reserved-fg: var(--state-reserved-fg);
+  --color-state-reserved-soft: color-mix(
+    in oklab,
+    var(--state-reserved) var(--state-tint),
+    transparent
+  );
+  --color-state-cleaning: var(--state-cleaning);
+  --color-state-cleaning-fg: var(--state-cleaning-fg);
+  --color-state-cleaning-soft: color-mix(
+    in oklab,
+    var(--state-cleaning) var(--state-tint),
+    transparent
+  );
+  --color-state-danger: var(--state-danger);
+  --color-state-danger-fg: var(--state-danger-fg);
+  --color-state-danger-soft: color-mix(
+    in oklab,
+    var(--state-danger) var(--state-tint),
+    transparent
+  );
+}
+
+@theme {
+  /*
+   * Noto Sans has no Indic glyphs, so the browser falls through to the
+   * Devanagari / Bengali families per character. All three are bundled by the
+   * app (no network font loading) and share metrics, so mixed-script lines
+   * such as "KOT 34 · तैयार" sit on one baseline.
+   */
+  --font-sans:
+    'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Touch targets (wireframes §1): 48 px everywhere, 56 px on KDS. */
+  --spacing-touch: 3rem;
+  --spacing-kds: 3.5rem;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+
+  /* Indic scripts have tall matras; give them a little more room. */
+  :lang(hi),
+  :lang(bn) {
+    line-height: 1.6;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  [data-theme='high-contrast'] :focus-visible {
+    outline-width: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

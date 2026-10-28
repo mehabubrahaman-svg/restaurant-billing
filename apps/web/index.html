@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-IN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>RestroOS</title>
+    <script>
+      // Apply the stored theme and language before first paint to avoid a flash.
+      // Keys mirror src/lib/storage.ts (STORAGE_KEYS). Storage may be blocked: ignore.
+      (function () {
+        try {
+          var root = document.documentElement;
+          var theme = localStorage.getItem('restroos.theme');
+          var kind = localStorage.getItem('restroos.device-kind');
+          if (!theme && kind === 'KDS') theme = 'dark';
+          if (theme && theme !== 'system') root.dataset.theme = theme;
+          var locale = localStorage.getItem('restroos.locale');
+          if (locale) root.lang = locale;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

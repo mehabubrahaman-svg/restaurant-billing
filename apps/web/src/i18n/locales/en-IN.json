@@ -1,0 +1,160 @@
+{
+  "app": {
+    "name": "RestroOS",
+    "skipToContent": "Skip to main content",
+    "branch": "Main branch",
+    "branchLabel": "Branch"
+  },
+  "nav": {
+    "label": "Portals"
+  },
+  "portals": {
+    "admin": {
+      "nav": "Admin",
+      "title": "Admin",
+      "description": "Owner dashboard: today’s sales, staff, menu and restaurant settings."
+    },
+    "captain": {
+      "nav": "Captain",
+      "title": "Captain",
+      "description": "Floor view and order pad for taking orders at the table."
+    },
+    "kitchen": {
+      "nav": "Kitchen",
+      "title": "Kitchen display (KDS)",
+      "description": "Live KOTs by station: accept, start cooking and mark ready."
+    },
+    "pos": {
+      "nav": "Billing",
+      "title": "Billing counter",
+      "description": "Open orders, bills, payments and cash shifts."
+    },
+    "inventory": {
+      "nav": "Stock",
+      "title": "Stock",
+      "description": "Raw material stock, recipes, wastage and stock counts."
+    },
+    "purchase": {
+      "nav": "Purchase",
+      "title": "Purchase",
+      "description": "Vendors, purchase orders, goods received (GRN) and vendor payments."
+    },
+    "accounts": {
+      "nav": "Accounts",
+      "title": "Accounts",
+      "description": "Ledgers, expenses and journal entries."
+    },
+    "reports": {
+      "nav": "Reports",
+      "title": "Reports",
+      "description": "Sales, GST, stock and profit reports, with export."
+    },
+    "tokenDisplay": {
+      "nav": "Token display",
+      "title": "Token display",
+      "description": "Ready-order token numbers for the customer TV."
+    },
+    "qrMenu": {
+      "nav": "QR menu",
+      "title": "QR menu",
+      "description": "See the menu and order from your table. Table code: {token}"
+    }
+  },
+  "placeholder": {
+    "badge": "Coming soon",
+    "body": "This screen arrives in a later sprint. The layout, language and theme around it already work."
+  },
+  "connection": {
+    "connecting": "Connecting…",
+    "live": "Live",
+    "reconnecting": "Reconnecting…",
+    "bluetooth": "Bluetooth mode",
+    "offline": "Offline",
+    "queued": "{count, plural, one {# action queued} other {# actions queued}}",
+    "hint": {
+      "live": "Connected to the Hub.",
+      "reconnecting": "Trying to reach the Hub.",
+      "bluetooth": "Wi-Fi is down. Orders are going over Bluetooth.",
+      "offline": "Cannot reach the Hub. Work is saved on this device and will be sent when the connection is back."
+    }
+  },
+  "language": {
+    "label": "Language"
+  },
+  "theme": {
+    "label": "Theme",
+    "system": "Auto",
+    "light": "Light",
+    "dark": "Dark",
+    "highContrast": "High contrast"
+  },
+  "digits": {
+    "label": "Digits",
+    "latin": "123",
+    "native": "Native"
+  },
+  "user": {
+    "menu": "Account menu for {name}",
+    "switch": "Switch user",
+    "role": {
+      "owner": "Owner",
+      "cashier": "Cashier",
+      "captain": "Captain",
+      "chef": "Chef"
+    }
+  },
+  "login": {
+    "title": "Sign in",
+    "device": "{name} · {kind}",
+    "recentUsers": "Recent users on this device",
+    "otherUser": "Other",
+    "chooseUser": "Choose your name to sign in",
+    "employeeCode": "Employee code",
+    "unknownCode": "No staff member with this code. Check the code or ask a manager.",
+    "pinFor": "PIN for {name}",
+    "pinProgress": "{entered, number} of {length, number} digits entered",
+    "backspace": "Delete last digit",
+    "submit": "Sign in"
+  },
+  "access": {
+    "deniedTitle": "No access",
+    "deniedBody": "Your role cannot open {portal}. Ask a manager to give you access.",
+    "goHome": "Go to my home screen"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "This address does not match any screen."
+  },
+  "pos": {
+    "preview": {
+      "title": "Display check",
+      "description": "How table and KOT states, amounts and times will look on this screen.",
+      "tables": "Table states",
+      "kots": "KOT states",
+      "amounts": "Amounts",
+      "subtotal": "Subtotal",
+      "total": "Total",
+      "daySales": "Today’s sales"
+    }
+  },
+  "state": {
+    "table": {
+      "available": "Free",
+      "occupied": "Occupied",
+      "billing": "Billing",
+      "reserved": "Reserved",
+      "cleaning": "Cleaning"
+    },
+    "kot": {
+      "new": "New",
+      "accepted": "Accepted",
+      "cooking": "Cooking",
+      "ready": "Ready",
+      "served": "Served",
+      "delayed": "Delayed"
+    }
+  },
+  "time": {
+    "minutes": "{minutes, number} min"
+  }
+}
