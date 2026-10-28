@@ -1,6 +1,7 @@
 import { DomainError, Kot, Order, type NewOrderLine, type OrderLine } from '@restroos/domain';
 import type { CatalogRepository, MenuItemRecord } from '../catalog/ports';
 import type { FloorRepository, TableRecord } from '../floor/ports';
+import type { SettingsRepository } from '../settings/ports';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, TransactionScope, UnitOfWork } from '../ports/unit-of-work';
@@ -14,6 +15,7 @@ export interface OrderServiceDeps {
   readonly catalog: CatalogRepository;
   readonly floor: FloorRepository;
   readonly channels: SalesChannelRepository;
+  readonly taxGroups: Pick<SettingsRepository, 'taxGroup'>;
   readonly calendar: BusinessCalendar;
   readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
@@ -134,6 +136,7 @@ export class OrderService {
       const now = this.d.clock.now();
       const order = this.load(ctx.branchId, id);
       const lines = items.map((item) => this.priceLine(ctx, item, now));
+      if (order.state.source === 'AGGREGATOR') this.refuseLiquor(lines);
       order.addLines(lines, now);
       this.d.orders.save(order);
       this.finish(scope, [order], 'order.items.add', order, {
@@ -286,10 +289,11 @@ export class OrderService {
         openedAt: now,
         createdBy: ctx.actorId!,
       });
-      order.addLines(
-        input.items.map((item) => this.priceLine(ctx, item, now, channel.priceMarkupBp)),
-        now,
+      const lines = input.items.map((item) =>
+        this.priceLine(ctx, item, now, channel.priceMarkupBp),
       );
+      this.refuseLiquor(lines);
+      order.addLines(lines, now);
       this.d.orders.insert(order);
       const kots = input.fire ? this.fireIn(order, ctx, now) : [];
       if (input.fire) this.d.orders.save(order);
@@ -457,6 +461,24 @@ export class OrderService {
     const order = this.d.orders.get(branchId, id);
     if (!order) throw new DomainError('NOT_FOUND', 'order not found');
     return order;
+  }
+
+  /**
+   * Swiggy and Zomato orders can't carry liquor: it is billed with state VAT
+   * on a separate liquor bill, outside the aggregator's GST (CGST Act s.9(5)),
+   * and needs the restaurant's own excise licence for the sale.
+   */
+  private refuseLiquor(lines: readonly NewOrderLine[]) {
+    const liquor = lines.find((line) => {
+      const group = line.taxGroupId ? this.d.taxGroups.taxGroup(line.taxGroupId) : undefined;
+      return group?.invoiceSeries === 'LIQ' || group?.taxType === 'VAT';
+    });
+    if (liquor) {
+      throw new DomainError(
+        'LIQUOR_NOT_FOR_DELIVERY',
+        `${liquor.name} is liquor and can't be sold through a delivery app`,
+      );
+    }
   }
 
   /** Snapshot name, price, tax group and station from the menu; checks variant and add-on rules. */

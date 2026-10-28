@@ -75,7 +75,7 @@ then mark the biryani ready.
    the approval code / RRN and the last 4 digits. Split across methods as
    needed. The order and table clear when fully paid.
 6. **Delivery**: Swiggy/Zomato orders are keyed in on the Delivery screen
-   with their order id. They're billed without GST (the platform pays it).
+   with their order id. They're billed without GST (the platform pays it). Liquor can't go on a delivery-app order: the Hub refuses it.
 7. **Refund**: from Bills, open the invoice → Refund, choose the items (or
    an amount) and how the money goes back. A credit note prints. Needs a
    manager.

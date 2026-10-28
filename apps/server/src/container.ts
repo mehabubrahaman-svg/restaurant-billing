@@ -283,6 +283,7 @@ export function buildContainer(
           catalog: new SqliteCatalogRepository(c.db),
           floor: new SqliteFloorRepository(c.db),
           channels: new SqliteSalesChannelRepository(c.db),
+          taxGroups: new SqliteSettingsRepository(c.db),
           calendar: c.calendar,
           unitOfWork: c.unitOfWork,
           clock: c.clock,

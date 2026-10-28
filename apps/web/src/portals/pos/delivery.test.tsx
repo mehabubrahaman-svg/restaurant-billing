@@ -156,6 +156,23 @@ describe('Delivery entry', () => {
     expect(screen.getByLabelText(/Channel order number/)).toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('says why the Hub refused liquor on a delivery order, and keeps the pad', async () => {
+    hub({ 'POST /orders/aggregator': () => problem(422, 'LIQUOR_NOT_FOR_DELIVERY') });
+    renderApp('/pos/delivery');
+    fireEvent.click(await screen.findByRole('button', { name: 'Breads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Butter Naan, ₹60.00' }));
+    fireEvent.change(screen.getByLabelText(/Channel order number/), {
+      target: { value: 'SW-2002' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send to kitchen' }));
+    expect(
+      await screen.findByText(
+        "Liquor can't be sold through a delivery app. Remove it from this order.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/Channel order number/)).toHaveValue('SW-2002');
+  });
+
   it('points to the sales channels page when no aggregator is set up', async () => {
     hub({ 'GET /sales-channels': () => json({ data: [directChannel] }) }, [
       ...CASHIER,

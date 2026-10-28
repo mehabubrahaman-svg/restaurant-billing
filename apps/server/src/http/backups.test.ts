@@ -151,5 +151,5 @@ describe('backups', () => {
     const pruned = all.filter((b) => b.status === 'PRUNED');
     expect(pruned).toHaveLength(3);
     expect(pruned.every((b) => !existsSync(b.filePath))).toBe(true);
-  });
+  }, 20_000); // ten sign-ins (bcrypt) and ten backups
 });

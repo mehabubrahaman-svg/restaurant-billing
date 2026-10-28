@@ -573,6 +573,7 @@
     "printerOnDevice": "This printer is paired with a tablet and prints from there.",
     "printerUnsupported": "This printer can’t print this.",
     "duplicateExternalOrder": "This aggregator order number was already entered.",
+    "liquorNotForDelivery": "Liquor can't be sold through a delivery app. Remove it from this order.",
     "backupUnavailable": "This backup file was removed or is missing on the Hub.",
     "backupUnreadable": "This backup can’t be opened: wrong passphrase, or it is not a RestroOS backup."
   },

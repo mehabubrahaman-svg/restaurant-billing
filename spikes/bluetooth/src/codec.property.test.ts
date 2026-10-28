@@ -62,7 +62,7 @@ describe('frame codec properties', () => {
         },
       ),
     );
-  });
+  }, 20_000); // CPU-heavy: generous when the whole monorepo tests in parallel
 
   it('never delivers a message when one of its frames is dropped', () => {
     fc.assert(

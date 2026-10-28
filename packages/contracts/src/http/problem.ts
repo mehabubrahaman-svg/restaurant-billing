@@ -55,6 +55,8 @@ export const ERROR_STATUS = {
   COUPON_INVALID: 422,
   /** That aggregator order id was already entered. */
   DUPLICATE_EXTERNAL_ORDER: 409,
+  /** Liquor can't be sold through Swiggy/Zomato: VAT liquor isn't an aggregator supply. */
+  LIQUOR_NOT_FOR_DELIVERY: 422,
   /** The backup file is gone or fails its checksum. */
   BACKUP_UNAVAILABLE: 422,
   /** The passphrase does not open this backup, or the file is not a RestroOS backup. */

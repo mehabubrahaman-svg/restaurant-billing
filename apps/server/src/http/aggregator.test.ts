@@ -76,4 +76,65 @@ describe('aggregator orders (manual entry)', () => {
     );
     expect(paid.status).toBe('PAID');
   });
+
+  it('refuses liquor on a delivery-app order, at entry and when items are added later', async () => {
+    const r = await restaurantServer();
+    s = r.s;
+    const swiggy = (
+      await r.admin('POST', '/sales-channels', {
+        code: 'swiggy',
+        name: 'Swiggy',
+        commissionBp: 2200,
+      })
+    ).json();
+    const vat = (await r.admin('GET', '/tax-groups'))
+      .json()
+      .data.find((g: { taxType: string }) => g.taxType === 'VAT');
+    const beer = (
+      await r.admin('POST', '/menu-items', {
+        sku: 'BEER-650',
+        name: 'Beer 650 ml',
+        categoryId: r.menu.category.id,
+        foodType: 'NA',
+        basePrice: 32000,
+        taxGroupId: vat.id,
+      })
+    ).json();
+
+    const refused = await r.admin('POST', '/orders/aggregator', {
+      salesChannelId: swiggy.id,
+      externalOrderId: 'SWG-1',
+      items: [
+        { menuItemId: r.menu.naan.id, quantity: 2 },
+        { menuItemId: beer.id, quantity: 1 },
+      ],
+    });
+    expect(refused.statusCode).toBe(422);
+    expect(refused.json()).toMatchObject({
+      code: 'LIQUOR_NOT_FOR_DELIVERY',
+      detail: "Beer 650 ml is liquor and can't be sold through a delivery app",
+    });
+
+    // Nothing was saved, so the same Swiggy order goes through without the beer.
+    const created = FireKotsResponseSchema.parse(
+      (
+        await r.admin('POST', '/orders/aggregator', {
+          salesChannelId: swiggy.id,
+          externalOrderId: 'SWG-1',
+          items: [{ menuItemId: r.menu.naan.id, quantity: 2 }],
+        })
+      ).json(),
+    );
+    const later = await r.admin('POST', `/orders/${created.order.id}/items`, {
+      items: [{ menuItemId: beer.id, quantity: 1 }],
+    });
+    expect(later.json().code).toBe('LIQUOR_NOT_FOR_DELIVERY');
+
+    // A dine-in table can still order it.
+    const table = await r.openAt(r.admin, r.tables.t1.id);
+    const ordered = await r.admin('POST', `/orders/${table.id}/items`, {
+      items: [{ menuItemId: beer.id, quantity: 1 }],
+    });
+    expect(ordered.statusCode).toBe(200);
+  });
 });
