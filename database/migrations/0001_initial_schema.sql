@@ -4,8 +4,13 @@
 -- Conventions (see docs/03-database-design.md for the full rationale):
 --   * Primary keys are UUIDv7 strings (time-ordered, globally unique, sync-safe).
 --   * Timestamps are ISO-8601 UTC text, e.g. 2026-10-28T09:15:00.123Z.
---   * Money is INTEGER in minor units (paise/cents). Never REAL.
+--   * Money is INTEGER paise (INR minor units). Never REAL.
 --   * Rates are INTEGER basis points (5% = 500).
+--   * Tax type is per item via its tax group: GST (food, non-alcoholic drinks)
+--     or state VAT (alcoholic liquor, which is outside GST). One bill can need
+--     both, or liquor can be billed on its own invoice series.
+--   * Customer-facing names carry `name_translations` JSON ({"hi": "...",
+--     "bn": "..."}) for Hindi/Bengali menus and bilingual receipts.
 --   * Inventory quantities are INTEGER milli-units of the item's base unit
 --     (200 g of rice = 200000 when base unit is g).
 --   * Business rows are never physically deleted: deleted_at/deleted_by.
@@ -22,11 +27,25 @@ PRAGMA foreign_keys = ON;
 -- 1. ORGANISATION
 -- -----------------------------------------------------------------------------
 
+-- Indian states and union territories, keyed by GST state code. Drives
+-- CGST/SGST vs IGST, state VAT on liquor, default languages and rollout.
+CREATE TABLE indian_states (
+    gst_state_code  TEXT PRIMARY KEY,           -- '19' = West Bengal
+    iso_code        TEXT NOT NULL UNIQUE,       -- ISO 3166-2:IN, e.g. 'IN-WB'
+    name            TEXT NOT NULL,
+    is_union_territory INTEGER NOT NULL DEFAULT 0 CHECK (is_union_territory IN (0,1)),
+    region          TEXT NOT NULL CHECK (region IN ('NORTH','EAST','NORTH_EAST','CENTRAL','WEST','SOUTH','ISLANDS')),
+    rollout_wave    INTEGER NOT NULL,           -- 1 = launch (East, North East, North); 2 = later
+    local_locales   TEXT NOT NULL CHECK (json_valid(local_locales)), -- e.g. ["bn","en"]; wizard keeps the supported ones
+    liquor_permitted INTEGER NOT NULL DEFAULT 1 CHECK (liquor_permitted IN (0,1)), -- default only; admin can override
+    liquor_separate_invoice INTEGER NOT NULL DEFAULT 1 CHECK (liquor_separate_invoice IN (0,1))
+) STRICT;
+
 CREATE TABLE organizations (
     id              TEXT PRIMARY KEY,
     name            TEXT NOT NULL,
     legal_name      TEXT,
-    tax_id          TEXT,                       -- GSTIN / VAT no.
+    tax_id          TEXT,                       -- PAN / company registration no.
     currency_code   TEXT NOT NULL DEFAULT 'INR',
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
@@ -41,8 +60,13 @@ CREATE TABLE branches (
     address         TEXT,
     phone           TEXT,
     tax_id          TEXT,                       -- branch GSTIN (state specific)
-    state_code      TEXT,                       -- decides CGST+SGST vs IGST
+    vat_tin         TEXT,                       -- state VAT registration (bars serving liquor)
+    excise_licence_no TEXT,                     -- liquor licence, printed on liquor bills
+    state_code      TEXT NOT NULL REFERENCES indian_states(gst_state_code), -- decides CGST+SGST vs IGST and the VAT state
+    cash_rounding   INTEGER NOT NULL DEFAULT 100 CHECK (cash_rounding > 0), -- minor units; 100 = nearest rupee, 1 = none
     timezone        TEXT NOT NULL DEFAULT 'Asia/Kolkata',
+    default_locale  TEXT NOT NULL DEFAULT 'en-IN', -- en-IN | hi-IN | bn-IN; UI default for this branch
+    receipt_locales TEXT NOT NULL DEFAULT '["en"]' CHECK (json_valid(receipt_locales)), -- e.g. ["en","bn"] bilingual
     is_active       INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
@@ -70,7 +94,29 @@ CREATE TABLE devices (
     name            TEXT NOT NULL,
     kind            TEXT NOT NULL CHECK (kind IN ('SERVER','POS','CAPTAIN','KDS','OWNER','TOKEN_DISPLAY','KIOSK')),
     fingerprint     TEXT NOT NULL UNIQUE,
+    platform        TEXT CHECK (platform IN ('WINDOWS','LINUX','ANDROID','IOS','IPADOS','OTHER')),
+    client_kind     TEXT NOT NULL DEFAULT 'BROWSER' CHECK (client_kind IN ('BROWSER','PWA','NATIVE_SHELL','ELECTRON')),
+    bluetooth_address TEXT,                     -- set when paired over Bluetooth
+    last_transport  TEXT CHECK (last_transport IN ('LOCALHOST','LAN','WIFI','BLUETOOTH_PAN')),
     last_seen_at    TEXT,
+    is_active       INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    deleted_at      TEXT,
+    version         INTEGER NOT NULL DEFAULT 1
+) STRICT;
+
+-- Non-printer hardware. A peripheral is attached to the Hub or to a client
+-- device (e.g. a Bluetooth barcode scanner paired with a captain tablet).
+CREATE TABLE peripherals (
+    id              TEXT PRIMARY KEY,
+    branch_id       TEXT NOT NULL REFERENCES branches(id),
+    device_id       TEXT REFERENCES devices(id), -- NULL = attached to the Hub
+    name            TEXT NOT NULL,
+    kind            TEXT NOT NULL CHECK (kind IN ('BARCODE_SCANNER','WEIGHING_SCALE','CUSTOMER_DISPLAY','CASH_DRAWER','GUEST_PAGER','CARD_TERMINAL')),
+    connection      TEXT NOT NULL CHECK (connection IN ('USB','SERIAL','NETWORK','BLUETOOTH','BLE','HID')),
+    address         TEXT,                       -- COM port, IP, BT MAC, BLE device id
+    config_json     TEXT CHECK (config_json IS NULL OR json_valid(config_json)),
     is_active       INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
@@ -82,8 +128,9 @@ CREATE TABLE printers (
     id              TEXT PRIMARY KEY,
     branch_id       TEXT NOT NULL REFERENCES branches(id),
     name            TEXT NOT NULL,
-    connection      TEXT NOT NULL CHECK (connection IN ('USB','NETWORK','BLUETOOTH','SYSTEM')),
-    address         TEXT,                       -- IP:port, USB path, BT MAC, OS printer name
+    connection      TEXT NOT NULL CHECK (connection IN ('USB','NETWORK','BLUETOOTH','BLE','SYSTEM')),
+    address         TEXT,                       -- IP:port, USB path, BT MAC, BLE id, OS printer name
+    device_id       TEXT REFERENCES devices(id), -- NULL = driven by the Hub; else by that client (e.g. BT printer on a tablet)
     paper_width_mm  INTEGER NOT NULL DEFAULT 80 CHECK (paper_width_mm IN (58,80)),
     purpose         TEXT NOT NULL CHECK (purpose IN ('BILL','KOT','REPORT','LABEL')),
     station_id      TEXT REFERENCES kitchen_stations(id), -- KOT printer per station
@@ -135,6 +182,7 @@ CREATE TABLE users (
     email           TEXT,
     password_hash   TEXT NOT NULL,              -- bcrypt, cost >= 12
     pin_hash        TEXT,                       -- bcrypt of 4-6 digit quick-switch PIN
+    preferred_locale TEXT,                      -- BCP 47; NULL = branch default
     is_active       INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
     failed_logins   INTEGER NOT NULL DEFAULT 0,
     locked_until    TEXT,
@@ -194,7 +242,11 @@ CREATE INDEX ix_attendance_date ON staff_attendance(branch_id, business_date);
 CREATE TABLE tax_groups (
     id              TEXT PRIMARY KEY,
     organization_id TEXT NOT NULL REFERENCES organizations(id),
-    name            TEXT NOT NULL,              -- 'GST 5%', 'GST 18%', 'VAT 12.5%'
+    name            TEXT NOT NULL,              -- 'GST 5%', 'GST 18%', 'Liquor VAT 20%'
+    tax_type        TEXT NOT NULL CHECK (tax_type IN ('GST','VAT','NONE')),  -- VAT = state VAT on alcohol
+    tax_category    TEXT NOT NULL DEFAULT 'TAXABLE'
+                    CHECK (tax_category IN ('TAXABLE','NIL_RATED','EXEMPT','NON_GST')),
+    invoice_series  TEXT NOT NULL DEFAULT 'INV', -- 'LIQ' when the state wants liquor on a separate bill
     is_inclusive    INTEGER NOT NULL DEFAULT 0 CHECK (is_inclusive IN (0,1)),
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
@@ -205,7 +257,7 @@ CREATE TABLE tax_groups (
 CREATE TABLE tax_components (
     id              TEXT PRIMARY KEY,
     tax_group_id    TEXT NOT NULL REFERENCES tax_groups(id),
-    code            TEXT NOT NULL,              -- CGST, SGST, IGST, VAT, CESS
+    code            TEXT NOT NULL,              -- CGST, SGST, IGST, VAT, SURCHARGE, CESS
     rate_bp         INTEGER NOT NULL CHECK (rate_bp >= 0),
     applies_to      TEXT NOT NULL DEFAULT 'ALWAYS' CHECK (applies_to IN ('ALWAYS','INTRA_STATE','INTER_STATE')),
     sort_order      INTEGER NOT NULL DEFAULT 0,
@@ -301,6 +353,7 @@ CREATE TABLE categories (
     organization_id TEXT NOT NULL REFERENCES organizations(id),
     parent_id       TEXT REFERENCES categories(id),
     name            TEXT NOT NULL,
+    name_translations TEXT CHECK (name_translations IS NULL OR json_valid(name_translations)),
     color           TEXT,                       -- tile colour on POS grid
     sort_order      INTEGER NOT NULL DEFAULT 0,
     created_at      TEXT NOT NULL,
@@ -316,7 +369,9 @@ CREATE TABLE menu_items (
     sku             TEXT NOT NULL,
     name            TEXT NOT NULL,
     short_name      TEXT,                       -- printed on 58mm KOT
+    name_translations TEXT CHECK (name_translations IS NULL OR json_valid(name_translations)),
     description     TEXT,
+    description_translations TEXT CHECK (description_translations IS NULL OR json_valid(description_translations)),
     food_type       TEXT NOT NULL DEFAULT 'VEG' CHECK (food_type IN ('VEG','NON_VEG','EGG','VEGAN','NA')),
     base_price      INTEGER NOT NULL CHECK (base_price >= 0),
     tax_group_id    TEXT REFERENCES tax_groups(id),
@@ -352,6 +407,7 @@ CREATE TABLE menu_item_variants (
     id              TEXT PRIMARY KEY,
     menu_item_id    TEXT NOT NULL REFERENCES menu_items(id),
     name            TEXT NOT NULL,              -- 'Half', 'Full', 'Large'
+    name_translations TEXT CHECK (name_translations IS NULL OR json_valid(name_translations)),
     price           INTEGER NOT NULL CHECK (price >= 0),
     sort_order      INTEGER NOT NULL DEFAULT 0,
     created_at      TEXT NOT NULL,
@@ -377,6 +433,7 @@ CREATE TABLE addons (
     id              TEXT PRIMARY KEY,
     addon_group_id  TEXT NOT NULL REFERENCES addon_groups(id),
     name            TEXT NOT NULL,
+    name_translations TEXT CHECK (name_translations IS NULL OR json_valid(name_translations)),
     price           INTEGER NOT NULL DEFAULT 0 CHECK (price >= 0),
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
@@ -546,6 +603,7 @@ CREATE TABLE customers (
     birthday        TEXT,
     anniversary     TEXT,
     tax_id          TEXT,                       -- B2B GSTIN for tax invoices
+    preferred_locale TEXT,                      -- receipt / message language
     credit_limit    INTEGER NOT NULL DEFAULT 0,
     loyalty_points  INTEGER NOT NULL DEFAULT 0, -- cached balance; source of truth = loyalty_transactions
     membership_tier TEXT,
@@ -578,6 +636,26 @@ CREATE TABLE loyalty_transactions (
 -- 8. ORDERS & KITCHEN
 -- -----------------------------------------------------------------------------
 
+-- Where an order came from. Aggregators (Swiggy, Zomato, ...) are channels
+-- with their own commission and optional price markup.
+CREATE TABLE sales_channels (
+    id              TEXT PRIMARY KEY,
+    organization_id TEXT NOT NULL REFERENCES organizations(id),
+    code            TEXT NOT NULL,              -- 'DIRECT', 'SWIGGY', 'ZOMATO', 'MAGICPIN'
+    name            TEXT NOT NULL,
+    kind            TEXT NOT NULL CHECK (kind IN ('DIRECT','AGGREGATOR','OWN_ONLINE')),
+    integration     TEXT NOT NULL DEFAULT 'MANUAL' CHECK (integration IN ('MANUAL','MIDDLEWARE','DIRECT_API')),
+    commission_bp   INTEGER NOT NULL DEFAULT 0, -- for net-revenue reports
+    price_markup_bp INTEGER NOT NULL DEFAULT 0, -- channel price = base price + markup
+    gst_paid_by_operator INTEGER NOT NULL DEFAULT 0 CHECK (gst_paid_by_operator IN (0,1)), -- e-commerce operator pays GST on restaurant supplies (CGST Act s.9(5))
+    is_active       INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    deleted_at      TEXT,
+    version         INTEGER NOT NULL DEFAULT 1,
+    UNIQUE (organization_id, code)
+) STRICT;
+
 CREATE TABLE orders (
     id              TEXT PRIMARY KEY,
     branch_id       TEXT NOT NULL REFERENCES branches(id),
@@ -585,7 +663,10 @@ CREATE TABLE orders (
     token_no        INTEGER,                    -- token display for takeaway / QSR
     business_date   TEXT NOT NULL,
     order_type      TEXT NOT NULL CHECK (order_type IN ('DINE_IN','TAKEAWAY','DELIVERY','QR_SELF','KIOSK')),
-    source          TEXT NOT NULL DEFAULT 'POS' CHECK (source IN ('POS','CAPTAIN','QR','KIOSK','ONLINE')),
+    source          TEXT NOT NULL DEFAULT 'POS' CHECK (source IN ('POS','CAPTAIN','QR','KIOSK','ONLINE','AGGREGATOR')),
+    sales_channel_id TEXT REFERENCES sales_channels(id), -- NULL = direct
+    external_order_id TEXT,                     -- aggregator's order id
+    external_otp    TEXT,                       -- rider pickup code, if any
     dining_table_id TEXT REFERENCES dining_tables(id),
     customer_id     TEXT REFERENCES customers(id),
     captain_id      TEXT REFERENCES users(id),
@@ -609,6 +690,8 @@ CREATE INDEX ix_orders_open ON orders(branch_id, status) WHERE status = 'OPEN';
 CREATE INDEX ix_orders_date ON orders(branch_id, business_date);
 CREATE INDEX ix_orders_table ON orders(dining_table_id) WHERE status = 'OPEN';
 CREATE INDEX ix_orders_customer ON orders(customer_id);
+CREATE UNIQUE INDEX ux_orders_external ON orders(sales_channel_id, external_order_id)
+    WHERE external_order_id IS NOT NULL;
 
 CREATE TABLE order_items (
     id              TEXT PRIMARY KEY,
@@ -730,12 +813,17 @@ CREATE TABLE invoices (
     order_id        TEXT NOT NULL REFERENCES orders(id),
     invoice_no      TEXT NOT NULL,              -- e.g. BLR1/2026-27/000123
     kind            TEXT NOT NULL DEFAULT 'INVOICE' CHECK (kind IN ('INVOICE','CREDIT_NOTE')),
+    series          TEXT NOT NULL DEFAULT 'INV', -- 'INV' food bill, 'LIQ' separate liquor bill, 'CN' credit note
+    supply_type     TEXT NOT NULL DEFAULT 'B2C' CHECK (supply_type IN ('B2B','B2C')),
+    gst_paid_by_operator INTEGER NOT NULL DEFAULT 0 CHECK (gst_paid_by_operator IN (0,1)), -- aggregator order: no GST charged by us
     original_invoice_id TEXT REFERENCES invoices(id),   -- for credit notes (refunds)
     business_date   TEXT NOT NULL,
     fiscal_year     TEXT NOT NULL,
     customer_id     TEXT REFERENCES customers(id),
     customer_tax_id TEXT,                       -- snapshot (B2B)
     place_of_supply TEXT,                       -- state code
+    -- GST e-invoicing (IRN + signed QR) is deferred; its columns are added by a
+    -- later migration (see docs/adr/0005).
     subtotal        INTEGER NOT NULL,           -- sum of line totals before discount
     discount_total  INTEGER NOT NULL DEFAULT 0,
     charges_total   INTEGER NOT NULL DEFAULT 0,
@@ -780,7 +868,7 @@ CREATE INDEX ix_invoice_lines_invoice ON invoice_lines(invoice_id);
 CREATE TABLE invoice_taxes (
     id              TEXT PRIMARY KEY,
     invoice_id      TEXT NOT NULL REFERENCES invoices(id),
-    tax_code        TEXT NOT NULL,              -- CGST / SGST / IGST / VAT / CESS
+    tax_code        TEXT NOT NULL,              -- CGST / SGST / IGST / VAT / SURCHARGE / CESS
     rate_bp         INTEGER NOT NULL,
     taxable_value   INTEGER NOT NULL,
     tax_amount      INTEGER NOT NULL
@@ -813,11 +901,14 @@ CREATE TABLE payments (
     id              TEXT PRIMARY KEY,
     branch_id       TEXT NOT NULL REFERENCES branches(id),
     invoice_id      TEXT NOT NULL REFERENCES invoices(id),
-    method          TEXT NOT NULL CHECK (method IN ('CASH','CARD','UPI','WALLET','CREDIT','COMPLIMENTARY','LOYALTY')),
+    method          TEXT NOT NULL CHECK (method IN ('CASH','CARD','UPI','WALLET','CREDIT','COMPLIMENTARY','LOYALTY','AGGREGATOR')),
     amount          INTEGER NOT NULL CHECK (amount <> 0),  -- negative = refund
     tendered        INTEGER,                    -- cash given by customer
     change_due      INTEGER,
-    reference       TEXT,                       -- card auth code / UPI RRN
+    -- Card/UPI are taken on a separate (standalone) terminal and keyed in here.
+    reference       TEXT,                       -- card approval code / UPI RRN / aggregator order id
+    card_last4      TEXT CHECK (card_last4 IS NULL OR length(card_last4) = 4),
+    terminal_label  TEXT,                       -- which physical terminal, for settlement matching
     refund_of_payment_id TEXT REFERENCES payments(id),
     business_date   TEXT NOT NULL,
     shift_id        TEXT REFERENCES cash_shifts(id),
@@ -843,6 +934,19 @@ CREATE TABLE cash_shifts (
     variance        INTEGER,
     status          TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','CLOSED')),
     version         INTEGER NOT NULL DEFAULT 1
+) STRICT;
+
+-- Shift-close reconciliation per tender: the system's expected total vs. the
+-- figure the cashier reports (cash count, card terminal batch total, UPI app).
+CREATE TABLE shift_tender_counts (
+    cash_shift_id   TEXT NOT NULL REFERENCES cash_shifts(id),
+    method          TEXT NOT NULL,
+    terminal_label  TEXT NOT NULL DEFAULT '',
+    expected_amount INTEGER NOT NULL,
+    reported_amount INTEGER NOT NULL,
+    variance        INTEGER NOT NULL,           -- reported - expected
+    notes           TEXT,
+    PRIMARY KEY (cash_shift_id, method, terminal_label)
 ) STRICT;
 
 -- -----------------------------------------------------------------------------

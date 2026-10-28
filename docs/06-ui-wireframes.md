@@ -10,7 +10,8 @@
 | Calm motion | Framer Motion ≤ 200 ms. Only state changes animate (new KOT slides in, table changes colour). Respects `prefers-reduced-motion`. |
 | Themes | Light (front of house), Dark (default for KDS, reduces kitchen glare), High-contrast. Tokens live in `packages/ui/tokens.css`. |
 | Responsive | Phone 360 px (owner, QR guest) · Tablet 768–1280 px (captain, KDS) · Desktop 1366 px+ (POS, admin). |
-| Offline visible | A persistent status pill shows `● Live` / `◐ Reconnecting` / `○ Offline — 3 actions queued`. |
+| Offline visible | A persistent status pill shows `● Live` / `◐ Reconnecting` / `ᛒ Bluetooth mode` (Wi-Fi down, orders still flowing) / `○ Offline — 3 actions queued`. |
+| Language | Every screen ships in English, हिन्दी and বাংলা. Layouts are tested with the longest translation, and nothing is truncated without a tooltip. Prices use Indian grouping (₹1,00,000). |
 
 ### State colours (shared across portals)
 
@@ -50,7 +51,7 @@
 │                              │
 │  (RK)  (AS)  (MJ)  (+Other)  │   ← recent users on this device
 │                              │
-│      PIN for Ravi K.         │
+│  PIN for Ravi K.  [EN|हि|বা] │
 │        ● ● ○ ○               │
 │   [1] [2] [3]                │
 │   [4] [5] [6]                │
@@ -159,6 +160,30 @@ Item options bottom sheet:
 │                               │ [        Print & Settle  (F9)          ] │
 └───────────────────────────────┴──────────────────────────────────────────┘
  Keyboard: F2 search, F4 discount, F8 cash, F9 settle, Esc back.
+```
+
+Card / UPI on the standalone terminal:
+```
+┌────────────────────────────────────────┐
+│ Card payment             ₹ 2,078.00    │
+│ 1. Charge ₹2,078.00 on the terminal    │
+│ 2. Enter the slip details:             │
+│    Terminal  [ HDFC-1 ▾ ]              │
+│    Approval  [ 4F7K21 ]  Last 4 [4821] │
+│ [ Cancel ]           [ Record payment ]│
+└────────────────────────────────────────┘
+ UPI: same dialog with "UPI ref / RRN". The amount defaults to the remaining
+ balance. The shift-close screen asks for each terminal's settlement total.
+```
+
+Mixed food + liquor order (state requires a separate liquor bill):
+```
+┌───────────────────────────────────────────────┐
+│ T5 will be billed as 2 invoices               │
+│  INV/2026-27/000412  Food      ₹1,890  (GST)  │
+│  LIQ/2026-27/000087  Beverages ₹1,240  (VAT)  │
+│ [ Pay together ₹3,130 ]   [ Pay separately ]  │
+└───────────────────────────────────────────────┘
 ```
 
 Split payment dialog:

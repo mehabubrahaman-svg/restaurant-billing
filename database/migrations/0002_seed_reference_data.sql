@@ -4,6 +4,52 @@
 -- the first-run setup wizard from templates in packages/domain/src/templates.
 -- =============================================================================
 
+-- Indian states / UTs by GST state code.
+-- liquor_permitted reflects prohibition at the time of writing (Bihar,
+-- Gujarat, Mizoram, Nagaland, Lakshadweep). Policies change: these are setup
+-- defaults the admin can override, and must be verified before each state launch.
+INSERT INTO indian_states (gst_state_code, iso_code, name, is_union_territory, region, rollout_wave, local_locales, liquor_permitted) VALUES
+  -- Wave 1: North
+  ('01','IN-JK','Jammu and Kashmir',        1,'NORTH',     1,'["ur","hi","en"]',1),
+  ('02','IN-HP','Himachal Pradesh',         0,'NORTH',     1,'["hi","en"]',1),
+  ('03','IN-PB','Punjab',                   0,'NORTH',     1,'["pa","hi","en"]',1),
+  ('04','IN-CH','Chandigarh',               1,'NORTH',     1,'["hi","pa","en"]',1),
+  ('05','IN-UK','Uttarakhand',              0,'NORTH',     1,'["hi","en"]',1),
+  ('06','IN-HR','Haryana',                  0,'NORTH',     1,'["hi","en"]',1),
+  ('07','IN-DL','Delhi',                    1,'NORTH',     1,'["hi","en"]',1),
+  ('08','IN-RJ','Rajasthan',                0,'NORTH',     1,'["hi","en"]',1),
+  ('09','IN-UP','Uttar Pradesh',            0,'NORTH',     1,'["hi","en"]',1),
+  ('38','IN-LA','Ladakh',                   1,'NORTH',     1,'["hi","en"]',1),
+  -- Wave 1: East
+  ('10','IN-BR','Bihar',                    0,'EAST',      1,'["hi","en"]',0),
+  ('19','IN-WB','West Bengal',              0,'EAST',      1,'["bn","en","hi"]',1),
+  ('20','IN-JH','Jharkhand',                0,'EAST',      1,'["hi","en"]',1),
+  ('21','IN-OD','Odisha',                   0,'EAST',      1,'["or","en","hi"]',1),
+  -- Wave 1: North East
+  ('11','IN-SK','Sikkim',                   0,'NORTH_EAST',1,'["ne","en","hi"]',1),
+  ('12','IN-AR','Arunachal Pradesh',        0,'NORTH_EAST',1,'["en","hi"]',1),
+  ('13','IN-NL','Nagaland',                 0,'NORTH_EAST',1,'["en"]',0),
+  ('14','IN-MN','Manipur',                  0,'NORTH_EAST',1,'["mni","en"]',1),
+  ('15','IN-MZ','Mizoram',                  0,'NORTH_EAST',1,'["lus","en"]',0),
+  ('16','IN-TR','Tripura',                  0,'NORTH_EAST',1,'["bn","en"]',1),
+  ('17','IN-ML','Meghalaya',                0,'NORTH_EAST',1,'["en"]',1),
+  ('18','IN-AS','Assam',                    0,'NORTH_EAST',1,'["as","bn","en"]',1),
+  -- Wave 2: Central, West, South, Islands
+  ('22','IN-CG','Chhattisgarh',             0,'CENTRAL',   2,'["hi","en"]',1),
+  ('23','IN-MP','Madhya Pradesh',           0,'CENTRAL',   2,'["hi","en"]',1),
+  ('24','IN-GJ','Gujarat',                  0,'WEST',      2,'["gu","en"]',0),
+  ('26','IN-DH','Dadra and Nagar Haveli and Daman and Diu',1,'WEST',2,'["gu","en"]',1),
+  ('27','IN-MH','Maharashtra',              0,'WEST',      2,'["mr","en","hi"]',1),
+  ('30','IN-GA','Goa',                      0,'WEST',      2,'["kok","en"]',1),
+  ('29','IN-KA','Karnataka',                0,'SOUTH',     2,'["kn","en"]',1),
+  ('32','IN-KL','Kerala',                   0,'SOUTH',     2,'["ml","en"]',1),
+  ('33','IN-TN','Tamil Nadu',               0,'SOUTH',     2,'["ta","en"]',1),
+  ('34','IN-PY','Puducherry',               1,'SOUTH',     2,'["ta","en"]',1),
+  ('36','IN-TS','Telangana',                0,'SOUTH',     2,'["te","en"]',1),
+  ('37','IN-AP','Andhra Pradesh',           0,'SOUTH',     2,'["te","en"]',1),
+  ('31','IN-LD','Lakshadweep',              1,'ISLANDS',   2,'["ml","en"]',0),
+  ('35','IN-AN','Andaman and Nicobar Islands',1,'ISLANDS', 2,'["hi","bn","en"]',1);
+
 -- Units of measure. to_base_milli = milli-units of base per 1 unit.
 INSERT INTO units (id, code, name, base_code, to_base_milli) VALUES
   ('unit-g',     'g',     'Gram',       'g',  1000),

@@ -1,7 +1,7 @@
 # 03 — Database Design
 
 Source of truth: [`database/migrations/0001_initial_schema.sql`](../database/migrations/0001_initial_schema.sql) and [`0002_seed_reference_data.sql`](../database/migrations/0002_seed_reference_data.sql).
-The migrations are validated against SQLite 3.45 (69 tables, 33 integrity triggers, all FKs resolve).
+The migrations are validated against SQLite 3.45 (73 tables, 33 integrity triggers, all FKs resolve).
 
 ## 1. Engine configuration
 
@@ -24,7 +24,8 @@ Writes always use `BEGIN IMMEDIATE`, so the write lock is taken up front and dea
 | Primary keys | `TEXT` UUIDv7 | Created offline on any device, globally unique for sync, time-ordered so B-tree inserts stay local. |
 | Timestamps | ISO-8601 UTC text (`…Z`) | Sorts lexicographically, maps to `timestamptz`. |
 | Business date | `business_date TEXT 'YYYY-MM-DD'` in branch timezone | A restaurant "day" may close at 3 AM. Reports group by business date, not calendar date. |
-| Money | `INTEGER` minor units | No floating-point drift. ₹249.50 = `24950`. |
+| Money | `INTEGER` paise | No floating-point drift. ₹249.50 = `24950`. |
+| Translations | `name_translations` JSON on categories, items, variants, addons | `{"hi":"चिकन बिरयानी","bn":"চিকেন বিরিয়ানি"}`. The English `name` is always present as the fallback. |
 | Rates | `INTEGER` basis points | 5% GST = `500`, 2.5% CGST = `250`. |
 | Stock quantities | `INTEGER` milli-units of the base unit (g / ml / pc) | 200 g rice = `200000`, 1.5 eggs (rare but possible in recipes) = `1500`. |
 | Soft delete | `deleted_at`, `deleted_by` + `BEFORE DELETE` triggers that abort | "Nothing should be deletable." |
@@ -37,15 +38,15 @@ Writes always use `BEGIN IMMEDIATE`, so the write lock is taken up front and dea
 
 | Context | Tables |
 |---|---|
-| Organisation | `organizations`, `branches`, `settings`, `devices`, `printers` |
+| Organisation | `indian_states`, `organizations`, `branches`, `settings`, `devices`, `printers`, `peripherals` |
 | Identity | `permissions`, `roles`, `role_permissions`, `users`, `user_roles`, `refresh_tokens`, `staff_attendance` |
 | Tax | `tax_groups`, `tax_components`, `charge_rules` |
 | Floor | `floor_areas`, `dining_tables`, `reservations` |
 | Catalog | `kitchen_stations`, `categories`, `menu_items`, `branch_menu_items`, `menu_item_variants`, `addon_groups`, `addons`, `menu_item_addon_groups` |
 | Inventory | `units`, `inventory_items`, `inventory_stock`, `stock_batches`, `recipes`, `recipe_ingredients`, `addon_ingredients`, `stock_movements`, `stock_counts`, `stock_count_lines` |
 | CRM | `customers`, `loyalty_transactions` |
-| Ordering & Kitchen | `orders`, `order_items`, `order_item_addons`, `kots`, `kot_status_events` |
-| Billing | `document_sequences`, `coupons`, `invoices`, `invoice_lines`, `invoice_taxes`, `invoice_discounts`, `invoice_charges`, `payments`, `cash_shifts` |
+| Ordering & Kitchen | `sales_channels`, `orders`, `order_items`, `order_item_addons`, `kots`, `kot_status_events` |
+| Billing | `document_sequences`, `coupons`, `invoices`, `invoice_lines`, `invoice_taxes`, `invoice_discounts`, `invoice_charges`, `payments`, `cash_shifts`, `shift_tender_counts` |
 | Purchasing | `vendors`, `purchase_orders`, `purchase_order_lines`, `grns`, `grn_lines`, `vendor_payments` |
 | Accounting | `accounts`, `journal_entries`, `journal_lines`, `expenses` |
 | Platform | `audit_logs`, `notifications`, `domain_events`, `sync_queue`, `sync_state`, `sync_conflicts`, `backups` |
@@ -59,7 +60,13 @@ Writes always use `BEGIN IMMEDIATE`, so the write lock is taken up front and dea
 - A **KOT** is a batch of items fired to one kitchen station. Each "send to kitchen" creates one KOT per station. `order_items.kot_id` links each item to the KOT that fired it.
 - An **invoice** is the legal document created at billing. Its lines are a frozen copy. Refunds create a **credit note** (`invoices.kind = 'CREDIT_NOTE'`, `original_invoice_id`) plus negative `payments`. Invoices are never edited.
 
-### 4.2 Material consumption engine
+### 4.2 Taxes, invoice series and channels
+- **Tax type lives on the tax group, not the branch**: `tax_groups.tax_type = GST | VAT`. A menu item's group decides how it is taxed, so food (GST) and liquor (state VAT) can sit in one order.
+- `tax_groups.invoice_series` routes liquor to its own gapless series (`LIQ`) when the branch bills liquor separately. One order can then produce two invoices (`orders` 1 → N `invoices`).
+- `sales_channels` records Swiggy/Zomato etc. with commission and the `gst_paid_by_operator` flag, which is copied onto each invoice so historic GST reports never change if the flag is edited.
+- **Payments on standalone terminals**: `payments.reference` (approval code / UPI RRN), `card_last4`, `terminal_label`. `shift_tender_counts` stores expected vs. reported totals per tender and terminal at shift close.
+
+### 4.3 Material consumption engine
 On `KotFired`, the Inventory policy:
 1. Resolves the active recipe for `(menu_item_id, variant_id)`, falling back to the item-level recipe.
 2. Computes `qty_milli × quantity / yield_portions × (1 + wastage_bp/10000)` for each ingredient, plus addon ingredients.
@@ -70,11 +77,13 @@ Deducting at **KOT fire** (not at payment) matches real kitchen consumption. Thi
 
 Example (Chicken Biryani, 1 portion): Rice 200 g → `200000`, Chicken 150 g → `150000`, Oil 20 ml → `20000`.
 
-### 4.3 Accounting postings (auto-journal)
+### 4.4 Accounting postings (auto-journal)
 
 | Event | Debit | Credit |
 |---|---|---|
-| Invoice issued | Accounts Receivable (customer) | Sales; Output CGST/SGST/IGST; Service-charge income |
+| Invoice issued | Accounts Receivable (customer) | Sales (food / liquor); Output CGST/SGST/IGST; Output VAT (liquor); Service-charge income |
+| Aggregator invoice (`gst_paid_by_operator`) | Aggregator receivable | Sales (no output GST: the operator pays it) |
+| Aggregator settlement | Bank; Commission expense; Input GST on commission | Aggregator receivable |
 | Payment received | Cash / Bank / UPI clearing | Accounts Receivable |
 | Credit note (refund) | Sales returns; Output tax | Cash/Bank (via negative payment) |
 | GRN posted | Inventory; Input CGST/SGST | Accounts Payable (vendor) |
@@ -85,10 +94,10 @@ Example (Chicken Biryani, 1 portion): Rice 200 g → `200000`, Chicken 150 g →
 
 Sub-ledgers (customer, vendor) are `journal_lines.party_type/party_id`. P&L, balance sheet, and cash flow are aggregations over `v_account_ledger`.
 
-### 4.4 Audit trail
+### 4.5 Audit trail
 Every command writes one `audit_logs` row (actor, approver, device, before/after JSON, reason). The hash chain (`prev_hash`, `hash`) makes tampering detectable, even by someone with direct DB access.
 
-### 4.5 Sync readiness
+### 4.6 Sync readiness
 Every command appends `domain_events` (local `seq` gives total order) and a `sync_queue` row **in the same transaction** (transactional outbox). Nothing is lost if the app crashes between commit and upload.
 
 ## 5. Indexing strategy

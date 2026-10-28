@@ -16,6 +16,8 @@ Full OpenAPI 3.1 will be **generated from Zod contracts** (`packages/contracts`)
 | Pagination | Cursor: `?limit=50&cursor=<opaque>` → `{ data, nextCursor }` |
 | Filtering | `?status=OPEN&from=2026-10-01&to=2026-10-31` |
 | Time | Responses include `serverTime`, and clients correct for clock skew |
+| Language | `Accept-Language: hi-IN` localises error `title`/`detail` and server-rendered documents (receipts, PDFs). Data fields are never translated in place; translations come in `nameTranslations` |
+| Transport | The same JSON contracts travel over HTTPS/WSS (normal) or the BLE fallback channel (§4). Idempotency keys make retries across transports safe |
 
 ### Standard error codes
 `UNAUTHENTICATED` 401 · `FORBIDDEN` 403 (includes `requiredPermission`) · `NOT_FOUND` 404 · `VERSION_CONFLICT` 409 · `INVALID_STATE_TRANSITION` 409 · `INSUFFICIENT_STOCK` 409 (only when `settings.inventory.block_on_negative`) · `APPROVAL_REQUIRED` 403 · `VALIDATION_FAILED` 422 · `RATE_LIMITED` 429.
@@ -38,7 +40,7 @@ Permission required in brackets.
 `GET/POST /users` · `GET/PATCH /users/{id}` · `POST /users/{id}/deactivate` · `POST /users/{id}/reset-pin` · `GET/POST /roles` · `PUT /roles/{id}/permissions` · `GET /permissions`
 
 ### Settings [`settings.manage`]
-`GET/PATCH /settings` · `GET/POST/PATCH /tax-groups` · `GET/POST/PATCH /charge-rules` · `GET/POST/PATCH /printers` · `POST /printers/{id}/test` · `GET/POST/PATCH /devices` · `POST /devices/pairing-code`
+`GET/PATCH /settings` · `GET/POST/PATCH /tax-groups` · `GET/POST/PATCH /charge-rules` · `GET/POST/PATCH /printers` · `POST /printers/{id}/test` · `GET/POST/PATCH /devices` · `POST /devices/pairing-code` · `GET/POST/PATCH /peripherals` · `POST /peripherals/{id}/test` · `GET/POST/PATCH /sales-channels`
 
 ### Floor
 | Method | Path | Perm | Notes |
@@ -60,6 +62,7 @@ Permission required in brackets.
 | Method | Path | Perm | Body / Notes |
 |---|---|---|---|
 | POST | `/orders` | `orders.create` | `{orderType, tableId?, covers?, customerId?}` → order. Sets table to OCCUPIED |
+| POST | `/orders/aggregator` | `orders.create` | Manual Swiggy/Zomato entry: `{salesChannelId, externalOrderId, externalOtp?, items[]}`. Rejects duplicates of `(channel, externalOrderId)` |
 | GET | `/orders?status=OPEN` | `tables.view` | |
 | GET | `/orders/{id}` | `tables.view` | Order + items + KOTs + running totals |
 | POST | `/orders/{id}/items` | `orders.create` | `{items:[{menuItemId, variantId?, quantity, addons:[{addonId,quantity}], specialNote?, course?}]}`. Items are PENDING until fired |
@@ -82,14 +85,14 @@ Permission required in brackets.
 ### Billing (POS)
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| POST | `/orders/{id}/invoice` | `billing.create` | `{discounts?:[…], couponCode?, chargeRuleIds?, customerId?, customerTaxId?}` → invoice with tax breakup. Order → BILLED, table → BILLING |
+| POST | `/orders/{id}/invoice` | `billing.create` | `{discounts?:[…], couponCode?, chargeRuleIds?, customerId?, customerTaxId?}` → **one or more** invoices (a separate `LIQ` invoice when liquor is billed separately), with GST/VAT breakup. Order → BILLED, table → BILLING |
 | POST | `/invoices/preview` | `billing.create` | Same body. Computes totals without persisting (live bill panel) |
-| POST | `/invoices/{id}/payments` | `billing.collect_payment` | `{payments:[{method, amount, tendered?, reference?}]}`. Split payment = several entries. Fully paid → order PAID, table → CLEANING |
+| POST | `/invoices/{id}/payments` | `billing.collect_payment` | `{payments:[{method, amount, tendered?, reference?, cardLast4?, terminalLabel?}]}`. Card/UPI are taken on the standalone terminal and the approval code / RRN is keyed in. Split payment = several entries. Fully paid → order PAID, table → CLEANING |
 | POST | `/invoices/{id}/print` | `billing.create` (first) / `billing.reprint` | `{printerId?, copy: CUSTOMER\|DUPLICATE}` |
 | POST | `/invoices/{id}/cancel` | `billing.cancel` + approver | Only if unpaid, or paid same-shift (auto-refunds) |
 | POST | `/invoices/{id}/refunds` | `billing.refund` + approver | `{lines?:[{invoiceLineId, quantity}], amount?, method, reason}` → credit note + negative payment |
 | GET | `/invoices?date=&status=` | `billing.create` | |
-| POST/GET | `/cash-shifts`, `/cash-shifts/{id}/close` | `cash.shift_manage` | `{openingFloat}` / `{countedCash, denominations}` → X/Z report |
+| POST/GET | `/cash-shifts`, `/cash-shifts/{id}/close` | `cash.shift_manage` | `{openingFloat}` / `{countedCash, denominations, tenders:[{method, terminalLabel?, reportedAmount}]}` → X/Z report with per-terminal variance |
 
 ### Customers
 `GET /customers?phone=` · `POST /customers` · `GET /customers/{id}` (history, favourites, LTV, points) · `POST /customers/{id}/loyalty-adjustments` [`loyalty.adjust`]
@@ -113,7 +116,20 @@ Permission required in brackets.
 | 5 | Reporting | `/reports/{sales\|items\|tax\|gstr1\|pnl\|balance-sheet\|cash-flow\|inventory-valuation\|consumption-variance}` |
 | 6 | Sync | `/sync/status`, `/sync/conflicts` (+`/resolve`), `/sync/retry` · cloud side: `POST /sync/push`, `GET /sync/pull` |
 
-## 4. WebSocket protocol
+## 4. Bluetooth LE interface
+
+The Hub exposes one GATT service, `RestroOS Hub` (128-bit UUID fixed in `packages/contracts/ble.ts`):
+
+| Characteristic | Properties | Content |
+|---|---|---|
+| `hub-info` | read | `{hubId, name, urls:["https://192.168.1.20:7400"], caFingerprint, protocol: 1}` |
+| `pairing` | read (rotates every 60 s) | One-time pairing nonce, the same one the on-screen QR shows |
+| `cmd-in` | write (with response) | Chunked frames of a normal API request: `{id, method, path, headers, body}` |
+| `evt-out` | notify | Chunked frames of responses and WebSocket-equivalent events |
+
+Frames: `[msgId u16][seq u16][last u8][payload ≤ (MTU−8)]`, gzip for payloads > 512 B. The fallback channel **only accepts an allow-list of routes** (orders, KOT, KDS status, auth refresh), and the same JWT and RBAC checks apply. The device must already have been paired over LAN or QR.
+
+## 5. WebSocket protocol
 
 Endpoint `wss://<hub>:7400/ws?token=<access JWT>`. The server assigns rooms from the user's role and device kind. Clients can `subscribe` to extra rooms they're authorized for.
 

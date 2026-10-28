@@ -18,6 +18,9 @@ erDiagram
   devices ||--o{ refresh_tokens : "issued to"
   branches ||--o{ devices : registers
   branches ||--o{ printers : has
+  branches ||--o{ peripherals : has
+  devices ||--o{ peripherals : "attached to"
+  devices ||--o{ printers : drives
   branches ||--o{ settings : configures
   users ||--o{ staff_attendance : clocks
   branches ||--o{ floor_areas : has
@@ -112,6 +115,7 @@ erDiagram
 ```mermaid
 erDiagram
   dining_tables ||--o{ orders : seats
+  sales_channels ||--o{ orders : "sourced from"
   customers ||--o{ orders : places
   users ||--o{ orders : "captain of"
   orders ||--|{ order_items : contains
@@ -131,9 +135,17 @@ erDiagram
   invoices ||--o{ payments : "settled by"
   invoices ||--o{ invoices : "credit note of"
   cash_shifts ||--o{ payments : collects
+  cash_shifts ||--o{ shift_tender_counts : reconciles
   customers ||--o{ loyalty_transactions : earns
   invoices ||--o{ loyalty_transactions : generates
 
+  sales_channels {
+    text id PK
+    text code
+    text kind
+    int commission_bp
+    int gst_paid_by_operator
+  }
   orders {
     text id PK
     text order_no

@@ -11,6 +11,8 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 | 1.3 | `infrastructure/db`: SQLCipher connection, pragmas, migrator (runs `database/migrations/*.sql`, records checksum, pre-migration backup), Drizzle schema, `UnitOfWork` (`BEGIN IMMEDIATE`, version checks, outbox + audit writer) | Migration idempotent; concurrent writer test; delete-trigger tests |
 | 1.4 | `apps/server` bootstrap: Fastify, awilix DI, config, pino logging, problem+json errors, `/health`, idempotency-key store, rate limit | Integration test harness with in-memory encrypted DB |
 | 1.5 | `apps/web` shell + `packages/ui`: Vite, Tailwind 4, shadcn, theme tokens (light/dark/high-contrast), layout, connection pill, router per portal | Storybook for core widgets |
+| 1.6 | i18n foundation: i18next + ICU, `en-IN`/`hi-IN`/`bn-IN` catalogues, bundled Noto fonts, lint rule banning hard-coded UI strings, pseudo-locale for testing | Every screen renders in all 3 locales without overflow at 768 px |
+| 1.7 | **Bluetooth spike** (time-boxed 4 days): BLE GATT server on Linux (BlueZ) and Windows (WinRT bridge); Android Chrome + Capacitor iPad clients; measure throughput, latency, max concurrent links | Go/no-go report feeding Phase 1.5 |
 
 ## Sprint 2 — Identity & setup (2 wks)
 
@@ -18,7 +20,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 |---|---|
 | 2.1 | Auth: login, PIN login, refresh rotation with family revoke, lockout, `/auth/approve` manager override, JWT (jose, EdDSA) |
 | 2.2 | RBAC: permission guard `requires()` preHandler, role templates (Admin, Manager, Cashier, Captain, Kitchen, Inventory, Accountant), UI `<Can permission>` |
-| 2.3 | First-run setup wizard: organisation, branch, GSTIN/state, tax groups (GST 5/12/18), admin user, backup passphrase |
+| 2.3 | First-run setup wizard: organisation, branch, **state (wave 1 only) → state pack** (GST groups, liquor VAT groups or liquor disabled, separate liquor bill default, languages), GSTIN / VAT TIN / excise licence, admin user, backup passphrase |
 | 2.4 | Users & roles admin UI · Settings UI (taxes, service charge, printers, receipt template) |
 | 2.5 | Audit log writer (hash chain) + viewer; nightly chain verification job |
 
@@ -29,7 +31,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 | 3.1 | Catalog commands/queries: categories, items, variants, addon groups, kitchen stations, availability toggle; menu snapshot endpoint with ETag |
 | 3.2 | Admin menu editor UI (bulk CSV import of menu) |
 | 3.3 | Floor areas + tables, drag-and-drop layout editor, table state machine, QR token generation |
-| 3.4 | Device pairing (mDNS advertise, pairing QR, local CA), device registry |
+| 3.4 | Device pairing (mDNS advertise, **BLE advertise + GATT hub-info/pairing**, pairing QR, local CA), device registry, peripherals registry (BT/USB printers, scanners) |
 
 ## Sprint 4 — Ordering & Kitchen (2 wks)
 
@@ -45,11 +47,12 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 
 | WP | Deliverable |
 |---|---|
-| 5.1 | `TaxCalculator` (inclusive/exclusive, CGST/SGST/IGST, line-level, round-off) — exhaustive table tests vs. hand-computed GST invoices |
+| 5.1 | `TaxEngine`: GST (inclusive/exclusive, CGST/SGST/IGST, line-level) + liquor VAT (rate + surcharge), mixed-order split into `INV`/`LIQ` invoices, aggregator `gst_paid_by_operator`, round-off. Exhaustive table tests vs. invoices hand-computed with a CA |
 | 5.2 | Invoice generation, gapless numbering, discounts (limits per role + approval), coupons, service charge, complimentary |
-| 5.3 | Payments: cash (tendered/change), card, UPI (reference), split, credit customer; cash shifts with X/Z report |
+| 5.3 | Payments: cash (tendered/change), card/UPI from **standalone terminals** (approval code/RRN, last 4, terminal), split, credit customer, aggregator; cash shifts with per-terminal reconciliation in X/Z report |
 | 5.4 | Cancellation, refund → credit note, reprint (DUPLICATE watermark), all with audit + approval |
-| 5.5 | Printing: ESC/POS templates (58/80 mm) for bill, KOT, X/Z report; network + USB + OS spooler adapters; printer test page |
+| 5.5 | Printing: ESC/POS templates (58/80 mm) for bill, liquor bill, KOT, X/Z report; network + USB + **Bluetooth** + OS spooler adapters; **raster mode for Hindi/Bengali** (Chromium off-screen render); printer test page |
+| 5.5b | Manual aggregator orders: Delivery screen, sales-channel admin, duplicate check on external order id, channel net-revenue in day-end |
 | 5.6 | Basic CRM: customer by phone at billing, visit count, LTV |
 | 5.7 | Day-end report + owner dashboard (today/month/year sales, payment mix, kitchen stats) with export |
 | 5.8 | Backups (hourly/daily, encrypted, retention, restore UI) |
@@ -70,6 +73,8 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 | Risk | Mitigation |
 |---|---|
 | Printer driver diversity | Abstract `PrinterPort`, start with ESC/POS over TCP 9100 (most common), keep a certified-printer list |
+| Bluetooth limits on real hardware (iPad browsers, Windows peripheral role, link count) | Spike in Sprint 1 (WP 1.7); Wi-Fi remains the primary path; native shell for iPads |
+| Liquor tax/billing rules differ per state and change | State packs are data; each state's pack is reviewed with a tax advisor before its launch |
 | SQLite native module + Electron ABI | Use `electron-rebuild` in CI and prebuilt binaries for win-x64 / linux-x64 |
 | Hub PC failure mid-service | Hourly backups + Phase 6 standby Hub; Phase 1 documents a manual restore in < 10 min |
 | GST rule changes | Tax groups are data, not code; rates are versioned with effective dates (added in WP 5.1 if needed) |
