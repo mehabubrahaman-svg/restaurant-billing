@@ -4,6 +4,8 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 
 ## Sprint 1 — Foundation (2 wks)
 
+> **Status (2026-10-28)**: delivered except where noted. **Deferred**: Husky pre-commit hooks (CI runs the same checks) and Storybook (component tests cover the UI kit for now). Drizzle schemas move to Sprint 2 with the first aggregate repositories, since Sprint 1 writes only platform tables. The Bluetooth spike (1.7) has its harness built and unit-tested. **The measurements themselves need the pilot's Android tablets and a Linux/Windows Hub with a BLE adapter**; see `spikes/bluetooth/RUNBOOK.md`.
+
 | WP | Deliverable | Acceptance |
 |---|---|---|
 | 1.1 | Monorepo: pnpm, Turborepo, TS strict, ESLint (+boundaries), Prettier, Vitest, Husky, CI (lint, typecheck, test, build) | `pnpm ci` green on Windows + Linux runners |

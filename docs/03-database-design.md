@@ -1,7 +1,16 @@
 # 03 — Database Design
 
 Source of truth: [`database/migrations/0001_initial_schema.sql`](../database/migrations/0001_initial_schema.sql) and [`0002_seed_reference_data.sql`](../database/migrations/0002_seed_reference_data.sql).
-The migrations are validated against SQLite 3.45 (73 tables, 33 integrity triggers, all FKs resolve).
+The migrations are validated in CI (`pnpm db:validate`): 74 tables, 73 integrity triggers, all FKs resolve.
+
+| Migration | Contents |
+|---|---|
+| `0001_initial_schema` | All business tables, append-only and no-delete triggers on ledgers and main documents, reporting views |
+| `0002_seed_reference_data` | Indian states (GST codes, waves, languages, liquor defaults), units, 52 permissions |
+| `0003_idempotency_keys` | Idempotency-Key cache for retried POST commands |
+| `0004_complete_delete_guards` | Delete guards on every remaining business table; draft-only deletion for PO and stock-count lines |
+
+Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 
 ## 1. Engine configuration
 
@@ -131,4 +140,4 @@ At that extreme volume, `domain_events` older than 90 days **and already synced*
 | Triggers `RAISE(ABORT)` | `RAISE EXCEPTION` triggers or REVOKE DELETE | Ported in the PG migration set |
 | `STRICT` | native | |
 
-Drizzle schema definitions live in `packages/infrastructure/src/db/schema/*` with one file per context and are kept in lock-step with the SQL migrations by a CI check (`drizzle-kit check`).
+Drizzle schema definitions (from Sprint 2, added with the first aggregate repositories) live in `packages/infrastructure/src/db/schema/*` with one file per context and are kept in lock-step with the SQL migrations by a CI check (`drizzle-kit check`).

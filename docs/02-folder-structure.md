@@ -1,6 +1,6 @@
 # 02 — Folder Structure
 
-pnpm + Turborepo monorepo. The **dependency direction is enforced** with `eslint-plugin-boundaries`. Arrows mean "may import":
+pnpm + Turborepo monorepo. The **dependency direction is enforced** by per-layer `no-restricted-imports` rules in the root `eslint.config.js`, so CI fails if, for example, `domain` imports anything or `application` imports `infrastructure`. Arrows mean "may import":
 
 ```
 apps/*  ──►  packages/server-*  ──►  packages/application  ──►  packages/domain
@@ -63,7 +63,7 @@ restaurant-billing/
 │   ├── contracts/                   # Zod request/response/WS message schemas, shared with web
 │   ├── infrastructure/              # Adapters implementing ports
 │   │   └── src/
-│   │       ├── db/                  #   drizzle schema, connection (SQLCipher, pragmas), UoW, migrator
+│   │       ├── db/                  #   connection (SQLCipher, pragmas), migrator, UoW; Drizzle schema from Sprint 2
 │   │       ├── repositories/        #   one per aggregate
 │   │       ├── read-models/         #   SQL for queries/reports
 │   │       ├── events/              #   event store + outbox writer, in-process bus
@@ -72,14 +72,15 @@ restaurant-billing/
 │   │       ├── export/              #   PDF / XLSX / CSV writers
 │   │       └── sync/                #   Phase 6 cloud client
 │   ├── ui/                          # shadcn/ui components + design tokens + POS-specific widgets
-│   └── config/                      # shared tsconfig, eslint, tailwind preset, vitest config
 │
 ├── database/
 │   ├── migrations/                  # Ordered SQL migrations (source of truth for schema)
 │   └── seeds/dev/                   # demo restaurant data for local development
 ├── docs/                            # This documentation set + ADRs
+├── spikes/bluetooth/                # Sprint 1 Bluetooth spike: hub GATT prototype + measurement page (not shipped)
 ├── e2e/                             # Playwright suites (captain → KDS → POS happy paths)
 ├── scripts/                         # dev tooling (db reset, seed, release)
+├── tsconfig.base.json · eslint.config.js · .prettierrc.json   # shared config lives at the root
 ├── turbo.json · pnpm-workspace.yaml · package.json
 └── README.md
 ```
