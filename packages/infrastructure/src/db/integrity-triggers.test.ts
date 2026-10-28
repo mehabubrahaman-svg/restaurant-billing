@@ -93,22 +93,29 @@ describe('database integrity guards', () => {
     expect(() => t.db.prepare('DELETE FROM orders').run()).toThrow(/cannot be deleted/);
   });
 
-  it('rejects a journal line with both debit and credit', () => {
+  it('rejects a journal line with both debit and credit, and keeps journals append-only', () => {
+    // Every organisation gets the chart of accounts; the system posts with no user.
+    const cash = `${TEST_ORG_ID}:1000`;
+    expect(t.db.prepare('SELECT system_tag FROM accounts WHERE id = ?').pluck().get(cash)).toBe(
+      'CASH',
+    );
     t.db.exec(`
-      INSERT INTO accounts (id, organization_id, code, name, type, created_at, updated_at)
-        VALUES ('a1', '${TEST_ORG_ID}', '1000', 'Cash', 'ASSET', '${T}', '${T}');
       INSERT INTO journal_entries (id, branch_id, entry_no, entry_date, source_type, created_at, created_by)
-        VALUES ('j1', '${TEST_BRANCH_ID}', 'JE1', '2026-10-28', 'MANUAL', '${T}', '${TEST_USER_ID}');
+        VALUES ('j1', '${TEST_BRANCH_ID}', 'JE1', '2026-10-28', 'STOCK', '${T}', NULL);
     `);
     const line = (debit: number, credit: number) =>
       t.db
         .prepare(
           'INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit) VALUES (?, ?, ?, ?, ?)',
         )
-        .run(`l${debit}${credit}`, 'j1', 'a1', debit, credit);
+        .run(`l${debit}${credit}`, 'j1', cash, debit, credit);
     expect(() => line(100, 100)).toThrow(/CHECK constraint/);
     expect(() => line(0, 0)).toThrow(/CHECK constraint/);
     expect(() => line(100, 0)).not.toThrow();
+    expect(() => t.db.prepare('UPDATE journal_lines SET debit = 1').run()).toThrow(/append-only/);
+    expect(() => t.db.prepare("DELETE FROM journal_entries WHERE id = 'j1'").run()).toThrow(
+      /append-only/,
+    );
   });
 
   it('rejects a branch in an unknown state', () => {

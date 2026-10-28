@@ -88,7 +88,22 @@ goes through the shared `StockLedger`); SQLite repository and queries; routes
 `apps/server/src/http/purchasing.test.ts`. Its web portal (`/purchase`) is
 still the placeholder.
 
-Then Phase 4 (chart of accounts,
+**Phase 4 backend is done**: migration `0012_accounting.sql` (chart template
+seeded for every organisation, also by a trigger on new ones; journal tables
+rebuilt so system postings have no user, a `STOCK` source type and one
+original entry per document; expense reference and cancel reason); domain
+`packages/domain/src/accounting/journal.ts`; contracts
+`packages/contracts/src/http/accounting.ts`; `AccountingService` (chart,
+manual journals and reversals, expenses, ledgers, statements),
+`AccountingProjector` (bills, credit notes, cancellations, payments, GRNs,
+vendor payments from events; stock from a cursor over `stock_movements`),
+`JournalWriter`; SQLite repository, posting sources and queries; routes
+`apps/server/src/http/routes/accounting.ts`; tests
+`apps/server/src/http/accounting.test.ts`. The test server fails any test in
+which a projector skipped an event. Its web portal (`/accounts`) is still the
+placeholder.
+
+Phase 4 scope as planned: (chart of accounts,
 automatic journals from sales, purchases, payments and COGS, ledgers, P&L,
 balance sheet, cash flow, GST summaries).
 

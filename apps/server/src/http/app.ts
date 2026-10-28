@@ -1,7 +1,11 @@
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
-import { INVENTORY_EVENT_TYPES } from '@restroos/application';
+import {
+  ACCOUNTING_EVENT_TYPES,
+  INVENTORY_EVENT_TYPES,
+  STOCK_MOVING_EVENT_TYPES,
+} from '@restroos/application';
 import { API_PREFIX } from '@restroos/contracts';
 import type { AwilixContainer } from 'awilix';
 import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify';
@@ -13,6 +17,7 @@ import { authPlugin } from './plugins/auth';
 import { devicePlugin } from './plugins/device';
 import { idempotencyPlugin } from './plugins/idempotency';
 import { errorHandler, problem, sendProblem } from './problem';
+import { accountingRoutes } from './routes/accounting';
 import { auditRoutes } from './routes/audit';
 import { authRoutes } from './routes/auth';
 import { backupRoutes } from './routes/backups';
@@ -81,13 +86,22 @@ export async function buildApp(
     allowList: ['127.0.0.1', '::1'],
   });
 
-  // Fired dishes take their ingredients from stock once the KOT has committed;
-  // catching up at start covers anything fired while the Hub was down.
-  const { inventoryProjector, eventBus } = container.cradle;
-  const stopProjecting = INVENTORY_EVENT_TYPES.map((type) =>
-    eventBus.subscribe(type, () => void inventoryProjector.catchUp()),
-  );
+  // Fired dishes take their ingredients from stock once the KOT has committed,
+  // then bills, payments, purchases and the stock that moved are journaled.
+  // Catching up at start covers anything committed while the Hub was down.
+  const { inventoryProjector, accountingProjector, eventBus } = container.cradle;
+  const accountingTypes = new Set<string>([...ACCOUNTING_EVENT_TYPES, ...STOCK_MOVING_EVENT_TYPES]);
+  const stopProjecting = [
+    ...INVENTORY_EVENT_TYPES.map((type) =>
+      eventBus.subscribe(type, () => void inventoryProjector.catchUp()),
+    ),
+    // Subscribed second, so it runs after the inventory projector for the same event.
+    ...[...accountingTypes].map((type) =>
+      eventBus.subscribe(type, () => void accountingProjector.catchUp()),
+    ),
+  ];
   inventoryProjector.catchUp();
+  accountingProjector.catchUp();
   app.addHook('onClose', async () => stopProjecting.forEach((stop) => stop()));
 
   await app.register(
@@ -114,6 +128,7 @@ export async function buildApp(
       await api.register(backupRoutes, { cradle });
       await api.register(inventoryRoutes, { cradle });
       await api.register(purchasingRoutes, { cradle });
+      await api.register(accountingRoutes, { cradle });
       await options.registerApiRoutes?.(api);
       api.setNotFoundHandler((request, reply) =>
         sendProblem(

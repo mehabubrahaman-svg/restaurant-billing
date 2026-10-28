@@ -51,3 +51,7 @@ export type * from './inventory/ports';
 export { addDays, StockLedger, type MovementContext } from './inventory/stock-ledger';
 export * from './purchasing/purchasing-service';
 export type * from './purchasing/ports';
+export * from './accounting/accounting-service';
+export * from './accounting/accounting-projector';
+export { JournalWriter } from './accounting/journal-writer';
+export type * from './accounting/ports';

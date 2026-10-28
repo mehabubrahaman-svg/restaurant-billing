@@ -109,7 +109,9 @@ export async function createTestServer(
     version: '0.0.0-test',
     ...options.config,
   };
-  const logger = pino({ level: 'silent' });
+  // Only errors are kept, so a projector that skipped an event fails the test that caused it.
+  const errors: string[] = [];
+  const logger = pino({ level: 'error' }, { write: (line: string) => void errors.push(line) });
   const restarts: string[] = [];
   const container = buildContainer(config, logger, database.db, {
     clock,
@@ -160,6 +162,8 @@ export async function createTestServer(
     async close() {
       await app.close();
       database.close();
+      const skipped = errors.filter((e) => /not journaled|stock not moved/.test(e));
+      if (skipped.length > 0) throw new Error(`a projector skipped events:\n${skipped.join('\n')}`);
     },
   };
 }

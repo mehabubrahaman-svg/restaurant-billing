@@ -26,18 +26,26 @@ export class SqliteProjectionLog implements ProjectionLog {
     return this.db
       .prepare<
         (string | number)[],
-        Omit<StoredEvent, 'payload' | 'occurredAt'> & { payload: string; occurredAt: string }
+        Omit<StoredEvent, 'payload' | 'actorId' | 'occurredAt'> & {
+          payload: string;
+          metadata: string | null;
+          occurredAt: string;
+        }
       >(
         `SELECT seq, event_type AS type, branch_id AS branchId, aggregate_id AS aggregateId,
-                payload_json AS payload, occurred_at AS occurredAt
+                payload_json AS payload, metadata_json AS metadata, occurred_at AS occurredAt
            FROM domain_events
           WHERE seq > ? AND seq <= ? AND event_type IN (${types.map(() => '?').join(', ')})
           ORDER BY seq LIMIT ?`,
       )
       .all(after, upTo, ...types, limit)
-      .map((e) => ({
+      .map(({ metadata, ...e }) => ({
         ...e,
         payload: JSON.parse(e.payload) as unknown,
+        actorId:
+          metadata === null
+            ? null
+            : ((JSON.parse(metadata) as { actorId?: string | null }).actorId ?? null),
         occurredAt: new Date(e.occurredAt),
       }));
   }

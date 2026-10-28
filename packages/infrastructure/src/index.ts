@@ -82,3 +82,8 @@ export { SqliteInventoryQueries } from './inventory/sqlite-inventory-queries';
 export { SqliteProjectionLog } from './events/sqlite-projection-log';
 export { SqlitePurchasingRepository } from './purchasing/sqlite-purchasing-repository';
 export { SqlitePurchasingQueries } from './purchasing/sqlite-purchasing-queries';
+export {
+  SqliteAccountingRepository,
+  SqlitePostingSources,
+} from './accounting/sqlite-accounting-repository';
+export { SqliteAccountingQueries } from './accounting/sqlite-accounting-queries';

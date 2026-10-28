@@ -1,3 +1,4 @@
+export * from './http/accounting';
 export * from './http/audit';
 export * from './http/auth';
 export * from './http/backups';

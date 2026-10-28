@@ -192,6 +192,8 @@ export interface StoredEvent {
   branchId: string;
   aggregateId: string;
   payload: unknown;
+  /** Who did what raised the event (null for the system). */
+  actorId: string | null;
   occurredAt: Date;
 }
 

@@ -1,4 +1,6 @@
 import {
+  AccountingProjector,
+  AccountingService,
   AuthService,
   BillingService,
   CatalogService,
@@ -46,7 +48,10 @@ import {
   JoseTokenSigner,
   nodeTokenCodec,
   ScryptKeyDerivation,
+  SqliteAccountingQueries,
+  SqliteAccountingRepository,
   SqliteAuditQueries,
+  SqlitePostingSources,
   SqliteBillingQueries,
   SqliteReportQueries,
   FileBackupStore,
@@ -137,6 +142,8 @@ export interface Cradle {
   inventoryService: InventoryService;
   inventoryProjector: InventoryProjector;
   purchasingService: PurchasingService;
+  accountingService: AccountingService;
+  accountingProjector: AccountingProjector;
 }
 
 export interface ContainerOverrides {
@@ -475,6 +482,35 @@ export function buildContainer(
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
+        }),
+    ),
+    accountingService: single(
+      (c) =>
+        new AccountingService({
+          accounting: new SqliteAccountingRepository(c.db),
+          queries: new SqliteAccountingQueries(c.db),
+          branches: new SqliteSettingsRepository(c.db),
+          calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    accountingProjector: single(
+      (c) =>
+        new AccountingProjector({
+          log: new SqliteProjectionLog(c.db),
+          accounting: new SqliteAccountingRepository(c.db),
+          sources: new SqlitePostingSources(c.db),
+          branches: new SqliteSettingsRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+          onError: (error, event) =>
+            c.logger.error(
+              { err: error, seq: event?.seq, eventType: event?.type ?? 'stock' },
+              'not journaled; skipped',
+            ),
         }),
     ),
     hubNetwork: overrides.hubNetwork

@@ -11,15 +11,7 @@ import type {
   StockCountView,
   StockMovementView,
 } from '@restroos/application';
-import {
-  divideRounded,
-  MILLI_PER_BASE_THOUSAND,
-  portionCost,
-  shareBp,
-  stockLevel,
-  stockValue,
-  toSafeNumber,
-} from '@restroos/domain';
+import { portionCost, shareBp, stockLevel, stockValue, stockValueOfSum } from '@restroos/domain';
 import type { SqliteDatabase } from '../db/connection';
 
 type ItemRow = Omit<
@@ -50,14 +42,6 @@ function toItem(r: ItemRow): InventoryItemView {
     value: r.qtyMilli > 0 ? stockValue(r.qtyMilli, r.avgCostPerBase) : 0,
     level: stockLevel(r.qtyMilli, r.reorderLevelMilli, r.maxLevelMilli),
   };
-}
-
-/** Paise from a SQL sum of qty_milli × cost per 1000 base units. */
-function paiseOf(sumOfProducts: number): number {
-  return toSafeNumber(
-    divideRounded(BigInt(Math.trunc(sumOfProducts)), MILLI_PER_BASE_THOUSAND, 'HALF_EVEN'),
-    'stock value',
-  );
 }
 
 const SALE = "('SALE_CONSUMPTION','SALE_REVERSAL')";
@@ -238,7 +222,7 @@ export class SqliteInventoryQueries implements InventoryQueries {
           ORDER BY c.created_at DESC, c.id DESC LIMIT 100`,
       )
       .all({ branchId, id })
-      .map(({ varianceRaw, ...c }) => ({ ...c, varianceValue: paiseOf(varianceRaw) }));
+      .map(({ varianceRaw, ...c }) => ({ ...c, varianceValue: stockValueOfSum(varianceRaw) }));
   }
 
   count(branchId: string, id: string): StockCountView | undefined {
@@ -284,7 +268,7 @@ export class SqliteInventoryQueries implements InventoryQueries {
               ? null
               : head.status === 'DRAFT'
                 ? stockValue(varianceMilli, avgCost)
-                : paiseOf(postedRaw),
+                : stockValueOfSum(postedRaw),
         };
       }),
     };
@@ -400,9 +384,9 @@ export class SqliteInventoryQueries implements InventoryQueries {
       )
       .map(({ soldRaw, wastageRaw, countRaw, avgCost, isActive: _active, ...r }) => ({
         ...r,
-        soldValue: paiseOf(soldRaw),
-        wastageValue: paiseOf(wastageRaw),
-        countVarianceValue: paiseOf(countRaw),
+        soldValue: stockValueOfSum(soldRaw),
+        wastageValue: stockValueOfSum(wastageRaw),
+        countVarianceValue: stockValueOfSum(countRaw),
         closingValue: r.closingMilli > 0 ? stockValue(r.closingMilli, avgCost) : 0,
         varianceBp: r.soldMilli > 0 ? shareBp(-r.countVarianceMilli, r.soldMilli) : null,
       }));

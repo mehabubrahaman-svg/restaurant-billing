@@ -71,6 +71,14 @@ export const ERROR_STATUS = {
   UNIT_MISMATCH: 422,
   /** Another vendor already has this code. */
   VENDOR_CODE_TAKEN: 409,
+  /** Another account already has this code. */
+  ACCOUNT_CODE_TAKEN: 409,
+  /** Automatic postings use this account: it can't be retired or change type. */
+  SYSTEM_ACCOUNT: 409,
+  /** The debits and the credits of a journal entry differ. */
+  JOURNAL_UNBALANCED: 422,
+  /** The entry was already reversed, or is itself a reversal. */
+  ALREADY_REVERSED: 409,
   /** No active printer for this purpose is set up. */
   NO_PRINTER: 409,
   /** The printer didn't answer (off, out of paper, wrong address). */

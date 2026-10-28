@@ -17,6 +17,14 @@ export function stockValue(qtyMilli: number, costPerBase: number): number {
   );
 }
 
+/** Value in paise of a sum of qty_milli × cost-per-1000 products (a SQL SUM over movements). */
+export function stockValueOfSum(sumOfProducts: number): number {
+  return toSafeNumber(
+    divideRounded(BigInt(Math.trunc(sumOfProducts)), MILLI_PER_BASE_THOUSAND, 'HALF_EVEN'),
+    'stock value',
+  );
+}
+
 /** The cost per 1000 base units of a receipt: what was paid for how much. */
 export function costPerBase(totalPaise: number, qtyMilli: number): number {
   invariant(qtyMilli > 0, 'QUANTITY_INVALID', 'a receipt must add a positive quantity');
