@@ -16,7 +16,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        # windows-2022: its Visual Studio 2022 is one every node-gyp in the build knows
+        # (better-sqlite3-multiple-ciphers compiles on install; windows-latest has VS 2026).
+        os: [windows-2022, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
