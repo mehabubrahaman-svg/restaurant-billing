@@ -349,6 +349,68 @@ describe('purchasing', () => {
     ]);
   });
 
+  it('refuses impossible dates, and a delivery rejected in full leaves the PO as it was', async () => {
+    const { admin, ok, items, vendors } = await purchasing();
+    const badDate = await admin('POST', '/vendor-payments', {
+      vendorId: vendors.farms.id,
+      method: 'CASH',
+      amount: 100,
+      paidOn: '2026-09-31',
+    });
+    expect(badDate.json().code).toBe('VALIDATION_FAILED');
+    let po = await ok(
+      admin('POST', '/purchase-orders', {
+        vendorId: vendors.farms.id,
+        lines: [
+          {
+            inventoryItemId: items.rice.id,
+            unitId: 'unit-kg',
+            quantityMilli: 10_000,
+            unitPrice: 9_000,
+          },
+        ],
+      }),
+      PurchaseOrderSchema,
+    );
+    po = await ok(
+      admin('POST', `/purchase-orders/${po.id}/approve`, { version: po.version }),
+      PurchaseOrderSchema,
+    );
+    const grn = await ok(
+      admin('POST', '/grns', {
+        purchaseOrderId: po.id,
+        vendorInvoiceDate: '2026-10-27',
+        lines: [
+          {
+            purchaseOrderLineId: po.lines[0]!.id,
+            inventoryItemId: items.rice.id,
+            unitId: 'unit-kg',
+            quantityMilli: 10_000,
+            rejectedQtyMilli: 10_000,
+            unitPrice: 9_000,
+          },
+        ],
+      }),
+      GrnSchema,
+    );
+    await ok(admin('POST', `/grns/${grn.id}/post`, { version: grn.version }), GrnSchema);
+    po = await ok(admin('GET', `/purchase-orders/${po.id}`), PurchaseOrderSchema);
+    expect(po.status).toBe('APPROVED');
+    const bad = await admin('POST', '/grns', {
+      vendorId: vendors.farms.id,
+      vendorInvoiceDate: '2026-13-01',
+      lines: [
+        {
+          inventoryItemId: items.rice.id,
+          unitId: 'unit-kg',
+          quantityMilli: 1_000,
+          unitPrice: 9_000,
+        },
+      ],
+    });
+    expect(bad.json().code).toBe('VALIDATION_FAILED');
+  });
+
   it('edits and cancels a draft GRN, and checks its lines', async () => {
     const { admin, ok, items, vendors } = await purchasing();
     const line = {

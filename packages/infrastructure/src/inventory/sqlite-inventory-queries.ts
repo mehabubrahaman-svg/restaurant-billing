@@ -234,7 +234,7 @@ export class SqliteInventoryQueries implements InventoryQueries {
         ? this.db
             .prepare<{ branchId: string; id: string }, Line>(
               `SELECT i.id AS inventoryItemId, i.sku, i.name, i.category, i.base_unit_code AS baseUnit,
-                      coalesce(s.qty_milli, 0) AS systemQtyMilli, l.counted_qty_milli AS countedQtyMilli,
+                      coalesce(l.system_qty_milli, s.qty_milli, 0) AS systemQtyMilli, l.counted_qty_milli AS countedQtyMilli,
                       coalesce(s.avg_cost_per_base, 0) AS avgCost, 0 AS postedRaw
                  FROM inventory_items i
                  LEFT JOIN inventory_stock s ON s.inventory_item_id = i.id AND s.branch_id = @branchId

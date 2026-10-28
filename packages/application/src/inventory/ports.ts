@@ -117,6 +117,8 @@ export interface InventoryRepository {
   ): void;
   /** In one branch, or in any (`branchId` null). */
   hasMovements(branchId: string | null, itemId: string): boolean;
+  /** Whether stock was ever received in the branch: opening stock, a purchase or a transfer in. */
+  hasReceipts(branchId: string, itemId: string): boolean;
   /**
    * Appends a movement and moves the branch balance in the same transaction,
    * setting the average cost to `avgCostPerBase`. Returns the new balance.
@@ -135,6 +137,8 @@ export interface InventoryRepository {
       batchNo: string | null;
       expiresOn: string | null;
       qtyMilli: number;
+      /** What is left of it on the shelf: less than received when stock was negative. */
+      remainingMilli: number;
       unitCostPerBase: number;
     },
     at: Date,
@@ -165,14 +169,12 @@ export interface InventoryRepository {
       systemQtyMilli: number;
     }[],
   ): void;
-  countLines(countId: string): { inventoryItemId: string; countedQtyMilli: number }[];
+  /** Counted lines, each with the balance the books showed when it was counted. */
+  countLines(
+    countId: string,
+  ): { inventoryItemId: string; countedQtyMilli: number; systemQtyMilli: number }[];
   /** Version-checked: bumps the version (lines changed) or posts the count. */
-  touchCount(
-    id: string,
-    expectedVersion: number,
-    at: Date,
-    posted?: { by: string | null; systemQty: ReadonlyMap<string, number> },
-  ): void;
+  touchCount(id: string, expectedVersion: number, at: Date, posted?: { by: string | null }): void;
 
   /** Order lines by id, for the consumption projector. */
   soldLines(ids: readonly string[]): SoldLine[];

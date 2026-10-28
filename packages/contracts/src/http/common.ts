@@ -5,6 +5,14 @@ export const IdSchema = z.uuid();
 export const PaiseSchema = z.number().int();
 /** Integer basis points: 5% = 500. */
 export const BasisPointsSchema = z.number().int().min(0).max(100_00);
+/** A real calendar day, "YYYY-MM-DD" (2026-09-31 is refused). */
+export const CalendarDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((v) => {
+    const d = new Date(`${v}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+  }, 'a real date');
 export const LocaleSchema = z.enum(['en-IN', 'hi-IN', 'bn-IN']);
 export type Locale = z.infer<typeof LocaleSchema>;
 /** Short language codes used for bilingual receipts. */

@@ -1,4 +1,5 @@
 import {
+  CalendarDateSchema,
   CancelGrnRequestSchema,
   CancelPurchaseOrderRequestSchema,
   GrnStatusSchema,
@@ -26,7 +27,7 @@ import type { Cradle } from '../../container';
 import { commandContext } from '../context';
 
 const IdParams = z.object({ id: z.uuid() });
-const DateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const DateString = CalendarDateSchema;
 const VendorsQuery = z.object({ includeRetired: z.enum(['true', 'false']).default('false') });
 const PoQuery = z.object({
   status: PurchaseOrderStatusSchema.optional(),

@@ -291,7 +291,10 @@ export class InventoryService {
     });
   }
 
-  /** What was on the shelves on day one, once per item. */
+  /**
+   * What was on the shelves on day one, once per item, before it is first
+   * received. Sales before it are fine: the stock was there, just not entered.
+   */
   opening(input: { lines: ReceiptLineInput[] }, ctx: CommandContext) {
     return this.entry(ctx, 'OPENING', 'OpeningStockEntered', 'opening', null, (m) => {
       const seen = new Set<string>();
@@ -300,10 +303,10 @@ export class InventoryService {
           throw new DomainError('VALIDATION_FAILED', 'enter each item’s opening stock once');
         seen.add(line.inventoryItemId);
         const item = this.activeItem(line.inventoryItemId);
-        if (this.d.inventory.hasMovements(m.branchId, item.id)) {
+        if (this.d.inventory.hasReceipts(m.branchId, item.id)) {
           throw new DomainError(
             'STOCK_ALREADY_MOVED',
-            `${item.name} already has stock movements; use an adjustment or a count`,
+            `${item.name} has already been received; use an adjustment or a count`,
           );
         }
         this.ledger.receive(m, item, line, 'OPENING');
@@ -428,7 +431,11 @@ export class InventoryService {
     });
   }
 
-  /** Books each difference between what was counted and the balance now as an adjustment. */
+  /**
+   * Books each difference between what was counted and what the books said
+   * when it was counted as an adjustment, so a count taken during service
+   * doesn't undo the sales made since.
+   */
   postCount(id: string, input: { version: number }, ctx: CommandContext): StockCountView {
     return this.write(ctx, (scope, now) => {
       const count = this.draftCount(ctx.branchId, id, input.version);
@@ -444,17 +451,15 @@ export class InventoryService {
         reason: 'Stock count',
         at: now,
       };
-      const systemQty = new Map<string, number>();
       let adjusted = 0;
       for (const line of lines) {
-        const system = this.d.inventory.stock(ctx.branchId, line.inventoryItemId).qtyMilli;
-        systemQty.set(line.inventoryItemId, system);
-        const diff = line.countedQtyMilli - system;
+        // Against what the books said when the shelf was counted: sales since then still count.
+        const diff = line.countedQtyMilli - line.systemQtyMilli;
         if (diff > 0) this.ledger.addAtAverage(m, line.inventoryItemId, diff);
         if (diff < 0) this.ledger.issue(m, line.inventoryItemId, -diff, 'ADJUSTMENT');
         if (diff !== 0) adjusted += 1;
       }
-      this.d.inventory.touchCount(id, count.version, now, { by: ctx.actorId, systemQty });
+      this.d.inventory.touchCount(id, count.version, now, { by: ctx.actorId });
       const view = this.count(ctx.branchId, id);
       scope.recordEvents([
         recordChanged(

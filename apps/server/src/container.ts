@@ -509,7 +509,8 @@ export function buildContainer(
           onError: (error, event) =>
             c.logger.error(
               { err: error, seq: event?.seq, eventType: event?.type ?? 'stock' },
-              'not journaled; skipped',
+              // A document is skipped; stock movements stay behind the cursor and are tried again.
+              event ? 'not journaled; skipped' : 'stock not journaled yet; will retry',
             ),
         }),
     ),

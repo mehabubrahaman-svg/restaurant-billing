@@ -441,6 +441,67 @@ describe('inventory', () => {
     });
   });
 
+  it('keeps the sales made after an item was counted when the count is posted', async () => {
+    const r = await storeRoom();
+    const { admin, items, menu, tables, ok } = r;
+    let count = await ok(admin('POST', '/stock-counts', {}), StockCountSchema);
+    // The shelf has 29 kg against 30 kg on the books when it is counted…
+    count = await ok(
+      admin('PUT', `/stock-counts/${count.id}/lines`, {
+        version: count.version,
+        lines: [{ inventoryItemId: items.rice.id, countedQtyMilli: 29 * KG }],
+      }),
+      StockCountSchema,
+    );
+    // …then two biryanis take 500 g before the count is posted.
+    await fire(r, admin, tables.t1.id, [
+      { menuItemId: menu.biryani.id, variantId: menu.full.id, quantity: 2 },
+    ]);
+    count = await ok(
+      admin('POST', `/stock-counts/${count.id}/post`, { version: count.version }),
+      StockCountSchema,
+    );
+    expect(count.lines[0]).toMatchObject({ systemQtyMilli: 30 * KG, varianceMilli: -KG });
+    expect((await r.stock(items.rice)).qtyMilli).toBe(28_500 * G);
+  });
+
+  it('takes opening stock for an item that sold before it was entered', async () => {
+    const r = await storeRoom();
+    const { admin, items, menu, tables, ok } = r;
+    await fire(r, admin, tables.t1.id, [
+      {
+        menuItemId: menu.biryani.id,
+        variantId: menu.full.id,
+        quantity: 1,
+        addons: [{ addonId: menu.raita.id }],
+      },
+    ]);
+    expect((await r.stock(items.curd)).qtyMilli).toBe(-50 * G);
+    await ok(
+      admin('POST', '/stock/opening', {
+        lines: [
+          {
+            inventoryItemId: items.curd.id,
+            qtyMilli: 2 * KG,
+            totalCost: 10_000,
+            expiresOn: '2026-10-30',
+          },
+        ],
+      }),
+      StockEntryResponseSchema,
+    );
+    // ₹50/kg; the 50 g already sold came out of this stock, so its batch holds 1.95 kg.
+    expect(await r.stock(items.curd)).toMatchObject({ qtyMilli: 1_950 * G, avgCostPerBase: 5_000 });
+    const alerts = await ok(admin('GET', '/stock/alerts'), StockAlertsSchema);
+    expect(alerts.expiring.find((b) => b.inventoryItemId === items.curd.id)).toMatchObject({
+      remainingMilli: 1_950 * G,
+    });
+    const again = await admin('POST', '/stock/opening', {
+      lines: [{ inventoryItemId: items.curd.id, qtyMilli: KG, totalCost: 5_000 }],
+    });
+    expect(again.json().code).toBe('STOCK_ALREADY_MOVED');
+  });
+
   it('alerts on low, out, over and negative stock and on batches about to expire', async () => {
     const r = await storeRoom();
     const { admin, items, menu, tables, ok } = r;

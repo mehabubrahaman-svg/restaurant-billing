@@ -1,4 +1,5 @@
 import {
+  CalendarDateSchema,
   CancelExpenseRequestSchema,
   JournalEntriesQuerySchema,
   PartyTypeSchema,
@@ -29,13 +30,16 @@ import { commandContext } from '../context';
 const AccountParams = z.object({ id: z.string().min(1).max(80) });
 const IdParams = z.object({ id: z.uuid() });
 const PartyParams = z.object({ type: PartyTypeSchema, id: z.string().min(1).max(80) });
-const DateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const DateString = CalendarDateSchema;
 const RangeQuery = z.object({ from: DateString, to: DateString });
 const OptionalRangeQuery = z.object({ from: DateString.optional(), to: DateString.optional() });
 const AsOfQuery = z.object({ asOf: DateString.optional() });
 const MAX_RANGE_DAYS = 366;
 
+/** The chart and the expense list: also for whoever books expenses. */
 const VIEW = { permission: ['accounts.view', 'accounts.journal', 'expenses.manage'] } as const;
+/** Journals and ledgers: the books themselves. */
+const BOOKS = { permission: ['accounts.view', 'accounts.journal'] } as const;
 const JOURNAL = { permission: 'accounts.journal' } as const;
 const EXPENSES = { permission: 'expenses.manage' } as const;
 const STATEMENTS = { permission: ['reports.financial', 'accounts.view'] } as const;
@@ -78,7 +82,7 @@ export async function accountingRoutes(app: FastifyInstance, { cradle }: { cradl
   // ---- journals ---------------------------------------------------------------------
   app.get(
     '/journal-entries',
-    { config: VIEW },
+    { config: BOOKS },
     async (request): Promise<JournalEntriesResponse> => {
       const filter = JournalEntriesQuerySchema.parse(request.query);
       const data = accounts.journalEntries(branchOf(request), filter);
@@ -86,7 +90,7 @@ export async function accountingRoutes(app: FastifyInstance, { cradle }: { cradl
     },
   );
 
-  app.get('/journal-entries/:id', { config: VIEW }, async (request): Promise<JournalEntry> =>
+  app.get('/journal-entries/:id', { config: BOOKS }, async (request): Promise<JournalEntry> =>
     accounts.entry(branchOf(request), IdParams.parse(request.params).id),
   );
 
@@ -141,13 +145,13 @@ export async function accountingRoutes(app: FastifyInstance, { cradle }: { cradl
   );
 
   // ---- ledgers --------------------------------------------------------------------------
-  app.get('/ledgers/party/:type/:id', { config: VIEW }, async (request): Promise<PartyLedger> => {
+  app.get('/ledgers/party/:type/:id', { config: BOOKS }, async (request): Promise<PartyLedger> => {
     const { type, id } = PartyParams.parse(request.params);
     const { from, to } = range(request);
     return accounts.partyLedger(branchOf(request), type, id, from, to);
   });
 
-  app.get('/ledgers/:id', { config: VIEW }, async (request): Promise<Ledger> => {
+  app.get('/ledgers/:id', { config: BOOKS }, async (request): Promise<Ledger> => {
     const { from, to } = range(request);
     return accounts.ledger(branchOf(request), AccountParams.parse(request.params).id, from, to);
   });

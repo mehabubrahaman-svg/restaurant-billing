@@ -1,4 +1,5 @@
 import {
+  CalendarDateSchema,
   AdjustmentRequestSchema,
   CreateStockCountRequestSchema,
   OpeningStockRequestSchema,
@@ -32,7 +33,7 @@ import { commandContext } from '../context';
 const IdParams = z.object({ id: z.uuid() });
 const ItemsQuery = z.object({ includeRetired: z.enum(['true', 'false']).default('false') });
 const RecipesQuery = z.object({ menuItemId: z.uuid().optional() });
-const DateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const DateString = CalendarDateSchema;
 const RangeQuery = z.object({ from: DateString, to: DateString });
 const MAX_RANGE_DAYS = 366;
 

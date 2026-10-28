@@ -357,6 +357,7 @@ export class PurchasingService {
       }
       const businessDate = this.today(ctx.branchId);
       const taxKind = inputTaxKind(vendor.taxId, this.branch(ctx.branchId).stateCode);
+      let receivedOnPo = false;
       for (const line of grn.lines) {
         const accepted = line.quantityMilli - line.rejectedQtyMilli;
         if (accepted <= 0) continue;
@@ -383,8 +384,10 @@ export class PurchasingService {
           },
           'PURCHASE',
         );
-        if (line.purchaseOrderLineId !== null)
+        if (line.purchaseOrderLineId !== null) {
           this.d.purchasing.addReceived(line.purchaseOrderLineId, accepted);
+          receivedOnPo = true;
+        }
       }
       const dueOn = addDays(grn.vendorInvoiceDate ?? businessDate, vendor.paymentTermsDays);
       this.d.purchasing.postGrn(
@@ -411,7 +414,8 @@ export class PurchasingService {
           now,
         ),
       ];
-      if (po) {
+      // Only goods accepted against the PO's lines move it on (a fully rejected delivery doesn't).
+      if (po && receivedOnPo) {
         const after = this.d.purchasing.purchaseOrder(ctx.branchId, po.id)!;
         const status = receivedStatus(
           after.lines.map((l) => ({

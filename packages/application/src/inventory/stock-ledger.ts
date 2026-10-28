@@ -73,6 +73,8 @@ export class StockLedger {
           batchNo: line.batchNo,
           expiresOn,
           qtyMilli: line.qtyMilli,
+          // Stock sold before it arrived (a negative balance) was taken from this delivery.
+          remainingMilli: Math.max(0, line.qtyMilli + Math.min(0, stock.qtyMilli)),
           unitCostPerBase: unitCost,
         },
         m.at,

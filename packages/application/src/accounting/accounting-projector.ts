@@ -1,4 +1,10 @@
-import { signedLine, splitGst, stockValueOfSum, type JournalLine } from '@restroos/domain';
+import {
+  DomainError,
+  signedLine,
+  splitGst,
+  stockValueOfSum,
+  type JournalLine,
+} from '@restroos/domain';
 import type { ProjectionLog, StoredEvent } from '../inventory/ports';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
@@ -13,7 +19,11 @@ import type {
 } from './ports';
 
 export const ACCOUNTING_PROJECTION = 'accounting';
-/** Its cursor over stock_movements (rowid), for cost of goods sold, wastage and adjustments. */
+/**
+ * Its cursor over stock_movements, for cost of goods sold, wastage and
+ * adjustments. The ledger is append-only (a trigger refuses deletes), so its
+ * rowids run 1, 2, 3 … without gaps and stay the same in a VACUUM INTO backup.
+ */
 export const ACCOUNTING_STOCK_PROJECTION = 'accounting-stock';
 /** Documents that are journaled. */
 export const ACCOUNTING_EVENT_TYPES = [
@@ -38,13 +48,13 @@ export const STOCK_MOVING_EVENT_TYPES = [
 const BATCH = 200;
 const STOCK_BATCH = 2_000;
 
+/** Where each tender (payments.method) takes the money; null: nowhere, the guest still owes. */
 const TENDER_ACCOUNT: Record<string, SystemAccount | null> = {
   CASH: 'CASH',
   CARD: 'CARD_UPI_CLEARING',
   UPI: 'CARD_UPI_CLEARING',
   WALLET: 'CARD_UPI_CLEARING',
   AGGREGATOR: 'AGGREGATOR_RECEIVABLE',
-  // On credit the guest still owes: the receivable stays.
   CREDIT: null,
   COMPLIMENTARY: 'SALES_RETURNS',
   LOYALTY: 'SALES_RETURNS',
@@ -230,7 +240,10 @@ export class AccountingProjector {
   private postPayments(invoiceId: string, actorId: string | null): number {
     let posted = 0;
     for (const p of this.d.sources.payments(invoiceId)) {
-      const tender = TENDER_ACCOUNT[p.method] ?? 'CASH';
+      if (!Object.hasOwn(TENDER_ACCOUNT, p.method))
+        throw new DomainError('VALIDATION_FAILED', `no account for ${p.method} payments`);
+      const tender = TENDER_ACCOUNT[p.method]!;
+      // A sale on credit leaves the receivable where it is.
       if (tender === null || this.d.accounting.originalEntry('PAYMENT', p.id)) continue;
       const party = p.customerId
         ? { partyType: 'CUSTOMER' as const, partyId: p.customerId }

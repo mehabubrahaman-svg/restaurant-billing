@@ -22,6 +22,8 @@ import type {
   PartyType,
 } from './ports';
 
+const PAYING_ACCOUNTS: ReadonlySet<string> = new Set(['CASH', 'BANK', 'CARD_UPI_CLEARING']);
+
 export interface AccountingServiceDeps {
   readonly accounting: AccountingRepository;
   readonly queries: AccountingQueries;
@@ -275,7 +277,13 @@ export class AccountingService {
       this.assertNotFuture(ctx.branchId, expenseDate);
       if (this.activeAccount(input.expenseAccountId).type !== 'EXPENSE')
         throw new DomainError('VALIDATION_FAILED', 'book an expense to an expense account');
-      if (this.activeAccount(input.paidFromAccountId).type !== 'ASSET')
+      // Cash, bank or card/UPI clearing, or an asset account of the owner's own (petty cash);
+      // not inventory, receivables or input tax.
+      const paidFrom = this.activeAccount(input.paidFromAccountId);
+      if (
+        paidFrom.type !== 'ASSET' ||
+        (paidFrom.systemTag !== null && !PAYING_ACCOUNTS.has(paidFrom.systemTag))
+      )
         throw new DomainError(
           'VALIDATION_FAILED',
           'an expense is paid from cash or a bank account',

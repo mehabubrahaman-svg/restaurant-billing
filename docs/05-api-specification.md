@@ -213,14 +213,14 @@ Quantities are integer milli-units of the item's base unit (g, ml or pc: 2.5 kg 
 | PATCH | `/recipes/{id}` | `inventory.manage_items` | `{version, yieldPortions?, ingredients?, isActive?}`; `isActive:false` removes it (`204`) |
 | GET/PUT | `/addons/{id}/ingredients` | read: `inventory.view` or `menu.manage`; PUT: `inventory.manage_items` | The full list per add-on per portion (extra cheese = 30 g cheese) |
 | POST | `/stock/receipts` | `inventory.adjust` | Bought directly: `{lines[{inventoryItemId, qtyMilli, totalCost, batchNo?, expiresOn?}], reference?}` → `PURCHASE` movements, weighted average cost, a batch for perishables (expiry defaults to the shelf life) |
-| POST | `/stock/opening` | `inventory.adjust` | Same lines, once per item, before its first movement (`409 STOCK_ALREADY_MOVED`) |
+| POST | `/stock/opening` | `inventory.adjust` | Same lines, once per item, before it is first received (sales before it are fine; `409 STOCK_ALREADY_MOVED`) |
 | POST | `/stock/wastage` | `inventory.adjust` | `{lines[{inventoryItemId, qtyMilli}], reason}`, at average cost, earliest expiry first |
 | POST | `/stock/adjustments` | `inventory.adjust` | `{lines[{inventoryItemId, qtyMilli (signed)}], reason}` |
 | GET | `/stock/movements?inventoryItemId=&type=&from=&to=&before=&limit=` | `inventory.view` | Newest first, signed quantities and values, batch, reference (`ORDER_ITEM`, `RECEIPT`, `OPENING`, `WASTAGE`, `ADJUSTMENT`, `STOCK_COUNT`, `GRN_LINE`); `nextCursor` |
 | GET | `/stock/alerts` | `inventory.view` | Out / low / over items, negative stock, batches with stock left that expire within 3 days (or have) |
 | GET/POST | `/stock-counts`, `/stock-counts/{id}` | read: `inventory.view`; create: `inventory.count` | `{countType: OPENING|CLOSING|SPOT, notes}`; the sheet lists every active item with the balance now |
 | PUT | `/stock-counts/{id}/lines` | `inventory.count` | `{version, lines[{inventoryItemId, countedQtyMilli|null}]}` merged into the draft |
-| POST | `/stock-counts/{id}/post` | `inventory.adjust` | `{version}`: each difference against the balance at posting becomes an `ADJUSTMENT` (reference `STOCK_COUNT`); items not counted are left alone |
+| POST | `/stock-counts/{id}/post` | `inventory.adjust` | `{version}`: for each counted item, counted − what the books said when it was counted becomes an `ADJUSTMENT` (reference `STOCK_COUNT`), so sales during the count still count; items not counted are left alone |
 | GET | `/reports/consumption?from=&to=` | `reports.inventory` | Per item: opening, received, sold (by recipe, net of reversals: the theoretical consumption), wastage, adjusted, count variance, closing, values, and `varianceBp` = −count variance ÷ sold (the Phase 2 exit criterion is under 5%) |
 
 Sales take stock automatically: see docs/03 §4.3. A sale is never blocked by stock (`INSUFFICIENT_STOCK` is reserved).
@@ -257,18 +257,18 @@ Journals for bills, credit notes, payments, cancellations, GRNs, vendor payments
 |---|---|---|---|
 | GET | `/accounts` | `accounts.view`, `accounts.journal` or `expenses.manage` | The chart with this branch's balances and `systemTag` (CASH, BANK, CARD_UPI_CLEARING, AR, INVENTORY, AP, OUTPUT_CGST, SALES_FOOD, COGS …) |
 | POST/PATCH | `/accounts`, `/accounts/{id}` | `accounts.journal` | `{code (3–6 digits), name, type, parentId}`; `409 ACCOUNT_CODE_TAKEN`; system accounts keep their type and stay active (`409 SYSTEM_ACCOUNT`); an account with postings keeps its type |
-| GET | `/journal-entries?from=&to=&sourceType=&accountId=&before=&limit=`, `/journal-entries/{id}` | as `/accounts` | Day book, newest first, with lines, the document number, who posted it (null: the system) and the reversal link |
+| GET | `/journal-entries?from=&to=&sourceType=&accountId=&before=&limit=`, `/journal-entries/{id}` | `accounts.view` or `accounts.journal` | Day book, newest first, with lines, the document number, who posted it (null: the system) and the reversal link |
 | POST | `/journal-entries` | `accounts.journal` | Manual: `{entryDate, narration, lines[{accountId, debit, credit, partyType?, partyId?, memo?}]}`; must balance (`422 JOURNAL_UNBALANCED`); not in the future |
 | POST | `/journal-entries/{id}/reverse` | `accounts.journal` | `{reason, entryDate?}`: a manual entry's mirror image (`409 ALREADY_REVERSED`); documents are corrected at the source (cancel or refund the bill, cancel the expense) |
 | GET | `/expenses?from=&to=` | as `/accounts` | |
-| POST | `/expenses` | `expenses.manage` | `{expenseAccountId (EXPENSE), paidFromAccountId (ASSET), amount, taxAmount (GST included, claimed as input CGST + SGST), description, reference, expenseDate?}` → posted at once |
+| POST | `/expenses` | `expenses.manage` | `{expenseAccountId (EXPENSE), paidFromAccountId (cash, bank, card/UPI clearing, or an asset account of the owner's own), amount, taxAmount (GST included, claimed as input CGST + SGST), description, reference, expenseDate?}` → posted at once |
 | POST | `/expenses/{id}/cancel` | `expenses.manage` | `{version, reason}`: cancelled, its entry reversed |
-| GET | `/ledgers/{accountId}?from=&to=` | as `/accounts` | Opening balance, entries with the other accounts ("against") and a running balance, totals, closing |
-| GET | `/ledgers/party/{CUSTOMER\|VENDOR\|EMPLOYEE}/{id}?from=&to=` | as `/accounts` | What the customer owes us or we owe the vendor |
+| GET | `/ledgers/{accountId}?from=&to=` | `accounts.view` or `accounts.journal` | Opening balance, entries with the other accounts ("against") and a running balance, totals, closing |
+| GET | `/ledgers/party/{CUSTOMER\|VENDOR\|EMPLOYEE}/{id}?from=&to=` | `accounts.view` or `accounts.journal` | What the customer owes us or we owe the vendor |
 | GET | `/reports/trial-balance?asOf=` | `reports.financial` or `accounts.view` | Debit and credit balances per account; `balanced` |
 | GET | `/reports/profit-and-loss?from=&to=` | `reports.financial` | Income (sales, liquor sales, service charge, rounding, less returns), cost of sales (cost of goods sold, wastage, stock adjustments), gross profit and margin, expenses, net profit |
 | GET | `/reports/balance-sheet?asOf=` | `reports.financial` | Assets, liabilities, equity and the profit to date; `balanced` |
-| GET | `/reports/cash-flow?from=&to=` | `reports.financial` | Cash, bank and card/UPI clearing: opening, inflows and outflows by `CUSTOMERS`, `VENDORS`, `EXPENSES`, `STOCK`, `OTHER`, closing per account |
+| GET | `/reports/cash-flow?from=&to=` | `reports.financial` | Cash, bank and card/UPI clearing (and accounts kept under them): opening, inflows and outflows by `CUSTOMERS`, `VENDORS`, `EXPENSES`, `STOCK`, `OTHER`, closing per account |
 | GET | `/reports/gst-summary?from=&to=` | `reports.financial` | For GSTR-1: outward supplies per rate, B2B and B2C apart, net of credit notes; operator-paid aggregator supplies. For GSTR-3B: output tax, input credit (GRNs and expenses) and net payable per CGST, SGST, IGST and cess. Liquor VAT and surcharge apart |
 
 ### Phases 5–6 (outline)

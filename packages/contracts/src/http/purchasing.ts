@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { BasisPointsSchema, IdSchema, PaiseSchema, patchSchema } from './common';
+import {
+  CalendarDateSchema,
+  BasisPointsSchema,
+  IdSchema,
+  PaiseSchema,
+  patchSchema,
+} from './common';
 import { BaseUnitSchema } from './inventory';
 
 /**
@@ -9,7 +15,7 @@ import { BaseUnitSchema } from './inventory';
  * (2.5 kg = 2_500 when the unit is kg); prices are paise per purchase unit.
  */
 const Version = z.number().int();
-const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Day = CalendarDateSchema;
 const Text = (max: number) => z.string().trim().min(1).max(max);
 const GstinSchema = z
   .string()

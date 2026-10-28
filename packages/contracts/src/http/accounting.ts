@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema, PaiseSchema } from './common';
+import { CalendarDateSchema, IdSchema, PaiseSchema } from './common';
 
 /**
  * Accounts (docs/08 Phase 4, docs/03 §4.4). The system posts journals for
@@ -10,7 +10,7 @@ import { IdSchema, PaiseSchema } from './common';
  * account owes (negative when it has crossed over).
  */
 const Version = z.number().int();
-const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Day = CalendarDateSchema;
 /** Seeded accounts have readable ids ("<organisation>:1000"), added ones UUIDs. */
 const AccountId = z.string().min(1).max(80);
 const Amount = PaiseSchema.nonnegative().max(100_000_000_000);

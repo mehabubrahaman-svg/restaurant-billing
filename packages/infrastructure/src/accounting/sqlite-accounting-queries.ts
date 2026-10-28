@@ -356,23 +356,30 @@ export class SqliteAccountingQueries implements AccountingQueries {
   }
 
   cashFlow(branchId: string, from: string, to: string): CashFlowView {
-    const isCash = (a: { systemTag: string | null }) => CASH_TAGS.has(a.systemTag ?? '');
+    // Cash in hand, the bank and card/UPI clearing, and any account the owner keeps under them.
+    const tagged = new Set(
+      this.totals(branchId, null, to)
+        .filter((a) => CASH_TAGS.has(a.systemTag ?? ''))
+        .map((a) => a.id),
+    );
+    const isCash = (a: { id: string; parentId: string | null }) =>
+      tagged.has(a.id) || (a.parentId !== null && tagged.has(a.parentId));
     const opening = this.totals(branchId, null, previousDay(from)).filter(isCash);
     const openingCash = opening.reduce((s, a) => s + a.debit - a.credit, 0);
+    const cashIds = JSON.stringify(opening.map((a) => a.id));
     const moves = this.db
       .prepare<
-        { branchId: string; from: string; to: string },
+        { branchId: string; from: string; to: string; cashIds: string },
         { sourceType: JournalSourceType; delta: number }
       >(
         `SELECT je.source_type AS sourceType, sum(jl.debit - jl.credit) AS delta
            FROM journal_lines jl
            JOIN journal_entries je ON je.id = jl.journal_entry_id
-           JOIN accounts a ON a.id = jl.account_id
           WHERE je.branch_id = @branchId AND je.entry_date BETWEEN @from AND @to
-            AND a.system_tag IN ('CASH','BANK','CARD_UPI_CLEARING')
+            AND jl.account_id IN (SELECT value FROM json_each(@cashIds))
           GROUP BY je.id`,
       )
-      .all({ branchId, from, to });
+      .all({ branchId, from, to, cashIds });
     const inflows = new Map<string, number>();
     const outflows = new Map<string, number>();
     for (const m of moves) {

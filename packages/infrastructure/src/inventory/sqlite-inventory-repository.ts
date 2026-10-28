@@ -178,6 +178,19 @@ export class SqliteInventoryRepository implements InventoryRepository {
     );
   }
 
+  hasReceipts(branchId: string, itemId: string): boolean {
+    return (
+      this.db
+        .prepare<[string, string], number>(
+          `SELECT EXISTS (SELECT 1 FROM stock_movements
+                           WHERE inventory_item_id = ? AND branch_id = ?
+                             AND movement_type IN ('OPENING','PURCHASE','TRANSFER_IN'))`,
+        )
+        .pluck()
+        .get(itemId, branchId) === 1
+    );
+  }
+
   move(id: string, m: NewMovement, avgCostPerBase: number, at: Date): number {
     const balance = this.db
       .prepare<[string, string, number, number, string], number>(
@@ -251,7 +264,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
         b.batchNo,
         b.expiresOn,
         b.qtyMilli,
-        b.qtyMilli,
+        b.remainingMilli,
         b.unitCostPerBase,
         at.toISOString(),
         at.toISOString(),
@@ -430,21 +443,20 @@ export class SqliteInventoryRepository implements InventoryRepository {
     }
   }
 
-  countLines(countId: string): { inventoryItemId: string; countedQtyMilli: number }[] {
+  countLines(countId: string) {
     return this.db
-      .prepare<[string], { inventoryItemId: string; countedQtyMilli: number }>(
-        `SELECT inventory_item_id AS inventoryItemId, counted_qty_milli AS countedQtyMilli
+      .prepare<
+        [string],
+        { inventoryItemId: string; countedQtyMilli: number; systemQtyMilli: number }
+      >(
+        `SELECT inventory_item_id AS inventoryItemId, counted_qty_milli AS countedQtyMilli,
+                system_qty_milli AS systemQtyMilli
            FROM stock_count_lines WHERE stock_count_id = ? ORDER BY rowid`,
       )
       .all(countId);
   }
 
-  touchCount(
-    id: string,
-    expectedVersion: number,
-    at: Date,
-    posted?: { by: string | null; systemQty: ReadonlyMap<string, number> },
-  ): void {
+  touchCount(id: string, expectedVersion: number, at: Date, posted?: { by: string | null }): void {
     const result = posted
       ? this.db
           .prepare(
@@ -460,11 +472,6 @@ export class SqliteInventoryRepository implements InventoryRepository {
           )
           .run(at.toISOString(), id, expectedVersion);
     assertVersionMatched(result, 'StockCount', id);
-    if (!posted) return;
-    const setSystem = this.db.prepare(
-      'UPDATE stock_count_lines SET system_qty_milli = ? WHERE stock_count_id = ? AND inventory_item_id = ?',
-    );
-    for (const [itemId, qty] of posted.systemQty) setSystem.run(qty, id, itemId);
   }
 
   soldLines(ids: readonly string[]): SoldLine[] {

@@ -354,6 +354,33 @@ describe('accounting', () => {
     });
   });
 
+  it('leaves a sale on credit in the customer’s receivable, not in the till', async () => {
+    const r = await books();
+    const order = await r.servedOrder();
+    const invoice = BillResponseSchema.parse(
+      (
+        await r.admin('POST', `/orders/${order.id}/invoice`, {
+          customer: { phone: '9830012345', name: 'Mr Bose' },
+        })
+      ).json(),
+    ).invoices[0]!;
+    const paid = await r.admin('POST', `/invoices/${invoice.id}/payments`, {
+      payments: [{ method: 'CREDIT', amount: invoice.grandTotal }],
+    });
+    expect(InvoiceSchema.parse(paid.json()).status).toBe('CREDIT');
+    const payments = JournalEntriesResponseSchema.parse(
+      (await r.admin('GET', '/journal-entries?sourceType=PAYMENT')).json(),
+    ).data;
+    expect(payments).toEqual([]);
+    const balances = await r.accounts();
+    expect([balances.get('1100'), balances.get('1000')]).toEqual([100_800, 0]);
+    const party = await r.ok(
+      r.admin('GET', `/ledgers/party/CUSTOMER/${invoice.customerId}?from=${TODAY}&to=${TODAY}`),
+      PartyLedgerSchema,
+    );
+    expect(party).toMatchObject({ partyName: 'Mr Bose', closingBalance: 100_800 });
+  });
+
   it('cancelling a bill reverses its journal', async () => {
     const r = await books();
     const order = await r.servedOrder();
@@ -446,6 +473,13 @@ describe('accounting', () => {
       description: 'Not an expense',
     });
     expect(wrong.json().code).toBe('VALIDATION_FAILED');
+    const fromStock = await accountant('POST', '/expenses', {
+      expenseAccountId: byCode('6000').id,
+      paidFromAccountId: byCode('1200').id,
+      amount: 5_000,
+      description: 'Paid with rice',
+    });
+    expect(fromStock.json().code).toBe('VALIDATION_FAILED');
     const expense = await ok(
       accountant('POST', '/expenses', {
         expenseAccountId: meals.id,

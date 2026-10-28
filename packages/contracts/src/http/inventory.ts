@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { BasisPointsSchema, IdSchema, PaiseSchema, patchSchema } from './common';
+import {
+  CalendarDateSchema,
+  BasisPointsSchema,
+  IdSchema,
+  PaiseSchema,
+  patchSchema,
+} from './common';
 import { SkuSchema, TranslationsSchema } from './catalog';
 
 /**
@@ -9,7 +15,7 @@ import { SkuSchema, TranslationsSchema } from './catalog';
  */
 const Version = z.number().int();
 const Name = z.string().trim().min(1).max(120);
-const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Day = CalendarDateSchema;
 /** Milli-units of the base unit. 10 tonnes is plenty for one line. */
 const Milli = z.number().int().min(-10_000_000_000).max(10_000_000_000);
 const PositiveMilli = Milli.positive();
@@ -187,7 +193,10 @@ export const StockReceiptRequestSchema = z.object({
   /** The seller's bill number or a note. */
   reference: z.string().trim().max(60).nullable().default(null),
 });
-/** Stock already on the shelves when the restaurant starts using RestroOS, per item, once. */
+/**
+ * Stock already on the shelves when the restaurant starts using RestroOS, per
+ * item, once, before it is first received (sales before it are allowed).
+ */
 export const OpeningStockRequestSchema = z.object({
   lines: z.array(ReceiptLine).min(1).max(500),
 });
@@ -282,8 +291,9 @@ export type StockCountSummary = z.infer<typeof StockCountSummarySchema>;
 export const StockCountsResponseSchema = z.object({ data: z.array(StockCountSummarySchema) });
 
 /**
- * The count sheet: every active item. `systemQtyMilli` is the balance now
- * (a draft) or when the count was posted. Items left uncounted are not changed.
+ * The count sheet: every active item. `systemQtyMilli` is what the books said
+ * when the item was counted (the balance now for an item not counted yet).
+ * Items left uncounted are not changed.
  */
 export const StockCountSchema = StockCountSummarySchema.extend({
   lines: z.array(
@@ -315,7 +325,10 @@ export const SaveStockCountLinesRequestSchema = z.object({
     .min(1)
     .max(2000),
 });
-/** Books every difference as an ADJUSTMENT (reference STOCK_COUNT). */
+/**
+ * Books each item's counted − books-when-counted as an ADJUSTMENT (reference
+ * STOCK_COUNT), so sales made while the count was under way still count.
+ */
 export const PostStockCountRequestSchema = z.object({ version: Version });
 
 // ---- alerts ---------------------------------------------------------------------------------
