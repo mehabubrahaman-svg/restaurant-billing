@@ -206,6 +206,7 @@ describe('inventory', () => {
       version: updated.version,
       isActive: false,
     });
+    expect(retire.statusCode).toBe(409);
     expect(retire.json().code).toBe('INGREDIENT_IN_USE');
 
     // Opening stock is entered once per item.

@@ -178,7 +178,7 @@ describe('Stock items', () => {
       'GET /stock/movements': () => json({ data: [makeMovement()], nextCursor: null }),
       [`PATCH /inventory-items/${RICE}`]: ({ body }) =>
         (body as { isActive?: boolean }).isActive === false
-          ? problem(422, 'INGREDIENT_IN_USE')
+          ? problem(409, 'INGREDIENT_IN_USE')
           : json(makeInventoryItem({ reorderLevelMilli: 8 * KG, version: 3 })),
     });
     renderApp('/inventory');

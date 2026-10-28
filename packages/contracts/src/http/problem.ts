@@ -65,6 +65,8 @@ export const ERROR_STATUS = {
   SKU_TAKEN: 409,
   /** The dish (or this size of it) already has a recipe: edit that one. */
   RECIPE_EXISTS: 409,
+  /** A recipe or add-on still uses the item: remove it there before retiring the item. */
+  INGREDIENT_IN_USE: 409,
   /** Opening stock is entered once, before the item is first received; use an adjustment or a count. */
   STOCK_ALREADY_MOVED: 409,
   /** The unit measures something else (kg for an item kept in pieces). */

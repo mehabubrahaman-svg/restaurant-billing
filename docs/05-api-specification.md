@@ -205,9 +205,9 @@ Quantities are integer milli-units of the item's base unit (g, ml or pc: 2.5 kg 
 
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| GET | `/units` | `inventory.view` | g, kg, ml, l, pc, dozen, tray with `baseCode` and `toBaseMilli` |
+| GET | `/units` | `inventory.view` or `menu.manage` (the recipe editor) | g, kg, ml, l, pc, dozen, tray with `baseCode` and `toBaseMilli` |
 | GET | `/inventory-items?includeRetired=` | `inventory.view` or `menu.manage` | Each with stock `qtyMilli`, `avgCostPerBase`, `value`, `level` (OUT / LOW / OK / OVER against the reorder and maximum levels) |
-| GET/POST/PATCH | `/inventory-items`, `/inventory-items/{id}` | `inventory.manage_items` | `{sku, name, nameTranslations, category, baseUnit, purchaseUnitId, isPerishable, shelfLifeDays, reorderLevelMilli, maxLevelMilli}`. `409 SKU_TAKEN`; `422 UNIT_MISMATCH` (purchase unit of another kind); the base unit is fixed once stock has moved; `isActive:false` retires it, refused while a recipe or add-on uses it (`INGREDIENT_IN_USE`) |
+| GET/POST/PATCH | `/inventory-items`, `/inventory-items/{id}` | `inventory.manage_items` | `{sku, name, nameTranslations, category, baseUnit, purchaseUnitId, isPerishable, shelfLifeDays, reorderLevelMilli, maxLevelMilli}`. `409 SKU_TAKEN`; `422 UNIT_MISMATCH` (purchase unit of another kind); the base unit is fixed once stock has moved; `isActive:false` retires it, refused while a recipe or add-on uses it (`409 INGREDIENT_IN_USE`) |
 | GET | `/recipes?menuItemId=` | `inventory.view` or `menu.manage` | With cost per portion at today's average cost, the menu price and food-cost % (`foodCostBp`) |
 | POST | `/recipes` | `inventory.manage_items` | `{menuItemId, variantId|null, yieldPortions, ingredients[{inventoryItemId, qtyMilli, wastageBp}]}`, quantities per `yieldPortions` portions. A variant without its own recipe uses the dish's. `409 RECIPE_EXISTS` |
 | PATCH | `/recipes/{id}` | `inventory.manage_items` | `{version, yieldPortions?, ingredients?, isActive?}`; `isActive:false` removes it (`204`) |

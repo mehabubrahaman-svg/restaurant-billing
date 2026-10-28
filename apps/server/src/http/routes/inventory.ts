@@ -49,7 +49,8 @@ export async function inventoryRoutes(app: FastifyInstance, { cradle }: { cradle
   const { inventoryService: inventory } = cradle;
   const branchOf = (r: FastifyRequest) => r.principal!.branchId;
 
-  app.get('/units', { config: VIEW }, async () => ({ data: inventory.units() }));
+  // The recipe editor needs the units too, for a menu manager without stock access.
+  app.get('/units', { config: RECIPE_VIEW }, async () => ({ data: inventory.units() }));
 
   // ---- items -------------------------------------------------------------------
   app.get(
