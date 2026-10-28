@@ -1,6 +1,6 @@
 # ADR 0006 — Bluetooth for discovery, Wi-Fi fallback and peripherals
 
-- Status: Accepted (subject to the Sprint 1 spike)
+- Status: Accepted (subject to the Sprint 1 spike); an iOS client app was added later by ADR 0011
 - Date: 2026-10-28
 
 ## Context

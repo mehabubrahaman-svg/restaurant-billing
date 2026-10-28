@@ -1,0 +1,25 @@
+/* Connecting to the Hub (first run). */
+"connect.title" = "Connect to your Hub";
+"connect.body" = "Enter the address of the RestroOS Hub on this restaurant's Wi-Fi. The Hub PC shows it when it starts, for example http://192.168.1.20:7400.";
+"connect.label" = "Hub address";
+"connect.placeholder" = "restro.local or 192.168.1.20";
+"connect.button" = "Connect";
+"connect.hint" = "This tablet and the Hub PC must be on the same Wi-Fi. Shake the device later to use another Hub.";
+"connect.invalid" = "That isn't an address. Try restro.local or 192.168.1.20.";
+"connect.unreachable" = "The Hub didn't answer. Check that this device is on the restaurant's Wi-Fi and that the Hub PC is on.";
+"connect.untrusted" = "This device doesn't trust the Hub's certificate yet. Use http:// with port 7400, or install the Hub's certificate first.";
+"connect.notAHub" = "Something answered, but it isn't a RestroOS Hub.";
+
+/* The Hub can't be reached. */
+"hub.unreachable.title" = "Can't reach the Hub";
+"hub.unreachable.body %@" = "%@ didn't answer. Check the Wi-Fi and that the Hub PC is on.";
+"hub.retry" = "Try again";
+"hub.change" = "Use another Hub";
+
+/* Shake to change the Hub. */
+"change.title" = "Use another Hub?";
+"change.message" = "You'll be asked for the Hub's address again.";
+"change.confirm" = "Change Hub";
+
+"common.cancel" = "Cancel";
+"common.ok" = "OK";

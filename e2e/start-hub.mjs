@@ -40,7 +40,7 @@ const hub = spawn(process.execPath, [server], {
     RESTRO_RASTER: 'off',
     RESTRO_BACKUPS: 'off',
     RESTRO_RATE_LIMIT_PER_MINUTE: '100000',
-    RESTRO_LOG_LEVEL: 'warn',
+    RESTRO_LOG_LEVEL: process.env.RESTRO_LOG_LEVEL ?? 'warn',
   },
 });
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => hub.kill(signal));

@@ -1,0 +1,43 @@
+# XcodeGen spec for the iPad/iPhone client (see README.md). The Xcode project
+# is generated from this file (`xcodegen generate`), not kept in the repo.
+name: RestroOS
+options:
+  bundleIdPrefix: app.restroos
+  deploymentTarget:
+    iOS: '16.0'
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: 0.2.0
+    CURRENT_PROJECT_VERSION: 1
+    SWIFT_VERSION: '5.0'
+targets:
+  RestroOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: RestroOS
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_NAME: RestroOS
+        # The CI build overrides this with the bundle id of the signing profile.
+        PRODUCT_BUNDLE_IDENTIFIER: app.restroos.client
+        INFOPLIST_FILE: RestroOS/Info.plist
+        TARGETED_DEVICE_FAMILY: '1,2'
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_PREVIEWS: NO
+        CODE_SIGN_STYLE: Manual
+schemes:
+  RestroOS:
+    build:
+      targets:
+        RestroOS: all
+    run:
+      config: Debug
+    archive:
+      config: Release

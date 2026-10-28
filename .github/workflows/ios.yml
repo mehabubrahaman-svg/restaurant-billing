@@ -1,0 +1,209 @@
+name: iOS app
+
+# Builds the iPad/iPhone client (apps/ios, docs/adr/0011-ios-client.md) on
+# macOS: an unsigned .ipa to sideload with your own Apple ID, a simulator
+# build, and a smoke test in an iPad simulator against a real Hub. When the
+# signing secrets are set it also exports a signed .ipa (ad hoc, development
+# or App Store, from the provisioning profile) and, with an App Store Connect
+# key, uploads it to TestFlight. See apps/ios/README.md for the secrets.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    tags: ['ios-v*']
+    paths: ['apps/ios/**', '.github/workflows/ios.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      HAS_SIGNING: ${{ secrets.IOS_CERTIFICATE_P12 != '' && secrets.IOS_PROVISIONING_PROFILE != '' }}
+      HAS_TESTFLIGHT: ${{ secrets.ASC_KEY_ID != '' && secrets.ASC_ISSUER_ID != '' && secrets.ASC_KEY_P8 != '' }}
+      BUNDLE_ID: app.restroos.client
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate the Xcode project
+        working-directory: apps/ios
+        run: |
+          xcodebuild -version
+          brew install xcodegen
+          xcodegen generate
+
+      # Compiler errors go to the run's annotations, so they show without the full log.
+      - name: Build for the simulator
+        working-directory: apps/ios
+        run: |
+          xcodebuild -project RestroOS.xcodeproj -scheme RestroOS -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build > "$RUNNER_TEMP/sim.log" 2>&1 || {
+            grep -E 'error:' "$RUNNER_TEMP/sim.log" | sort -u | head -10 | while read -r line; do
+              echo "::error title=Simulator build::$line"
+            done
+            tail -60 "$RUNNER_TEMP/sim.log"
+            exit 1
+          }
+          (cd build/sim/Build/Products/Release-iphonesimulator && zip -qry "$GITHUB_WORKSPACE/RestroOS-simulator.zip" RestroOS.app)
+
+      - name: Build the unsigned device app
+        working-directory: apps/ios
+        run: |
+          xcodebuild -project RestroOS.xcodeproj -scheme RestroOS -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/device \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' build > "$RUNNER_TEMP/device.log" 2>&1 || {
+            grep -E 'error:' "$RUNNER_TEMP/device.log" | sort -u | head -10 | while read -r line; do
+              echo "::error title=Device build::$line"
+            done
+            tail -60 "$RUNNER_TEMP/device.log"
+            exit 1
+          }
+          mkdir -p build/ipa/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/RestroOS.app build/ipa/Payload/
+          (cd build/ipa && zip -qry "$GITHUB_WORKSPACE/RestroOS-unsigned.ipa" Payload)
+
+      # A real Hub on this runner, and the app in an iPad simulator pointed at it.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Build and start a Hub
+        run: |
+          pnpm install --frozen-lockfile --filter '@restroos/server...' --filter '@restroos/web...'
+          pnpm --filter @restroos/web build
+          pnpm --filter @restroos/server build
+          E2E_PORT=7400 RESTRO_LOG_LEVEL=info nohup node e2e/start-hub.mjs > "$RUNNER_TEMP/hub.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:7400/api/v1/health; then exit 0; fi
+            sleep 2
+          done
+          tail -40 "$RUNNER_TEMP/hub.log"
+          exit 1
+
+      - name: Smoke test in the iPad simulator
+        run: |
+          mkdir -p screenshots
+          UDID=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | test("^iPad"))][0].udid')
+          echo "Simulator: $(xcrun simctl list devices available | grep "$UDID")"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" apps/ios/build/sim/Build/Products/Release-iphonesimulator/RestroOS.app
+          # First run: the app asks for the Hub's address.
+          xcrun simctl launch "$UDID" "$BUNDLE_ID"
+          sleep 10
+          xcrun simctl io "$UDID" screenshot screenshots/1-connect.png
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID"
+          # Given the address, it opens the Hub's own web app (a new Hub: the setup wizard),
+          # whose first call is the setup status; the runner's own curl only asks for health.
+          xcrun simctl launch "$UDID" "$BUNDLE_ID" -hubURL http://127.0.0.1:7400
+          for i in $(seq 1 45); do
+            if grep -q '"url":"/api/v1/setup/status' "$RUNNER_TEMP/hub.log"; then break; fi
+            sleep 2
+          done
+          sleep 8
+          xcrun simctl io "$UDID" screenshot screenshots/2-hub.png
+          if ! grep -q '"url":"/api/v1/setup/status' "$RUNNER_TEMP/hub.log"; then
+            echo "::error title=Smoke test::the app never opened the Hub's web app"
+            tail -40 "$RUNNER_TEMP/hub.log"
+            exit 1
+          fi
+          echo "The app called the Hub:"
+          grep -o '"url":"[^"]*"' "$RUNNER_TEMP/hub.log" | sort | uniq -c | head -20
+
+      - name: Sign and export
+        if: env.HAS_SIGNING == 'true'
+        working-directory: apps/ios
+        env:
+          IOS_CERTIFICATE_P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          echo "$IOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > "$RUNNER_TEMP/app.mobileprovision"
+          security cms -D -i "$RUNNER_TEMP/app.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          plist() { /usr/libexec/PlistBuddy -c "Print $1" "$RUNNER_TEMP/profile.plist" 2>/dev/null; }
+          UUID=$(plist UUID)
+          TEAM=$(plist TeamIdentifier:0)
+          APP_ID=$(plist Entitlements:application-identifier)
+          BUNDLE="${APP_ID#*.}"
+          # A wildcard profile (TEAM.* or TEAM.app.restroos.*) signs the default bundle id.
+          case "$BUNDLE" in *'*') BUNDLE="$BUNDLE_ID" ;; esac
+          if [ "$(plist ProvisionsAllDevices)" = "true" ]; then METHOD=enterprise
+          elif plist ProvisionedDevices > /dev/null; then
+            if [ "$(plist Entitlements:get-task-allow)" = "true" ]; then METHOD=development; else METHOD=ad-hoc; fi
+          else METHOD=app-store; fi
+          if [ "$METHOD" = development ]; then IDENTITY="Apple Development"; else IDENTITY="Apple Distribution"; fi
+          echo "Profile $UUID, team $TEAM, bundle $BUNDLE, export $METHOD"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$RUNNER_TEMP/app.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+
+          xcodebuild -project RestroOS.xcodeproj -scheme RestroOS -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/RestroOS.xcarchive archive \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM" PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE" \
+            PROVISIONING_PROFILE_SPECIFIER="$UUID" CODE_SIGN_IDENTITY="$IDENTITY" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN" > "$RUNNER_TEMP/archive.log" 2>&1 || {
+            grep -E 'error:' "$RUNNER_TEMP/archive.log" | sort -u | head -10 | while read -r line; do
+              echo "::error title=Signed archive::$line"
+            done
+            tail -60 "$RUNNER_TEMP/archive.log"
+            exit 1
+          }
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>$METHOD</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>$IDENTITY</string>
+            <key>provisioningProfiles</key><dict><key>$BUNDLE</key><string>$UUID</string></dict>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath build/RestroOS.xcarchive \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath build/signed
+          cp build/signed/RestroOS.ipa "$GITHUB_WORKSPACE/RestroOS-$METHOD.ipa"
+          echo "SIGNED_METHOD=$METHOD" >> "$GITHUB_ENV"
+
+      - name: Upload to TestFlight
+        if: env.HAS_TESTFLIGHT == 'true' && env.SIGNED_METHOD == 'app-store'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          echo "$ASC_KEY_P8" | base64 --decode > "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8"
+          xcrun altool --upload-app -f RestroOS-app-store.ipa -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Remove the signing keychain
+        if: always() && env.HAS_SIGNING == 'true'
+        run: security delete-keychain "$RUNNER_TEMP/signing.keychain-db" || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: restroos-ios
+          path: |
+            RestroOS-*.ipa
+            RestroOS-simulator.zip
+            screenshots/
+          if-no-files-found: warn
