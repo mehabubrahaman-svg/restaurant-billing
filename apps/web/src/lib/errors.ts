@@ -70,6 +70,8 @@ const CODE_KEYS = {
   PRINTER_ON_DEVICE: 'errors.printerOnDevice',
   PRINTER_UNSUPPORTED: 'errors.printerUnsupported',
   DUPLICATE_EXTERNAL_ORDER: 'errors.duplicateExternalOrder',
+  QR_TOO_MANY_REQUESTS: 'errors.qrTooMany',
+  QR_REQUEST_HANDLED: 'errors.qrHandled',
   LIQUOR_NOT_FOR_DELIVERY: 'errors.liquorNotForDelivery',
   BACKUP_UNAVAILABLE: 'errors.backupUnavailable',
   BACKUP_UNREADABLE: 'errors.backupUnreadable',

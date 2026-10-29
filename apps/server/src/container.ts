@@ -30,6 +30,7 @@ import {
   type OrderQueries,
   type PrinterTransport,
   MenuImporter,
+  QrOrderingService,
   ReportScheduleService,
   RoleAdminService,
   SettingsService,
@@ -60,6 +61,7 @@ import {
   SqliteBillingQueries,
   SqliteReportQueries,
   SqliteGstQueries,
+  SqliteQrRequestRepository,
   FileReportStore,
   SqliteReportFileRepository,
   SqliteReportScheduleRepository,
@@ -145,6 +147,7 @@ export interface Cradle {
   orderQueries: OrderQueries;
   kitchenQueries: KitchenQueries;
   orderService: OrderService;
+  qrOrderingService: QrOrderingService;
   kitchenService: KitchenService;
   billingQueries: BillingQueries;
   reportQueries: ReportQueries;
@@ -333,6 +336,19 @@ export function buildContainer(
           channels: new SqliteSalesChannelRepository(c.db),
           taxGroups: new SqliteSettingsRepository(c.db),
           calendar: c.calendar,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    qrOrderingService: single(
+      (c) =>
+        new QrOrderingService({
+          requests: new SqliteQrRequestRepository(c.db),
+          floor: new SqliteFloorRepository(c.db),
+          catalog: new SqliteCatalogRepository(c.db),
+          settings: new SqliteSettingsRepository(c.db),
+          orders: c.orderService,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,

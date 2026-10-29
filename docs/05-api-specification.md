@@ -213,7 +213,19 @@ The Hub writes XLSX files itself (`packages/infrastructure/src/reporting/xlsx.ts
 PDF comes from the browser: print and choose "Save as PDF". This keeps Hindi and Bengali text correct.
 
 ### Public QR ordering (no auth, rate-limited)
-`GET /public/qr/{qrToken}/menu` · `POST /public/qr/{qrToken}/orders` → order in `PENDING_APPROVAL`, captain notified to confirm.
+Implemented in Phase 5. Contracts: `packages/contracts/src/http/qr.ts`. A table takes QR orders once Admin → Floor has made its QR code; making a new one stops the old code working. Guests never change an order themselves: a captain accepts each request onto the table's order, or declines it.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/public/qr/{token}/menu` | none (60 a minute per address) | The branch and table, active categories, items (price, whether tax is included, sizes, add-on groups, available or not) and add-on groups. No SKUs, stations or costs. `404` for a code not in use |
+| POST | `/public/qr/{token}/requests` | none | `{kind: ORDER|WAITER|BILL, items?, covers?, guestName?, note?, clientKey?}` → `201`, `PENDING`. Each item is `{menuItemId, variantId?, quantity 1–20, addons, note?}`, up to 30. Items are checked against the menu, so an unavailable dish gives `409 ITEM_UNAVAILABLE`. The same `clientKey` returns the first request, so a retry is not a second order. A table with 5 requests waiting gets `429 QR_TOO_MANY_REQUESTS` |
+| GET | `/public/qr/{token}/requests/{id}` | none | The guest's view: status (`PENDING`, `ACCEPTED`, `REJECTED` with the reason, `DONE`) and the items |
+| GET | `/qr-requests` | `orders.create`, `orders.update` or `tables.view` | Waiting requests, oldest first, with the table's label |
+| POST | `/qr-requests/{id}/accept` `{fire = true}` | `orders.create` or `orders.update` | Puts the items onto the table's open order, or a new dine-in order with source `QR` and the guest's covers. Sends them to the kitchen unless `fire: false`. Prices come from the menu now. Returns `{order, kots}` like `POST /orders/aggregator`. Answered already: `409 QR_REQUEST_HANDLED` |
+| POST | `/qr-requests/{id}/reject` `{reason}` | same | Declines an order; the guest sees the reason |
+| POST | `/qr-requests/{id}/done` | same | Answers a call for a server or the bill |
+
+Every change sends `floor.qr_requests.changed` to the `floor` topic. Captains see waiting requests at the top of their floor.
 
 ### Admin / platform
 `GET /audit-logs?entityType=&entityId=&actorId=` [`audit.view`] · `GET /health` (no auth: db, disk, printer, sync status)
@@ -380,6 +392,7 @@ Every message carries the **current state** of one entity (never a diff), so cli
 | `token.ready` | tokens | tokenNo, orderId |
 | `menu.changed` | floor, kitchen | none: refetch `GET /menu` (304 if unchanged) |
 | `floor.reservations.changed` | floor | none: refetch `GET /reservations` and `GET /floor` |
+| `floor.qr_requests.changed` | floor | none: refetch `GET /qr-requests` |
 
 **Topics follow permissions**, re-checked every 60 s: `floor` with `tables.view`, `billing.create` or `floor.manage`; `kitchen` with `kds.view`; `tokens` for everyone. When the token expires or the session is revoked the server sends `unauthenticated` and only `tokens` messages flow until a fresh `auth`. `billing.invoice.paid` and `notification.created` arrive with Sprint 5.
 

@@ -313,6 +313,75 @@ export class OrderService {
     });
   }
 
+  /**
+   * A guest's QR order, accepted by a captain (Phase 5): onto the table's open
+   * order, or onto a new one (source QR), and sent to the kitchen unless
+   * `fire` is false. `alongside` runs in the same transaction, so the
+   * guest's request is marked accepted together with the order.
+   */
+  addGuestOrder(
+    input: {
+      tableId: string;
+      covers: number | null;
+      items: readonly NewItemInput[];
+      fire: boolean;
+    },
+    ctx: CommandContext,
+    alongside: (scope: TransactionScope, order: Order) => void,
+  ): { order: Order; kots: Kot[] } {
+    return this.d.unitOfWork.run(ctx, (scope) => {
+      const now = this.d.clock.now();
+      const table = this.d.floor.table(ctx.branchId, input.tableId);
+      if (!table || !table.isActive) throw new DomainError('NOT_FOUND', 'table not found');
+      const openId = this.d.orders.openOrderIdForTable(ctx.branchId, table.id);
+      let order: Order;
+      if (openId) {
+        order = this.load(ctx.branchId, openId);
+      } else {
+        if (table.status !== 'AVAILABLE' && table.status !== 'RESERVED') {
+          throw new DomainError(
+            'TABLE_NOT_FREE',
+            `table ${table.label} is ${table.status.toLowerCase()}`,
+          );
+        }
+        const businessDate = this.d.calendar.businessDate(ctx.branchId, now);
+        order = Order.open(this.d.ids.next(), {
+          branchId: ctx.branchId,
+          orderNo: this.d.orders.nextOrderNo(ctx.branchId, businessDate),
+          tokenNo: null,
+          businessDate,
+          orderType: 'DINE_IN',
+          source: 'QR',
+          tableId: table.id,
+          salesChannelId: null,
+          externalOrderId: null,
+          externalOtp: null,
+          captainId: ctx.actorId,
+          covers: input.covers,
+          notes: null,
+          openedAt: now,
+          createdBy: ctx.actorId!,
+        });
+      }
+      const lines = input.items.map((item) => this.priceLine(ctx, item, now));
+      order.addLines(lines, now);
+      if (openId) this.d.orders.save(order);
+      else this.d.orders.insert(order);
+      const kots = input.fire ? this.fireIn(order, ctx, now) : [];
+      if (input.fire) this.d.orders.save(order);
+      if (!openId) this.setTable(scope, ctx.branchId, table, 'OCCUPIED', order.id, now);
+      alongside(scope, order);
+      scope.audit({
+        action: 'order.qr.accept',
+        entityType: 'Order',
+        entityId: order.id,
+        after: { items: lines.length, fired: kots.length, opened: !openId },
+      });
+      scope.recordEvents([...order.pullEvents(), ...kots.flatMap((k) => k.pullEvents())]);
+      return { order, kots };
+    });
+  }
+
   /** FireKot inside an open transaction: one KOT per kitchen station for every PENDING line. */
   private fireIn(order: Order, ctx: CommandContext, now: Date): Kot[] {
     const pending = order.pendingLines();

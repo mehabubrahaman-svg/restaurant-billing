@@ -15,6 +15,7 @@ export * from './http/kitchen';
 export * from './http/printing';
 export * from './http/reports';
 export * from './http/ordering';
+export * from './http/qr';
 export * from './http/problem';
 export * from './http/purchasing';
 export * from './http/reservations';

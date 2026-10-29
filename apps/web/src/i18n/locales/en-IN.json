@@ -1205,6 +1205,8 @@
     "printerOnDevice": "This printer is paired with a tablet and prints from there.",
     "printerUnsupported": "This printer can’t print this.",
     "duplicateExternalOrder": "This aggregator order number was already entered.",
+    "qrHandled": "Someone already answered this request.",
+    "qrTooMany": "Your earlier requests are still waiting. A server will be with you shortly.",
     "liquorNotForDelivery": "Liquor can't be sold through a delivery app. Remove it from this order.",
     "backupUnavailable": "This backup file was removed or is missing on the Hub.",
     "backupUnreadable": "This backup can’t be opened: wrong passphrase, or it is not a RestroOS backup."
@@ -3013,6 +3015,74 @@
     "none": "No tiers yet. Add one, like Silver from ₹5,000.",
     "saved": "Saved {name}.",
     "actions": "Actions"
+  },
+  "qr": {
+    "table": "Table {table}",
+    "unknown": "This QR code isn’t in use. Please ask a server.",
+    "callWaiter": "Call a server",
+    "askBill": "Ask for the bill",
+    "categories": "Menu sections",
+    "from": "from {price}",
+    "add": "Add",
+    "addNamed": "Add {name}",
+    "unavailable": "Not available now",
+    "taxNote": "Prices are before GST; tax is added on the bill.",
+    "cartSummary": "{count, plural, one {# item} other {# items}} · {total}",
+    "viewOrder": "View order",
+    "addWithTotal": "Add · {total}",
+    "size": "Size",
+    "chooseExactly": "{count, plural, one {choose #} other {choose #}}",
+    "chooseUpTo": "{count, plural, one {up to #} other {up to #}}",
+    "note": "Anything we should know? (optional)",
+    "less": "One less {name}",
+    "more": "One more {name}",
+    "yourOrder": "Your order",
+    "sending": "Sending…",
+    "send": "Send order · {total}",
+    "guests": "How many of you? (optional)",
+    "name": "Your name (optional)",
+    "confirmNote": "A server confirms your order before it goes to the kitchen.",
+    "status": {
+      "order": {
+        "PENDING": "Order sent. A server will confirm it shortly.",
+        "ACCEPTED": "Your order is confirmed and on its way to the kitchen.",
+        "REJECTED": "Your order couldn’t be taken.",
+        "DONE": "Your order is confirmed."
+      },
+      "waiter": {
+        "PENDING": "A server has been called.",
+        "ACCEPTED": "A server is on the way.",
+        "REJECTED": "Please wave to a server.",
+        "DONE": "A server is on the way."
+      },
+      "bill": {
+        "PENDING": "Your bill has been asked for.",
+        "ACCEPTED": "Your bill is on the way.",
+        "REJECTED": "Please ask a server for the bill.",
+        "DONE": "Your bill is on the way."
+      }
+    },
+    "requests": {
+      "title": "{count, plural, one {# guest request} other {# guest requests}}",
+      "kinds": {
+        "ORDER": "Table {table}: order",
+        "WAITER": "Table {table}: calls a server",
+        "BILL": "Table {table}: asks for the bill"
+      },
+      "line": "{quantity} × {name}",
+      "guests": "{count, plural, one {# guest} other {# guests}}",
+      "acceptSend": "Accept and send",
+      "accept": "Accept",
+      "decline": "Decline",
+      "done": "Done",
+      "acceptedSent": "Added to table {table} and sent to the kitchen.",
+      "accepted": "Added to table {table}.",
+      "declined": "Declined the order from table {table}.",
+      "declineTitle": "Decline table {table}’s order",
+      "reason": "Why",
+      "reasonHint": "The guest sees this on their phone.",
+      "reasonShort": "Say why, in a few words."
+    }
   },
   "customers": {
     "title": "Customers",

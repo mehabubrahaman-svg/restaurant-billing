@@ -59,6 +59,10 @@ export const ERROR_STATUS = {
   LOYALTY_INSUFFICIENT: 409,
   /** Loyalty points are off for this branch (Admin → Branch). */
   LOYALTY_DISABLED: 409,
+  /** A table's earlier QR requests are still waiting for a captain. */
+  QR_TOO_MANY_REQUESTS: 429,
+  /** Another captain already accepted or declined this QR request. */
+  QR_REQUEST_HANDLED: 409,
   /** That aggregator order id was already entered. */
   DUPLICATE_EXTERNAL_ORDER: 409,
   /** Liquor can't be sold through Swiggy/Zomato: VAT liquor isn't an aggregator supply. */

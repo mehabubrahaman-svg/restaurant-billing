@@ -34,6 +34,7 @@ import { TableSheet } from '../../features/floor/table-sheet';
 import { STATUS_CHIP, STATUS_ORDER } from '../../features/floor/table-status';
 import { useElapsed } from '../../features/orders/elapsed';
 import { setOrder, useOpenOrders } from '../../features/orders/order-queries';
+import { QrRequestsPanel } from '../../features/orders/qr-requests-panel';
 import { toast } from '../../features/toast/toast-store';
 import { useFormat } from '../../i18n/use-format';
 import { useErrorMessage } from '../../lib/errors';
@@ -149,6 +150,7 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
           <SoundToggle />
         </div>
       </header>
+      <QrRequestsPanel />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <AreaTabs

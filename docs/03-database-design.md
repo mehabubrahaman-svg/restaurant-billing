@@ -21,6 +21,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0014_gst_returns` | `sales_channels.operator_gstin`: the GSTIN of the e-commerce operator that pays the GST on the channel's orders under section 9(5), for GSTR-1 table 14 |
 | `0015_membership_tiers` | `membership_tiers`: name, lifetime spend and visits needed, points multiplier, discount. `customers.membership_tier` (since 0001) holds a tier a manager pinned; otherwise a guest's tier is worked out from `lifetime_value` and `visit_count` when it's read |
 | `0016_scheduled_reports` | `report_schedules` (report, frequency, format, the last period made, the last error) and `report_files` (one file the Hub made, under `reports/` in its data folder). Files are marked `PRUNED` after 400 days. Both tables refuse a physical DELETE |
+| `0017_qr_ordering` | `qr_requests`: a guest's QR order (its items as JSON, with the names they saw), or a call for a server or the bill. It waits as `PENDING` until a captain accepts it (`order_id`), declines it (`reject_reason`) or marks it done. `client_key` is unique per table, so a resend isn't a second order. Refuses a physical DELETE |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

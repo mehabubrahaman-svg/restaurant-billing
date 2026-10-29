@@ -7,6 +7,7 @@ import { useKdsFlags } from '../kitchen/kds-flags';
 import { applyKot, KITCHEN_KEYS } from '../kitchen/kds-queries';
 import { MENU_KEYS } from '../menu/menu-queries';
 import { applyKotToOrder, applyOrderSummary, ORDER_KEYS } from '../orders/order-queries';
+import { QR_REQUESTS_KEY } from '../orders/qr-requests';
 import { markTokenReady, TOKENS_KEY } from '../tokens/token-queries';
 
 const NO_CANCEL = { cancelRefetch: false } as const;
@@ -76,6 +77,9 @@ export function applyLiveMessage(client: QueryClient, message: ServerMessage): v
     case 'floor.reservations.changed':
       refreshReservations(client);
       return;
+    case 'floor.qr_requests.changed':
+      void client.invalidateQueries({ queryKey: QR_REQUESTS_KEY }, NO_CANCEL);
+      return;
   }
 }
 
@@ -85,6 +89,7 @@ export function resyncAll(client: QueryClient): Promise<void> {
     [
       FLOOR_KEY,
       RESERVATIONS_KEY,
+      QR_REQUESTS_KEY,
       ORDER_KEYS.all,
       KITCHEN_KEYS.all,
       TOKENS_KEY,

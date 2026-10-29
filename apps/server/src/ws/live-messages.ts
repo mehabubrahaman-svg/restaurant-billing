@@ -56,6 +56,13 @@ export function messagesFor(
         message: { ...base, type: 'floor.reservations.changed', data: {} },
       });
       break;
+    case 'QrRequest':
+      out.push({
+        key: 'qr-requests',
+        topics: ['floor'],
+        message: { ...base, type: 'floor.qr_requests.changed', data: {} },
+      });
+      break;
     case 'DiningTable': {
       let table;
       try {

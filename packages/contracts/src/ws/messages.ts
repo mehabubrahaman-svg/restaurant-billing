@@ -55,6 +55,8 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   envelope('menu.changed', z.object({})),
   /** A reservation was booked, changed, seated or cancelled: refetch GET /reservations and GET /floor. */
   envelope('floor.reservations.changed', z.object({})),
+  /** A guest sent a QR order or call, or a captain answered one: refetch GET /qr-requests. */
+  envelope('floor.qr_requests.changed', z.object({})),
 ]);
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;
 export type ServerMessageType = ServerMessage['type'];

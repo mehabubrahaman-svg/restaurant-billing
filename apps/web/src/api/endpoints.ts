@@ -54,6 +54,10 @@ import {
   type AdjustLoyaltyRequest,
   ReservationSchema,
   SalesReportSchema,
+  QrMenuSchema,
+  QrRequestStatusResponseSchema,
+  QrRequestsResponseSchema,
+  type SubmitQrRequest,
   ReportFileSchema,
   ReportFilesResponseSchema,
   ReportScheduleSchema,
@@ -868,6 +872,39 @@ export const api = {
     loyalty: (id: string) => c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema),
     adjustLoyalty: (id: string, body: AdjustLoyaltyRequest) =>
       c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema, { method: POST, body }),
+  },
+  /** The guest's phone after scanning a table's QR code: no sign-in. */
+  qr: {
+    menu: (token: string) =>
+      c.json(`/public/qr/${encodeURIComponent(token)}/menu`, QrMenuSchema, { auth: false }),
+    submit: (token: string, body: SubmitQrRequest) =>
+      c.json(`/public/qr/${encodeURIComponent(token)}/requests`, QrRequestStatusResponseSchema, {
+        method: POST,
+        body,
+        auth: false,
+      }),
+    status: (token: string, id: string) =>
+      c.json(
+        `/public/qr/${encodeURIComponent(token)}/requests/${id}`,
+        QrRequestStatusResponseSchema,
+        { auth: false },
+      ),
+  },
+  /** Guests' QR orders and calls, waiting for a captain. */
+  qrRequests: {
+    list: () => c.json('/qr-requests', QrRequestsResponseSchema),
+    accept: (id: string, fire: boolean) =>
+      c.json(`/qr-requests/${id}/accept`, FireKotsResponseSchema, {
+        method: POST,
+        body: { fire },
+      }),
+    reject: (id: string, reason: string) =>
+      c.json(`/qr-requests/${id}/reject`, QrRequestStatusResponseSchema, {
+        method: POST,
+        body: { reason },
+      }),
+    done: (id: string) =>
+      c.json(`/qr-requests/${id}/done`, QrRequestStatusResponseSchema, { method: POST }),
   },
   reportSchedules: {
     list: () => c.json('/report-schedules', ReportSchedulesResponseSchema),
