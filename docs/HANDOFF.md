@@ -2,20 +2,27 @@
 
 Branch: `claude/nifty-shannon-ahib6j`. Phases 1–4 are complete: the Core POS,
 Stock, Purchase and Accounts, each with its backend, web portal, tests and
-screenshots. So are reservations and loyalty points (Phase 5 CRM), the
-owner's Overview, and an iPad/iPhone app. No role reaches a "Coming soon"
+screenshots. So is Phase 5 (2026-10-28):
+- reservations, loyalty points and membership tiers;
+- the report engine with XLSX, CSV and print;
+- GSTR-1, GSTR-3B and the VAT register;
+- scheduled reports;
+- QR self-ordering;
+- online orders through the cloud relay.
+
+So are the owner's Overview and an iPad/iPhone app. No role reaches a "Coming soon"
 screen. Status notes per phase are in `docs/09-implementation-plan.md`.
 
 ## What each role has
 
 | Role | Portals and features |
 |---|---|
-| Admin, Manager | Admin (Overview, menu, floor, customers with loyalty points, staff, roles, branch with loyalty settings, taxes, charges, coupons, printers, sales channels, devices, backups, audit log), plus every portal below |
-| Captain | Captain: floor (filters, takeaway and delivery, move, merge, cleaning), order pad, **reservations** (book, change, seat and take the order, cancel, no-show; bookings show on the table tiles). Customers (guest list) |
+| Admin, Manager | Admin (Overview, menu, floor, customers with loyalty points and tiers, membership tiers, staff, roles, branch with loyalty settings, taxes, charges, coupons, printers, sales channels, online orders, devices, backups, audit log), plus every portal below. Reports: sales, GST returns, scheduled reports |
+| Captain | Captain: floor (filters, takeaway and delivery, move, merge, cleaning), with **guest QR requests** at the top: accept an order onto the table, decline it, answer a call for a server or the bill. Order pad, **reservations** (book, change, seat and take the order, cancel, no-show; bookings show on the table tiles). Customers (guest list) |
 | Cashier | POS: counter, bills, refunds, delivery, cash shift with X/Z. The **Points** tender spends a guest's loyalty points. Captain screens; reports |
 | Kitchen | KDS, out-of-stock list |
 | Inventory staff | Stock: items, stock in and out, counts, alerts, consumption. Purchase: vendors, orders, goods received |
-| Accountant | Accounts: chart, day book, manual journals, ledgers, expenses, statements (trial balance, P&L, balance sheet, cash flow, GST summary). Purchase: vendor payments and dues. Reports, audit log, Overview |
+| Accountant | Accounts: chart, day book, manual journals, ledgers, expenses, statements (trial balance, P&L, balance sheet, cash flow, GST summary). Purchase: vendor payments and dues. Reports (sales, GST returns, scheduled), audit log, Overview |
 
 `sync.manage` (Phase 6 cloud sync) is the only permission with no screen;
 nothing shows it.
@@ -40,6 +47,25 @@ nothing shows it.
   (settings), Admin → Customers (balance, history, adjust), and the POS
   payment pad (Points tender).
 - **Overview:** `apps/web/src/features/admin/overview/overview-page.tsx`.
+- **Reports and GST:** `packages/application/src/reporting/`:
+  - `periods.ts`, `workbook.ts`, `sales-workbook.ts`;
+  - `gst.ts`;
+  - `schedules.ts` (`ReportScheduleService`, run every 15 minutes from `apps/server/src/main.ts`).
+
+  Queries are in `packages/infrastructure/src/reporting/`, including the XLSX writer `xlsx.ts`. Routes are in `reports.ts`; the web pages are in `apps/web/src/portals/reports/` (`sales-page`, `gst-page`, `scheduled-page`).
+- **Membership tiers:** `packages/domain/src/crm/membership.ts` (the rules),
+  `packages/application/src/crm/membership.ts`. The member discount is added in
+  `BillingService.memberDiscount`. Web: Admin → Membership, and the tier on
+  Customers and at the POS.
+- **QR self-ordering:** `packages/application/src/ordering/qr-ordering.ts`.
+  The accept step is `OrderService.addGuestOrder`. Routes are in `qr.ts`: public `/public/qr/...`, staff `/qr-requests`. Web: `apps/web/src/portals/qr-menu/`, and `features/orders/qr-requests-panel.tsx` on the captain floor.
+- **Online orders:**
+  - the relay: `apps/relay`;
+  - the protocol: `packages/contracts/src/relay.ts`;
+  - the Hub side: `packages/application/src/integrations/relay.ts`, `apps/server/src/relay/` (client and feeds) and routes `integrations.ts`;
+  - web: Admin → Online orders.
+
+  Deploying it is in docs/12 ("Online orders").
 - **iOS app:** `apps/ios` (SwiftUI WKWebView shell, ADR 0011),
   `.github/workflows/ios.yml`; see `apps/ios/README.md`.
 - **Windows/Linux Hub:** `apps/desktop`, `.github/workflows/desktop.yml`.
@@ -101,6 +127,30 @@ nothing shows it.
 - Manual journal lines have no party picker, though the contract supports one.
 - Vendor payments can't be edited or refunded.
 
+**Reports and GST**
+- The GSTR-1 workbook's column headings follow the GST offline tool's template as remembered. Check them against the current template before the first filing.
+- GSTR-3B input tax credit is set off head by head, without cross-utilisation. It is marked not allowed when every GST line is at 5%.
+- Lines without an HSN code, and charges, count as SAC 996331.
+- Table 5 counts purchases from unregistered vendors as intra-state.
+- PDF is the browser's print. Scheduled reports aren't emailed: they stay on the Hub and in the copy folder.
+- After the Hub was off, scheduled reports catch up with the latest period only.
+- No inventory valuation report yet.
+
+**Membership and QR ordering**
+- A guest's tier is worked out when it is read, so there is no tier history. Tiers are the same for every branch.
+- The member discount comes after a manual discount and a coupon (they stack).
+- A table takes QR orders as soon as it has a QR code. There is no menu-only mode and no branch switch; making a new code stops the old one.
+- The guest page shows prices before tax. It has no online payment and doesn't show the running bill.
+- The order's source (QR) is stored but not in the order contract, so screens don't badge QR orders.
+
+**Online orders (relay)**
+- The middleware format is our own documented JSON. A real provider (UrbanPiper, for example) needs a small adapter in front of the relay. It hasn't been tested against a live provider: there is no partner account yet.
+- Hubs are added to the relay from the command line. The relay has no admin screen.
+- The relay keeps the webhook secret and the middleware key in plain text in its database. Only the Hub's key is hashed.
+- The relay needs a reverse proxy for HTTPS.
+- One relay link per Hub (the first branch with it on).
+- An order the Hub can't enter isn't rejected on the platform: staff key it in or retry it.
+
 **Apps**
 - The iOS app is unsigned until an Apple Developer account's secrets are added.
 - Scanning a pairing QR with the iPad camera pairs Safari, not the app; type
@@ -110,13 +160,8 @@ nothing shows it.
 
 1. **Phase 1.5:** BLE command channel for the Wi-Fi-down mode, and the
    Capacitor Android app.
-2. **Phase 5, still to do:**
-   - the report engine (daily, weekly, monthly and annual) with PDF/XLSX
-     export and scheduled reports;
-   - the GSTR-1/3B returns and the liquor VAT registers;
-   - membership tiers;
-   - general availability of QR self-ordering;
-   - the cloud relay and aggregator middleware.
+2. **Phase 5, still to do:** the inventory valuation report, and a
+   middleware adapter once a provider account is chosen.
 3. **Phase 6:** cloud sync and multi-branch (`sync.manage`); **Phase 7:** AI.
 
 ## Checks before every commit

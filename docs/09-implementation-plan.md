@@ -81,7 +81,15 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 > - **iPad/iPhone app** (`apps/ios`, ADR 0011), built and smoke-tested on GitHub Actions.
 > - **Fixed on the way:** cancelling a bill already paid in the same shift always failed. Credit sales were journaled as cash. Counts compared against the stock at posting time.
 > - **Tests:** web 357, server 135, domain 148, contracts 148, infrastructure 31, UI 32, application 5, desktop 10, spike 55. End-to-end: 8 golden paths (setup, dine-in, delivery, day-end, stock, purchase, accounts).
-> - **Still to do in Phase 5:** the report engine with PDF/XLSX and scheduled reports, GSTR-1/3B, membership tiers, QR self-ordering GA, and aggregator middleware.
+> - **Phase 5, the rest (delivered 2026-10-28):**
+>   - **Report engine** (Reports → Sales): any range by day, ISO week, month or financial year, with types, channels, payments, categories, items, hours, weekdays, staff, discounts and taxes. XLSX is written by the Hub itself; there is also CSV, and PDF through the browser's print.
+>   - **GST returns** (Reports → GST returns; migration 0014): GSTR-1 by section, as a workbook laid out like the offline tool and as per-section CSVs. Also GSTR-3B and the liquor VAT register.
+>   - **Membership tiers** (Admin → Membership; migration 0015): reached by lifetime spend and visits, with a points multiplier and an automatic member discount. A manager can pin a tier.
+>   - **Scheduled reports** (Reports → Scheduled; migration 0016): files made as each day, week or month ends, kept for 400 days, with an optional copy folder.
+>   - **QR self-ordering** (migration 0017): the guest's menu at `/qr/<token>` (order, call a server, ask for the bill, live status). Captains accept the order onto the table and send it to the kitchen, or decline it.
+>   - **Online orders** (Admin → Online orders; `apps/relay`; migration 0018): a cloud relay the Hub connects out to. Platform orders arrive through it, are entered as aggregator orders and go to the kitchen. The menu, availability and order status go back.
+> - **Tests at the end of Phase 5:** web 380, server 145, domain 151, contracts 148, infrastructure 32, UI 32, application 8, relay 2, desktop 10, spike 55. End-to-end: the same 8 golden paths.
+> - **Still to do:** the inventory valuation report (docs/05, Phases 5–6 outline). Phase 5's open items are in `docs/HANDOFF.md`.
 
 ## Definition of Done (every WP)
 
