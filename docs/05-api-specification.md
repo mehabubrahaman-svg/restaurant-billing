@@ -175,6 +175,14 @@ Implemented in Sprint 5B (WP 5.6). Contracts: `packages/contracts/src/http/custo
 
 `GET /customers?q=` (phone or name) [`customers.view`, `customers.manage` or `billing.create`] · `GET /customers/{id}` (visits, lifetime value, recent bills) · `POST /customers` · `PATCH /customers/{id}` [`customers.manage`]. Indian mobile numbers are stored as `+91XXXXXXXXXX`. Giving `customer.phone` on a bill finds or creates the customer; a visit and the amount are added when the order is paid, and a refund lowers the lifetime value. Loyalty points: `GET /customers/{id}/loyalty` (balance, the latest 100 entries, the branch's program) [same as viewing] · `POST /customers/{id}/loyalty` `{points (signed), note}` [`loyalty.adjust`]; the balance can't go below zero (`409 LOYALTY_INSUFFICIENT`). With points on (Admin → Branch: `loyaltyEnabled`, `loyaltyEarnPer100`, `loyaltyPointValue` in paise, `loyaltyMinRedeem`), a guest on the bill earns points per whole ₹100 paid (not counting points or an aggregator) when the order is paid, and spends them with the `LOYALTY` payment method: whole points, at least the minimum, within the balance (`409 LOYALTY_INSUFFICIENT`, `409 LOYALTY_DISABLED`). Cancelling the bill in the same shift gives the spent points back and takes the earned ones away. Refunds by credit note don't change points. Points are posted as Sales returns when spent.
 
+Membership tiers (Phase 5):
+- `GET /membership-tiers` [same as viewing] lists every tier, lowest first.
+- `POST /membership-tiers` and `PATCH /membership-tiers/{id}` take `{name, minSpend (paise), minVisits, pointsMultiplierBp (10000 = 1×), discountBp}`, plus `isActive` and `version` when editing [`settings.manage`: tiers carry discounts, so they are set up like coupons]. A name that's already used gives `409 DUPLICATE_NAME`.
+- A guest's `tier` is worked out each time it's read: the highest active tier whose lifetime spend and visits they have reached. Changing a tier moves guests at once.
+- `membershipTierId` on `POST` or `PATCH /customers` pins a tier by hand; `null` lets it follow spend and visits again. This needs `loyalty.adjust` (`403` without it). An unknown or inactive tier gives `422 VALIDATION_FAILED`.
+- The customer detail also gives `nextTier` `{name, spendNeeded, visitsNeeded}`.
+- Benefits: points earned are multiplied by the tier's multiplier, from the bill that reaches the tier. A bill with a known guest on it gets the tier's discount by itself, as an `invoice_discounts` row of kind `LOYALTY` whose reason is the tier's name. The discount is applied after any manual discount and coupon. It needs no approval, and is not given on complimentary bills or aggregator orders.
+
 ### Reports
 Implemented in Sprint 5B (WP 5.7) and Phase 5 (the report engine and GST returns). Contracts: `packages/contracts/src/http/reports.ts`, `gst.ts`.
 

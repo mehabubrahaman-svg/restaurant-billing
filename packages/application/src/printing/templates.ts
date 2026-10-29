@@ -113,9 +113,11 @@ export function invoiceSlip(
       d.couponCode ??
       (d.kind === 'PERCENT'
         ? `${formatRate(d.value)}%`
-        : d.kind === 'COMPLIMENTARY'
-          ? 'Complimentary'
-          : '');
+        : d.kind === 'LOYALTY'
+          ? `${d.reason ?? ''} ${formatRate(d.value)}%`.trim()
+          : d.kind === 'COMPLIMENTARY'
+            ? 'Complimentary'
+            : '');
     blocks.push({
       kind: 'row',
       left: `${L('discount')} ${what}`.trim(),

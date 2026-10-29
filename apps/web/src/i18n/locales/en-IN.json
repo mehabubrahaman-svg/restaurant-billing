@@ -807,6 +807,7 @@
       "discountPercent": "Discount {rate}%",
       "discountFixed": "Discount",
       "coupon": "Coupon {code}",
+      "member": "Member discount {rate}%",
       "complimentary": "Complimentary",
       "remove": "Remove",
       "removeCharge": "Remove {name}",
@@ -1438,7 +1439,8 @@
       "coupons": "Coupons",
       "backups": "Backups",
       "channels": "Sales channels",
-      "customers": "Customers"
+      "customers": "Customers",
+      "membership": "Membership"
     }
   },
   "users": {
@@ -2822,6 +2824,7 @@
       "PERCENT": "Percentage",
       "FIXED": "Fixed amount",
       "COUPON": "Coupon",
+      "LOYALTY": "Member discount",
       "COMPLIMENTARY": "Complimentary"
     },
     "register": {
@@ -2938,6 +2941,35 @@
     "gstOperatorHint": "Under section 9(5) of the CGST Act the aggregator pays the GST, so the bill charges none.",
     "saved": "Saved {name}."
   },
+  "membership": {
+    "title": "Membership tiers",
+    "description": "Guests move up a tier by what they spend and how often they come. A tier can earn points faster and take a discount off every bill.",
+    "add": "Add tier",
+    "editNamed": "Edit {name}",
+    "name": "Tier",
+    "nameHint": "Silver, Gold, Platinum …",
+    "nameInvalid": "2 to 40 characters.",
+    "minSpend": "Lifetime spend from",
+    "minSpendLabel": "Lifetime spend from (₹)",
+    "minSpendHint": "Paid bills less refunds. 0 for any.",
+    "minVisits": "Visits from",
+    "minVisitsHint": "Paid orders. 0 for any.",
+    "multiplier": "Points",
+    "multiplierLabel": "Points multiplier",
+    "multiplierHint": "1 is the branch’s normal rate; 1.5 earns half as many again.",
+    "multiplierValue": "{value}×",
+    "discount": "Discount",
+    "discountLabel": "Discount on every bill (%)",
+    "discountHint": "Taken off by itself when the guest’s number is on the bill. Not on aggregator orders or complimentary bills.",
+    "noDiscount": "None",
+    "amountInvalid": "Rupees, like 5000.",
+    "countInvalid": "A whole number, 0 or more.",
+    "multiplierInvalid": "Between 0 and 10, like 1.5.",
+    "percentInvalid": "Between 0 and 100, like 10 or 12.5.",
+    "none": "No tiers yet. Add one, like Silver from ₹5,000.",
+    "saved": "Saved {name}.",
+    "actions": "Actions"
+  },
   "customers": {
     "title": "Customers",
     "description": "Guests found by mobile number: their visits, spend and favourite dishes.",
@@ -2969,6 +3001,25 @@
       "noteHint": "Kept with the points, e.g. “Birthday gift”.",
       "noteError": "Say why, in a few words.",
       "saved": "{count, plural, one {Saved. The guest now has # point.} other {Saved. The guest now has # points.}}"
+    },
+    "tier": {
+      "title": "Membership",
+      "column": "Tier",
+      "none": "No tier yet",
+      "pinned": "Given by a manager",
+      "reached": "By spend and visits",
+      "benefitDiscount": "{rate}% off every bill",
+      "benefitPoints": "points ×{value}",
+      "noBenefits": "No benefits set for this tier",
+      "next": "Next: {name}",
+      "needSpend": "{amount} more spend",
+      "needVisits": "{count, plural, one {# more visit} other {# more visits}}",
+      "top": "Top tier reached.",
+      "noTiers": "No membership tiers are set up (Admin → Membership).",
+      "choose": "Tier",
+      "auto": "By spend and visits",
+      "chooseHint": "Give this guest a tier by hand, or let it follow their spend and visits.",
+      "saved": "Tier saved."
     },
     "search": "Find a guest",
     "searchPlaceholder": "Mobile number or name",

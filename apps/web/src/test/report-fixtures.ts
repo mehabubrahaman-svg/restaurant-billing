@@ -181,6 +181,8 @@ export function makeCustomer(overrides: Partial<Customer> = {}): Customer {
     lastVisitAt: '2026-10-20T15:00:00.000Z',
     marketingOptIn: true,
     loyaltyPoints: 0,
+    membershipTierId: null,
+    tier: null,
     version: 3,
     ...overrides,
   };
@@ -202,6 +204,7 @@ export function makeCustomerDetail(overrides: Partial<CustomerDetail> = {}): Cus
       { name: 'Chicken Biryani', quantity: 14 },
       { name: 'Mishti Doi', quantity: 9 },
     ],
+    nextTier: null,
     ...overrides,
   };
 }

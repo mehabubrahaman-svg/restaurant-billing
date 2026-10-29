@@ -5,7 +5,7 @@ import { assertVersionMatched } from '../db/optimistic';
 type Row = Omit<CustomerRecord, 'marketingOptIn'> & { marketingOptIn: number };
 const COLUMNS = `id, phone, name, email, tax_id AS taxId, preferred_locale AS preferredLocale, visit_count AS visitCount,
                  lifetime_value AS lifetimeValue, last_visit_at AS lastVisitAt, marketing_opt_in AS marketingOptIn,
-                 loyalty_points AS loyaltyPoints, version`;
+                 loyalty_points AS loyaltyPoints, membership_tier AS membershipTierId, version`;
 const toRecord = (r: Row): CustomerRecord => ({ ...r, marketingOptIn: r.marketingOptIn === 1 });
 
 export class SqliteCustomerRepository implements CustomerRepository {
@@ -51,8 +51,8 @@ export class SqliteCustomerRepository implements CustomerRepository {
     this.db
       .prepare(
         `INSERT INTO customers (id, organization_id, phone, name, email, tax_id, preferred_locale, marketing_opt_in,
-                                created_at, created_by, updated_at, version)
-         VALUES (?, (SELECT id FROM organizations LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                membership_tier, created_at, created_by, updated_at, version)
+         VALUES (?, (SELECT id FROM organizations LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         r.id,
@@ -62,6 +62,7 @@ export class SqliteCustomerRepository implements CustomerRepository {
         r.taxId,
         r.preferredLocale,
         r.marketingOptIn ? 1 : 0,
+        r.membershipTierId,
         at.toISOString(),
         actorId,
         at.toISOString(),
@@ -73,7 +74,7 @@ export class SqliteCustomerRepository implements CustomerRepository {
     const result = this.db
       .prepare(
         `UPDATE customers SET phone = ?, name = ?, email = ?, tax_id = ?, preferred_locale = ?, marketing_opt_in = ?,
-                updated_at = ?, updated_by = ?, version = ?
+                membership_tier = ?, updated_at = ?, updated_by = ?, version = ?
           WHERE id = ? AND version = ?`,
       )
       .run(
@@ -83,6 +84,7 @@ export class SqliteCustomerRepository implements CustomerRepository {
         r.taxId,
         r.preferredLocale,
         r.marketingOptIn ? 1 : 0,
+        r.membershipTierId,
         at.toISOString(),
         actorId,
         r.version,

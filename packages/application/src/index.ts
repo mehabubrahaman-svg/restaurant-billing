@@ -42,6 +42,7 @@ export * from './printing/templates';
 export * from './ordering/channels';
 export * from './crm/customers';
 export * from './crm/loyalty';
+export * from './crm/membership';
 export type * from './reporting/ports';
 export * from './reporting/csv';
 export * from './reporting/periods';

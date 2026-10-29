@@ -22,6 +22,7 @@ export * from './billing/tax-engine';
 export * from './billing/invoice';
 export * from './billing/credit-note';
 export * from './crm/loyalty';
+export * from './crm/membership';
 export * from './inventory/stock';
 export * from './purchasing/purchase';
 export * from './accounting/journal';

@@ -46,8 +46,11 @@ import {
   BackupSchema,
   BackupsResponseSchema,
   CustomerDetailSchema,
+  CustomerSchema,
   CustomersResponseSchema,
   LoyaltyLedgerSchema,
+  MembershipTierSchema,
+  MembershipTiersResponseSchema,
   type AdjustLoyaltyRequest,
   ReservationSchema,
   SalesReportSchema,
@@ -396,6 +399,21 @@ export interface RefundBody {
   method: RefundMethod;
   reference?: string;
   reason: string;
+}
+export interface SaveMembershipTierBody {
+  name?: string;
+  /** Lifetime spend needed, in paise. */
+  minSpend?: number;
+  minVisits?: number;
+  /** 10000 = points at the normal rate. */
+  pointsMultiplierBp?: number;
+  discountBp?: number;
+  isActive?: boolean;
+}
+export interface UpdateCustomerBody {
+  /** A tier given by hand; null lets it follow spend and visits. */
+  membershipTierId?: string | null;
+  version: number;
 }
 export interface SaveCouponBody {
   code?: string;
@@ -833,10 +851,19 @@ export const api = {
         ...(signal === undefined ? {} : { signal }),
       }),
     get: (id: string) => c.json(`/customers/${id}`, CustomerDetailSchema),
+    update: (id: string, body: UpdateCustomerBody) =>
+      c.json(`/customers/${id}`, CustomerSchema, { method: PATCH, body }),
     /** The points balance and latest entries. */
     loyalty: (id: string) => c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema),
     adjustLoyalty: (id: string, body: AdjustLoyaltyRequest) =>
       c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema, { method: POST, body }),
+  },
+  membershipTiers: {
+    list: () => c.json('/membership-tiers', MembershipTiersResponseSchema),
+    create: (body: SaveMembershipTierBody) =>
+      c.json('/membership-tiers', MembershipTierSchema, { method: POST, body }),
+    update: (id: string, body: SaveMembershipTierBody & { version: number }) =>
+      c.json(`/membership-tiers/${id}`, MembershipTierSchema, { method: PATCH, body }),
   },
   reports: {
     /** The business day's report; today's business date when `date` is left out. */

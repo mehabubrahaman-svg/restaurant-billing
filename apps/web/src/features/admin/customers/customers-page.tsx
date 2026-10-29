@@ -26,11 +26,13 @@ import {
   useCustomer,
   useCustomerSearch,
 } from '../../customers/customer-queries';
+import { TierBadge } from '../../customers/tier-badge';
 import { InvoiceStatusBadge } from '../../../portals/pos/counter-page';
 import { useDayFormat } from '../../reports/use-day-format';
 import { AdminHeader } from '../admin-layout';
 import { QueryState } from '../query-state';
 import { LoyaltySection } from './loyalty-section';
+import { TierSection } from './tier-section';
 
 /** /admin/customers?q=: find guests by mobile number or name. */
 export function CustomersPage() {
@@ -77,6 +79,7 @@ export function CustomersPage() {
           <THead>
             <Tr>
               <Th>{t('customers.name')}</Th>
+              <Th>{t('customers.tier.column')}</Th>
               <Th>{t('customers.phone')}</Th>
               <Th className="text-end">{t('customers.visits')}</Th>
               <Th className="text-end">{t('customers.lifetimeValue')}</Th>
@@ -96,6 +99,9 @@ export function CustomersPage() {
                   {c.taxId !== null && (
                     <span className="block font-mono text-xs text-muted-foreground">{c.taxId}</span>
                   )}
+                </Td>
+                <Td>
+                  <TierBadge tier={c.tier} />
                 </Td>
                 <Td className="whitespace-nowrap tabular-nums">{formatPhone(c.phone)}</Td>
                 <Td className="text-end tabular-nums">{format.number(c.visitCount)}</Td>
@@ -178,6 +184,7 @@ export function CustomerDetailPage() {
                 </dd>
               </dl>
             </Card>
+            <TierSection customer={c} />
             <LoyaltySection customerId={c.id} />
             <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               <section aria-labelledby="cust-bills" className="flex min-w-0 flex-col gap-2">

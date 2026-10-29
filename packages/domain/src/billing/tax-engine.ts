@@ -38,7 +38,7 @@ export interface ChargeInput {
 }
 
 export interface DiscountInput {
-  readonly kind: 'PERCENT' | 'FIXED' | 'COUPON' | 'COMPLIMENTARY';
+  readonly kind: 'PERCENT' | 'FIXED' | 'COUPON' | 'LOYALTY' | 'COMPLIMENTARY';
   /** Basis points (PERCENT, percent coupons) or paise (FIXED, fixed coupons). */
   readonly value: number;
   readonly valueIsPercent: boolean;

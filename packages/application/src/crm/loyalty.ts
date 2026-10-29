@@ -1,10 +1,17 @@
-import { DomainError, pointsEarned, pointsToRedeem, type LoyaltyProgram } from '@restroos/domain';
+import {
+  boostedPoints,
+  DomainError,
+  pointsEarned,
+  pointsToRedeem,
+  type LoyaltyProgram,
+} from '@restroos/domain';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, TransactionScope, UnitOfWork } from '../ports/unit-of-work';
 import type { SettingsRepository } from '../settings/ports';
 import { recordChanged } from '../shared-events';
 import type { CustomerRepository } from './customers';
+import { guestTier, type MembershipTierRepository } from './membership';
 
 export type LoyaltyKind = 'EARN' | 'REDEEM' | 'EXPIRE' | 'ADJUST';
 
@@ -45,6 +52,7 @@ export class LoyaltyService {
     private readonly d: {
       loyalty: LoyaltyRepository;
       customers: CustomerRepository;
+      tiers: MembershipTierRepository;
       settings: SettingsRepository;
       unitOfWork: UnitOfWork;
       clock: Clock;
@@ -120,13 +128,19 @@ export class LoyaltyService {
     });
   }
 
-  /** Inside the payment's transaction, once the order is paid: points on what the guest paid. */
+  /**
+   * Inside the payment's transaction, once the order is paid (and its visit
+   * counted): points on what the guest paid, times their tier's multiplier.
+   */
   earnIn(
     scope: TransactionScope,
     ctx: CommandContext,
     input: { customerId: string; invoiceId: string; paid: number },
   ): void {
-    const points = pointsEarned(input.paid, this.program(ctx.branchId));
+    const customer = this.d.customers.get(input.customerId);
+    const tier = customer ? guestTier(this.d.tiers.all(), customer) : null;
+    const base = pointsEarned(input.paid, this.program(ctx.branchId));
+    const points = boostedPoints(base, tier);
     if (points === 0) return;
     this.add(scope, ctx, {
       customerId: input.customerId,

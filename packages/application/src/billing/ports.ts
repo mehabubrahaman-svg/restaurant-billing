@@ -125,7 +125,7 @@ export interface InvoiceView {
     taxAmount: number;
   }[];
   discounts: {
-    kind: 'PERCENT' | 'FIXED' | 'COUPON' | 'COMPLIMENTARY';
+    kind: 'PERCENT' | 'FIXED' | 'COUPON' | 'LOYALTY' | 'COMPLIMENTARY';
     value: number;
     amount: number;
     couponCode: string | null;

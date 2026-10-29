@@ -43,6 +43,7 @@ export {
   CookingPot,
   Copy,
   CreditCard,
+  Crown,
   DatabaseBackup,
   Delete,
   Download,

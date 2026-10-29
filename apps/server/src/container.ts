@@ -8,6 +8,7 @@ import {
   CustomerService,
   ReservationService,
   LoyaltyService,
+  MembershipService,
   InventoryProjector,
   InventoryService,
   PurchasingService,
@@ -64,6 +65,7 @@ import {
   SqliteCustomerRepository,
   SqliteReservationRepository,
   SqliteLoyaltyRepository,
+  SqliteMembershipTierRepository,
   SqliteInventoryQueries,
   SqliteInventoryRepository,
   SqliteMenuLookup,
@@ -131,6 +133,7 @@ export interface Cradle {
   floorService: FloorService;
   reservationService: ReservationService;
   loyaltyService: LoyaltyService;
+  membershipService: MembershipService;
   deviceService: DeviceService;
   hubNetwork: HubNetwork;
   calendar: BusinessCalendar;
@@ -333,6 +336,7 @@ export function buildContainer(
       (c) =>
         new CustomerService({
           customers: new SqliteCustomerRepository(c.db),
+          tiers: new SqliteMembershipTierRepository(c.db),
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
@@ -343,7 +347,17 @@ export function buildContainer(
         new LoyaltyService({
           loyalty: new SqliteLoyaltyRepository(c.db),
           customers: new SqliteCustomerRepository(c.db),
+          tiers: new SqliteMembershipTierRepository(c.db),
           settings: new SqliteSettingsRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    membershipService: single(
+      (c) =>
+        new MembershipService({
+          tiers: new SqliteMembershipTierRepository(c.db),
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
@@ -415,6 +429,7 @@ export function buildContainer(
           customers: new SqliteCustomerRepository(c.db),
           customerService: c.customerService,
           loyalty: c.loyaltyService,
+          tiers: new SqliteMembershipTierRepository(c.db),
           calendar: c.calendar,
           defaultTaxGroupId: () =>
             c.db

@@ -17,6 +17,7 @@ import {
   searchTerm,
   useCustomerSearch,
 } from '../../features/customers/customer-queries';
+import { TierBadge } from '../../features/customers/tier-badge';
 import { useFormat } from '../../i18n/use-format';
 import { gstinProblem } from '../../features/setup/gstin';
 import {
@@ -382,8 +383,9 @@ export function CustomerDialog({
                   >
                     {chosen && <Check aria-hidden="true" />}
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="font-semibold break-words">
+                      <span className="flex flex-wrap items-center gap-2 font-semibold break-words">
                         {c.name ?? t('pos.customer.noName')}
+                        <TierBadge tier={c.tier} />
                       </span>
                       <span className="text-sm font-normal text-muted-foreground tabular-nums">
                         {t('pos.customer.matchDetail', {

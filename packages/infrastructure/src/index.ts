@@ -78,6 +78,7 @@ export {
 export { SqliteSalesChannelRepository } from './ordering/sqlite-sales-channel-repository';
 export { SqliteCustomerRepository } from './crm/sqlite-customer-repository';
 export { SqliteLoyaltyRepository } from './crm/sqlite-loyalty-repository';
+export { SqliteMembershipTierRepository } from './crm/sqlite-membership-tier-repository';
 export {
   SqliteInventoryRepository,
   SqliteMenuLookup,

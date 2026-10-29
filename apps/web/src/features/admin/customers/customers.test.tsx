@@ -11,7 +11,15 @@ import { makeSession, signInForTest } from '../../../test/session';
 import { useAuthStore } from '../../auth/auth-store';
 import { searchTerm } from '../../customers/customer-queries';
 
-const asha = makeCustomer();
+const asha = makeCustomer({
+  tier: {
+    id: '0f300000-0000-4000-8000-000000000002',
+    name: 'Gold',
+    discountBp: 1000,
+    pointsMultiplierBp: 20_000,
+    pinned: false,
+  },
+});
 const rahul = makeCustomer({
   id: '0e300000-0000-4000-8000-000000000002',
   phone: '+919830099999',
@@ -38,6 +46,26 @@ function hub(routes: Record<string, Handler> = {}, permissions = ['customers.vie
     ...routes,
   });
 }
+
+const SILVER = {
+  id: '0f300000-0000-4000-8000-000000000001',
+  name: 'Silver',
+  discountBp: 0,
+  pointsMultiplierBp: 15_000,
+};
+const GOLD = {
+  id: '0f300000-0000-4000-8000-000000000002',
+  name: 'Gold',
+  discountBp: 1000,
+  pointsMultiplierBp: 20_000,
+};
+const TIER = (x: typeof SILVER) => ({
+  ...x,
+  minSpend: x === SILVER ? 5_000_00 : 20_000_00,
+  minVisits: x === SILVER ? 0 : 10,
+  isActive: true,
+  version: 1,
+});
 
 const PROGRAM = { enabled: true, earnPer100: 1, pointValue: 100, minRedeem: 50 };
 function ledger(balance: number, extra: object[] = []) {
@@ -154,6 +182,62 @@ describe('Customers', () => {
     expect(JSON.parse(String(post[1]?.body))).toEqual({ points: 25, note: 'Birthday gift' });
   });
 
+  it('shows the guest’s tier and what the next one needs, and lets a manager give one by hand', async () => {
+    const fetchMock = hub(
+      {
+        [`GET /customers/${CUSTOMER_ID}`]: () =>
+          json(
+            makeCustomerDetail({
+              tier: { ...SILVER, pinned: false },
+              nextTier: { name: 'Gold', spendNeeded: 1_550_00, visitsNeeded: 2 },
+            }),
+          ),
+        'GET /membership-tiers': () => json({ data: [TIER(SILVER), TIER(GOLD)] }),
+        [`PATCH /customers/${CUSTOMER_ID}`]: () =>
+          json(makeCustomer({ membershipTierId: GOLD.id, tier: { ...GOLD, pinned: true } })),
+      },
+      ['customers.view', 'loyalty.adjust'],
+    );
+    renderApp(`/admin/customers/${CUSTOMER_ID}`);
+    const section = (await screen.findByRole('heading', { name: 'Membership' })).closest(
+      'section',
+    )!;
+    expect(within(section).getByText('Silver')).toBeInTheDocument();
+    expect(within(section).getByText('By spend and visits')).toBeInTheDocument();
+    expect(within(section).getByText('points ×1.5')).toBeInTheDocument();
+    expect(
+      within(section).getByText('Next: Gold · ₹1,550.00 more spend · 2 more visits'),
+    ).toBeInTheDocument();
+    const choose = await within(section).findByLabelText(/^Tier/);
+    expect(choose).toHaveValue('');
+    fireEvent.change(choose, { target: { value: GOLD.id } });
+    fireEvent.click(within(section).getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Tier saved.')).toBeInTheDocument();
+    const patch = callsTo(fetchMock, `/customers/${CUSTOMER_ID}`).find(
+      ([, init]) => init?.method === 'PATCH',
+    )!;
+    expect(JSON.parse(String(patch[1]?.body))).toEqual({ membershipTierId: GOLD.id, version: 3 });
+    await expectNoAxeViolations();
+  });
+
+  it('shows the tier to counter staff, without giving one by hand', async () => {
+    hub(
+      {
+        [`GET /customers/${CUSTOMER_ID}`]: () =>
+          json(makeCustomerDetail({ tier: { ...GOLD, pinned: true } })),
+        'GET /membership-tiers': () => json({ data: [TIER(SILVER), TIER(GOLD)] }),
+      },
+      ['customers.manage'],
+    );
+    renderApp(`/admin/customers/${CUSTOMER_ID}`);
+    const section = (await screen.findByRole('heading', { name: 'Membership' })).closest(
+      'section',
+    )!;
+    expect(within(section).getByText('Given by a manager')).toBeInTheDocument();
+    expect(within(section).getByText('10% off every bill · points ×2')).toBeInTheDocument();
+    expect(within(section).queryByRole('combobox')).toBeNull();
+  });
+
   it('shows points without the adjust button to staff without loyalty.adjust', async () => {
     hub({}, ['customers.view']);
     renderApp(`/admin/customers/${CUSTOMER_ID}`);
@@ -195,6 +279,7 @@ describe('Customer lookup at billing', () => {
     expect(
       within(suggestions).getByText('+91 98300 12345 · 12 visits · ₹18,450.00'),
     ).toBeInTheDocument();
+    expect(within(suggestions).getByText('Gold')).toBeInTheDocument();
     await expectNoAxeViolations();
     fireEvent.click(within(suggestions).getByRole('button', { name: /Asha Roy/ }));
     expect(phone).toHaveValue('+91 98300 12345');

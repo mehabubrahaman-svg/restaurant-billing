@@ -4,6 +4,7 @@ import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, TransactionScope, UnitOfWork } from '../ports/unit-of-work';
 import { recordChanged } from '../shared-events';
+import { guestNextTier, guestTier, type MembershipTierRepository } from './membership';
 
 export interface CustomerRecord {
   id: string;
@@ -18,6 +19,8 @@ export interface CustomerRecord {
   marketingOptIn: boolean;
   /** Cached balance of loyalty_transactions (kept by LoyaltyRepository). */
   loyaltyPoints: number;
+  /** A tier a manager gave the guest by hand (else it follows spend and visits). */
+  membershipTierId: string | null;
   version: number;
 }
 
@@ -50,36 +53,47 @@ export class CustomerService {
   constructor(
     private readonly d: {
       customers: CustomerRepository;
+      tiers: MembershipTierRepository;
       unitOfWork: UnitOfWork;
       clock: Clock;
       ids: IdGenerator;
     },
   ) {}
 
-  search(query: string): CustomerRecord[] {
-    return this.d.customers.search(query.trim(), 20);
+  search(query: string) {
+    const tiers = this.d.tiers.all();
+    return this.d.customers
+      .search(query.trim(), 20)
+      .map((c) => ({ ...c, tier: guestTier(tiers, c) }));
+  }
+
+  /** With the guest's membership tier. */
+  view(customer: CustomerRecord) {
+    return { ...customer, tier: guestTier(this.d.tiers.all(), customer) };
   }
 
   detail(id: string) {
     const customer = this.d.customers.get(id);
     if (!customer) throw new DomainError('NOT_FOUND', 'customer not found');
     return {
-      ...customer,
+      ...this.view(customer),
+      nextTier: guestNextTier(this.d.tiers.all(), customer),
       recentInvoices: this.d.customers.recentInvoices(id, 10),
       favourites: this.d.customers.favourites(id, 5),
     };
   }
 
-  create(input: CustomerInput, ctx: CommandContext): CustomerRecord {
-    return this.d.unitOfWork.run(ctx, (scope) => this.createIn(scope, input, ctx));
+  create(input: CustomerInput, ctx: CommandContext) {
+    return this.view(
+      this.d.unitOfWork.run(ctx, (scope) => {
+        this.checkTier(input.membershipTierId);
+        return this.createIn(scope, input, ctx);
+      }),
+    );
   }
 
-  update(
-    id: string,
-    patch: Patch<CustomerInput> & { version: number },
-    ctx: CommandContext,
-  ): CustomerRecord {
-    return this.d.unitOfWork.run(ctx, (scope) => {
+  update(id: string, patch: Patch<CustomerInput> & { version: number }, ctx: CommandContext) {
+    const saved = this.d.unitOfWork.run(ctx, (scope) => {
       const current = this.d.customers.get(id);
       if (!current) throw new DomainError('NOT_FOUND', 'customer not found');
       if (current.version !== patch.version)
@@ -90,6 +104,7 @@ export class CustomerService {
       if (next.phone !== current.phone && this.d.customers.byPhone(next.phone)) {
         throw new DomainError('PHONE_TAKEN', 'another customer has this number');
       }
+      if (next.membershipTierId !== current.membershipTierId) this.checkTier(next.membershipTierId);
       const now = this.d.clock.now();
       this.d.customers.update(next, ctx.actorId, now);
       scope.recordEvents([
@@ -104,6 +119,12 @@ export class CustomerService {
       });
       return next;
     });
+    return this.view(saved);
+  }
+
+  private checkTier(id: string | null): void {
+    if (id !== null && !this.d.tiers.get(id)?.isActive)
+      throw new DomainError('VALIDATION_FAILED', 'no such membership tier');
   }
 
   /** At billing, inside the bill's transaction: the guest by phone, added if new, name and GSTIN filled in if missing. */
@@ -123,6 +144,7 @@ export class CustomerService {
           taxId: input.taxId ?? null,
           preferredLocale: null,
           marketingOptIn: false,
+          membershipTierId: null,
         },
         ctx,
       );

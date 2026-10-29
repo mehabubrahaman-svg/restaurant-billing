@@ -63,7 +63,7 @@ export const InvoiceTaxSchema = z.object({
 });
 
 export const InvoiceDiscountSchema = z.object({
-  kind: z.enum(['PERCENT', 'FIXED', 'COUPON', 'COMPLIMENTARY']),
+  kind: z.enum(['PERCENT', 'FIXED', 'COUPON', 'LOYALTY', 'COMPLIMENTARY']),
   /** Basis points for PERCENT/COUPON-percent, paise for FIXED. */
   value: z.number().int(),
   amount: PaiseSchema,

@@ -73,9 +73,11 @@ export function BillBreakdown({
                 ? t('pos.bill.discountPercent', { rate: rate(d.value) })
                 : d.kind === 'COUPON'
                   ? t('pos.bill.coupon', { code: d.couponCode ?? '' })
-                  : d.kind === 'COMPLIMENTARY'
-                    ? t('pos.bill.complimentary')
-                    : t('pos.bill.discountFixed')
+                  : d.kind === 'LOYALTY'
+                    ? t('pos.bill.member', { rate: rate(d.value) })
+                    : d.kind === 'COMPLIMENTARY'
+                      ? t('pos.bill.complimentary')
+                      : t('pos.bill.discountFixed')
             }
             detail={d.reason ?? undefined}
             value={`−${plain(d.amount)}`}

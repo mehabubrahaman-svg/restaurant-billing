@@ -10,6 +10,21 @@ export const CUSTOMER_KEYS = {
   loyalty: (id: string) => ['customers', 'loyalty', id] as const,
 } as const;
 
+export const TIERS_KEY = ['membership-tiers'] as const;
+
+/** Silver, Gold …, lowest first (active or not). */
+export function useMembershipTiers(enabled = true) {
+  return useQuery({
+    queryKey: TIERS_KEY,
+    queryFn: api.membershipTiers.list,
+    staleTime: 60_000,
+    enabled,
+  });
+}
+
+/** A points multiplier: 15000 → "1.5". */
+export const multiplierText = (bp: number) => String(bp / 10_000);
+
 /** Searching starts at this many characters (a few digits of a mobile number, or a name). */
 export const MIN_SEARCH = 3;
 

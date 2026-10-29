@@ -2,6 +2,7 @@ import {
   Bike,
   cn,
   Contact,
+  Crown,
   DatabaseBackup,
   Spinner,
   LayoutDashboard,
@@ -42,7 +43,8 @@ export interface AdminSection {
     | 'admin.tabs.audit'
     | 'admin.tabs.backups'
     | 'admin.tabs.channels'
-    | 'admin.tabs.customers';
+    | 'admin.tabs.customers'
+    | 'admin.tabs.membership';
   readonly permission: PermissionRequirement;
 }
 
@@ -63,6 +65,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Contact,
     labelKey: 'admin.tabs.customers',
     permission: CUSTOMER_PERMISSIONS,
+  },
+  {
+    path: 'membership',
+    icon: Crown,
+    labelKey: 'admin.tabs.membership',
+    permission: 'settings.manage',
   },
   { path: 'users', icon: Users, labelKey: 'admin.tabs.users', permission: 'users.manage' },
   {

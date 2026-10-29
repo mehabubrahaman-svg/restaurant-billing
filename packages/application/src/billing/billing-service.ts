@@ -16,6 +16,7 @@ import {
 import type { CatalogRepository } from '../catalog/ports';
 import type { CustomerRepository, CustomerService } from '../crm/customers';
 import type { LoyaltyService } from '../crm/loyalty';
+import { guestTier, type MembershipTierRepository } from '../crm/membership';
 import type { FloorRepository } from '../floor/ports';
 import type { SalesChannelRepository } from '../ordering/channels';
 import type { BusinessCalendar, OrderRepository } from '../ordering/ports';
@@ -38,6 +39,7 @@ export interface BillingServiceDeps {
   readonly customers: CustomerRepository;
   readonly customerService: CustomerService;
   readonly loyalty: LoyaltyService;
+  readonly tiers: MembershipTierRepository;
   readonly calendar: BusinessCalendar;
   /** billing.default_tax_group_id: for menu items without a tax group of their own. */
   readonly defaultTaxGroupId: () => string | null;
@@ -515,6 +517,8 @@ export class BillingService {
         reason: null,
       });
     }
+    const member = this.memberDiscount(order, options);
+    if (member) discounts.push(member);
     if (options.complimentary) {
       if (rights && !rights.complimentary)
         throw approvalRequired(
@@ -544,6 +548,31 @@ export class BillingService {
         separateLiquor: branch.liquorInvoice === 'SEPARATE',
       },
       coupon,
+    };
+  }
+
+  /**
+   * A known guest's tier discount, set by the restaurant so no approval is
+   * needed. Not on a complimentary bill, nor on an aggregator's order (its
+   * prices are the channel's).
+   */
+  private memberDiscount(order: Order, options: BillOptions): DiscountInput | null {
+    const phone = options.customer?.phone;
+    if (!phone || options.complimentary) return null;
+    const channel = order.state.salesChannelId
+      ? this.d.channels.get(order.state.salesChannelId)
+      : undefined;
+    if (channel && channel.kind !== 'DIRECT') return null;
+    const guest = this.d.customers.byPhone(phone);
+    const tier = guest ? guestTier(this.d.tiers.all(), guest) : null;
+    if (!tier || tier.discountBp === 0) return null;
+    return {
+      kind: 'LOYALTY',
+      value: tier.discountBp,
+      valueIsPercent: true,
+      cap: null,
+      couponCode: null,
+      reason: tier.name,
     };
   }
 

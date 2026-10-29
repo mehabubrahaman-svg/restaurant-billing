@@ -112,6 +112,11 @@ const CustomerDetailPage = lazy(() =>
     default: m.CustomerDetailPage,
   })),
 );
+const MembershipPage = lazy(() =>
+  import('../features/admin/membership/membership-page').then((m) => ({
+    default: m.MembershipPage,
+  })),
+);
 const DashboardPage = lazy(() =>
   import('../portals/reports/dashboard-page').then((m) => ({ default: m.DashboardPage })),
 );
@@ -266,7 +271,8 @@ function AdminGuard({
     | 'admin.tabs.audit'
     | 'admin.tabs.backups'
     | 'admin.tabs.channels'
-    | 'admin.tabs.customers';
+    | 'admin.tabs.customers'
+    | 'admin.tabs.membership';
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -407,6 +413,14 @@ function adminRoutes(): RouteObject {
         element: (
           <AdminGuard permission={CUSTOMER_PERMISSIONS} labelKey="admin.tabs.customers">
             <CustomerDetailPage />
+          </AdminGuard>
+        ),
+      },
+      {
+        path: 'membership',
+        element: (
+          <AdminGuard permission="settings.manage" labelKey="admin.tabs.membership">
+            <MembershipPage />
           </AdminGuard>
         ),
       },

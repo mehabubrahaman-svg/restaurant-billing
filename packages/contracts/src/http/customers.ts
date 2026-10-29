@@ -9,6 +9,19 @@ export const IndianMobileSchema = z
   .pipe(z.string().regex(/^(\+91|91|0)?[6-9]\d{9}$/, 'a 10-digit Indian mobile number'))
   .transform((v) => `+91${v.slice(-10)}`);
 
+/** The guest's tier: one a manager pinned, else the highest their spend and visits reach. */
+export const GuestTierSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  /** Off every bill with the guest on it. */
+  discountBp: z.number().int(),
+  /** Points earned × this / 10000. */
+  pointsMultiplierBp: z.number().int(),
+  /** Given by a manager rather than reached. */
+  pinned: z.boolean(),
+});
+export type GuestTier = z.infer<typeof GuestTierSchema>;
+
 export const CustomerSchema = z.object({
   id: IdSchema,
   phone: z.string(),
@@ -24,6 +37,9 @@ export const CustomerSchema = z.object({
   marketingOptIn: z.boolean(),
   /** Loyalty points to spend (Phase 5). */
   loyaltyPoints: z.number().int(),
+  /** A tier a manager pinned (null: it follows spend and visits). */
+  membershipTierId: IdSchema.nullable(),
+  tier: GuestTierSchema.nullable(),
   version: z.number().int(),
 });
 export type Customer = z.infer<typeof CustomerSchema>;
@@ -42,6 +58,10 @@ export const CustomerDetailSchema = CustomerSchema.extend({
   ),
   /** Most ordered dishes, by quantity. */
   favourites: z.array(z.object({ name: z.string(), quantity: z.number().int() })),
+  /** The next tier up and what is still needed for it (null at the top, or when pinned). */
+  nextTier: z
+    .object({ name: z.string(), spendNeeded: PaiseSchema, visitsNeeded: z.number().int() })
+    .nullable(),
 });
 export type CustomerDetail = z.infer<typeof CustomerDetailSchema>;
 
@@ -58,6 +78,7 @@ export const SaveCustomerRequestSchema = z.object({
     .default(null),
   preferredLocale: LocaleSchema.nullable().default(null),
   marketingOptIn: z.boolean().default(false),
+  membershipTierId: IdSchema.nullable().default(null),
 });
 export const UpdateCustomerRequestSchema = patchSchema(SaveCustomerRequestSchema).extend({
   version: z.number().int(),
@@ -101,3 +122,32 @@ export const AdjustLoyaltyRequestSchema = z.object({
   note: z.string().trim().min(3).max(200),
 });
 export type AdjustLoyaltyRequest = z.infer<typeof AdjustLoyaltyRequestSchema>;
+
+export const MembershipTierSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  /** Lifetime spend needed, in paise. */
+  minSpend: PaiseSchema,
+  minVisits: z.number().int(),
+  /** Loyalty points earned × this / 10000 (10000 = 1×). */
+  pointsMultiplierBp: z.number().int(),
+  /** Off every bill with the guest on it, in basis points. */
+  discountBp: z.number().int(),
+  isActive: z.boolean(),
+  version: z.number().int(),
+});
+export type MembershipTier = z.infer<typeof MembershipTierSchema>;
+export const MembershipTiersResponseSchema = z.object({ data: z.array(MembershipTierSchema) });
+export type MembershipTiersResponse = z.infer<typeof MembershipTiersResponseSchema>;
+
+export const SaveMembershipTierRequestSchema = z.object({
+  name: z.string().trim().min(2).max(40),
+  minSpend: z.number().int().min(0).max(1_000_000_000_00),
+  minVisits: z.number().int().min(0).max(100_000),
+  pointsMultiplierBp: z.number().int().min(0).max(100_000).default(10_000),
+  discountBp: z.number().int().min(0).max(10_000).default(0),
+});
+export type SaveMembershipTierRequest = z.input<typeof SaveMembershipTierRequestSchema>;
+export const UpdateMembershipTierRequestSchema = patchSchema(
+  SaveMembershipTierRequestSchema,
+).extend({ isActive: z.boolean().optional(), version: z.number().int() });
