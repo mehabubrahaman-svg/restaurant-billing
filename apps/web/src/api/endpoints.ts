@@ -1,3 +1,39 @@
+// Purchase (Phase 3) and Accounts (Phase 4).
+import {
+  AccountSchema,
+  AccountsResponseSchema,
+  BalanceSheetSchema,
+  CashFlowSchema,
+  ExpenseSchema,
+  ExpensesResponseSchema,
+  GrnSchema,
+  GrnsResponseSchema,
+  GstSummarySchema,
+  InventoryItemsResponseSchema,
+  JournalEntriesResponseSchema,
+  JournalEntrySchema,
+  LedgerSchema,
+  PartyLedgerSchema,
+  ProfitAndLossSchema,
+  PurchaseOrderSchema,
+  PurchaseOrdersResponseSchema,
+  TrialBalanceSchema,
+  UnitsResponseSchema,
+  VendorDuesReportSchema,
+  VendorPaymentSchema,
+  VendorPaymentsResponseSchema,
+  VendorSchema,
+  VendorStatementSchema,
+  VendorsResponseSchema,
+  type AccountType,
+  type JournalSourceType,
+  type PostJournalRequest,
+  type PurchaseOrderStatus,
+  type SaveGrnRequest,
+  type SavePurchaseOrderRequest,
+  type SaveVendorRequest,
+  type VendorPaymentMethod,
+} from '@restroos/contracts';
 import {
   API_PREFIX,
   AddonGroupSchema,
@@ -86,6 +122,72 @@ import {
   type UpdateUserRequest,
 } from '@restroos/contracts';
 import { apiClient as c } from './client';
+
+// ---- Purchase and Accounts request bodies ----------------------------------------------
+/** PATCH /vendors/{id}: any vendor field; `isActive: false` retires the vendor. */
+export type UpdateVendorBody = Partial<SaveVendorRequest> & { version: number; isActive?: boolean };
+export type GrnStatus = 'DRAFT' | 'POSTED' | 'CANCELLED';
+/** Only a DRAFT purchase order can be edited; `lines` replaces them all. */
+export interface UpdatePurchaseOrderBody {
+  version: number;
+  vendorId?: string;
+  expectedOn?: string | null;
+  notes?: string | null;
+  lines?: SavePurchaseOrderRequest['lines'];
+}
+/** Only a DRAFT GRN can be edited; `lines` replaces them all. */
+export interface UpdateGrnBody {
+  version: number;
+  vendorInvoiceNo?: string | null;
+  vendorInvoiceDate?: string | null;
+  notes?: string | null;
+  lines?: SaveGrnRequest['lines'];
+}
+/** Against one posted GRN, or on account (`grnId: null`: settles the oldest bills first). */
+export interface VendorPaymentBody {
+  vendorId: string;
+  grnId: string | null;
+  method: VendorPaymentMethod;
+  /** Paise. */
+  amount: number;
+  reference: string | null;
+  /** YYYY-MM-DD, not in the future; the business day when left out. */
+  paidOn?: string;
+}
+export interface SaveAccountBody {
+  code: string;
+  name: string;
+  type: AccountType;
+  parentId: string | null;
+}
+/** System accounts can be renamed but not retired or retyped. */
+export interface UpdateAccountBody {
+  version: number;
+  name?: string;
+  type?: AccountType;
+  parentId?: string | null;
+  isActive?: boolean;
+}
+export interface JournalFilter {
+  from?: string;
+  to?: string;
+  sourceType?: JournalSourceType;
+  accountId?: string;
+  /** The `nextCursor` of the page before. */
+  before?: string;
+  limit?: number;
+}
+/** An expense account paid from cash or the bank; `amount` includes the GST in `taxAmount`. */
+export interface ExpenseBody {
+  expenseAccountId: string;
+  paidFromAccountId: string;
+  amount: number;
+  taxAmount: number;
+  description: string;
+  reference: string | null;
+  expenseDate?: string;
+}
+export type LedgerPartyType = 'CUSTOMER' | 'VENDOR';
 
 /** Request bodies whose contract types are only exported as schemas. */
 export interface SaveRoleBody {
@@ -358,6 +460,119 @@ const InvoiceListSchema = {
 };
 
 export const api = {
+  /** Phase 3: vendors, purchase orders, goods received notes, vendor payments, dues. */
+  purchasing: {
+    /** Units for PO and GRN lines; a line's unit must measure its item's base unit. */
+    units: () => c.json('/units', UnitsResponseSchema),
+    /** Active stock items with their base and purchase units. */
+    items: () => c.json('/inventory-items', InventoryItemsResponseSchema),
+    vendors: (includeRetired = false) =>
+      c.json('/vendors', VendorsResponseSchema, { query: { includeRetired } }),
+    vendor: (id: string) => c.json(`/vendors/${id}`, VendorSchema),
+    createVendor: (body: SaveVendorRequest) =>
+      c.json('/vendors', VendorSchema, { method: POST, body }),
+    updateVendor: (id: string, body: UpdateVendorBody) =>
+      c.json(`/vendors/${id}`, VendorSchema, { method: PATCH, body }),
+    /** Bills and payments between two days (at most 366), with running balances. */
+    statement: (id: string, from: string, to: string) =>
+      c.json(`/vendors/${id}/statement`, VendorStatementSchema, { query: { from, to } }),
+    orders: (status?: PurchaseOrderStatus, vendorId?: string) =>
+      c.json('/purchase-orders', PurchaseOrdersResponseSchema, { query: { status, vendorId } }),
+    order: (id: string) => c.json(`/purchase-orders/${id}`, PurchaseOrderSchema),
+    createOrder: (body: SavePurchaseOrderRequest) =>
+      c.json('/purchase-orders', PurchaseOrderSchema, { method: POST, body }),
+    updateOrder: (id: string, body: UpdatePurchaseOrderBody) =>
+      c.json(`/purchase-orders/${id}`, PurchaseOrderSchema, { method: PATCH, body }),
+    /** approve (po.approve), send or close (po.create): the order's next step. */
+    moveOrder: (id: string, step: 'approve' | 'send' | 'close', version: number) =>
+      c.json(`/purchase-orders/${id}/${step}`, PurchaseOrderSchema, {
+        method: POST,
+        body: { version },
+      }),
+    cancelOrder: (id: string, version: number, reason: string) =>
+      c.json(`/purchase-orders/${id}/cancel`, PurchaseOrderSchema, {
+        method: POST,
+        body: { version, reason },
+      }),
+    grns: (filter: { status?: GrnStatus; vendorId?: string; purchaseOrderId?: string } = {}) =>
+      c.json('/grns', GrnsResponseSchema, {
+        query: {
+          status: filter.status,
+          vendorId: filter.vendorId,
+          purchaseOrderId: filter.purchaseOrderId,
+        },
+      }),
+    grn: (id: string) => c.json(`/grns/${id}`, GrnSchema),
+    createGrn: (body: SaveGrnRequest) => c.json('/grns', GrnSchema, { method: POST, body }),
+    updateGrn: (id: string, body: UpdateGrnBody) =>
+      c.json(`/grns/${id}`, GrnSchema, { method: PATCH, body }),
+    /** Puts the accepted goods into stock and the bill into the vendor's dues. */
+    postGrn: (id: string, version: number) =>
+      c.json(`/grns/${id}/post`, GrnSchema, { method: POST, body: { version } }),
+    cancelGrn: (id: string, version: number, reason: string) =>
+      c.json(`/grns/${id}/cancel`, GrnSchema, { method: POST, body: { version, reason } }),
+    payments: (filter: { vendorId?: string; from?: string; to?: string } = {}) =>
+      c.json('/vendor-payments', VendorPaymentsResponseSchema, {
+        query: { vendorId: filter.vendorId, from: filter.from, to: filter.to },
+      }),
+    recordPayment: (body: VendorPaymentBody, o?: CommandOptions) =>
+      c.json('/vendor-payments', VendorPaymentSchema, { method: POST, body, ...extras(o) }),
+    /** What is owed per vendor by age, as of a day (today's business day when left out). */
+    dues: (asOf?: string) =>
+      c.json('/reports/vendor-dues', VendorDuesReportSchema, { query: { asOf } }),
+  },
+  /** Phase 4: chart of accounts, journals, expenses, ledgers and financial statements. */
+  accounting: {
+    accounts: () => c.json('/accounts', AccountsResponseSchema),
+    createAccount: (body: SaveAccountBody) =>
+      c.json('/accounts', AccountSchema, { method: POST, body }),
+    /** Seeded account ids look like "<organisation>:1000", so they are encoded. */
+    updateAccount: (id: string, body: UpdateAccountBody) =>
+      c.json(`/accounts/${encodeURIComponent(id)}`, AccountSchema, { method: PATCH, body }),
+    /** Newest first; pass the page's `nextCursor` as `before` for older entries. */
+    journal: (filter: JournalFilter) =>
+      c.json('/journal-entries', JournalEntriesResponseSchema, {
+        query: {
+          from: filter.from,
+          to: filter.to,
+          sourceType: filter.sourceType,
+          accountId: filter.accountId,
+          before: filter.before,
+          limit: filter.limit,
+        },
+      }),
+    entry: (id: string) => c.json(`/journal-entries/${id}`, JournalEntrySchema),
+    postJournal: (body: PostJournalRequest, o?: CommandOptions) =>
+      c.json('/journal-entries', JournalEntrySchema, { method: POST, body, ...extras(o) }),
+    /** Manual entries only; answers the reversing entry. */
+    reverse: (id: string, reason: string, entryDate?: string) =>
+      c.json(`/journal-entries/${id}/reverse`, JournalEntrySchema, {
+        method: POST,
+        body: entryDate === undefined ? { reason } : { reason, entryDate },
+      }),
+    expenses: (from?: string, to?: string) =>
+      c.json('/expenses', ExpensesResponseSchema, { query: { from, to } }),
+    recordExpense: (body: ExpenseBody, o?: CommandOptions) =>
+      c.json('/expenses', ExpenseSchema, { method: POST, body, ...extras(o) }),
+    cancelExpense: (id: string, version: number, reason: string) =>
+      c.json(`/expenses/${id}/cancel`, ExpenseSchema, { method: POST, body: { version, reason } }),
+    ledger: (accountId: string, from: string, to: string) =>
+      c.json(`/ledgers/${encodeURIComponent(accountId)}`, LedgerSchema, { query: { from, to } }),
+    partyLedger: (type: LedgerPartyType, id: string, from: string, to: string) =>
+      c.json(`/ledgers/party/${type}/${encodeURIComponent(id)}`, PartyLedgerSchema, {
+        query: { from, to },
+      }),
+    trialBalance: (asOf?: string) =>
+      c.json('/reports/trial-balance', TrialBalanceSchema, { query: { asOf } }),
+    profitAndLoss: (from: string, to: string) =>
+      c.json('/reports/profit-and-loss', ProfitAndLossSchema, { query: { from, to } }),
+    balanceSheet: (asOf?: string) =>
+      c.json('/reports/balance-sheet', BalanceSheetSchema, { query: { asOf } }),
+    cashFlow: (from: string, to: string) =>
+      c.json('/reports/cash-flow', CashFlowSchema, { query: { from, to } }),
+    gstSummary: (from: string, to: string) =>
+      c.json('/reports/gst-summary', GstSummarySchema, { query: { from, to } }),
+  },
   setup: {
     status: () => c.json('/setup/status', SetupStatusResponseSchema, { auth: false }),
     run: (body: SetupRequest) =>

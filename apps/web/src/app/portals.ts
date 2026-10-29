@@ -78,7 +78,12 @@ export const PORTALS: readonly Portal[] = [
   portal('pos', '/pos', CreditCard, 'billing.create'),
   portal('inventory', '/inventory', Package, 'inventory.view'),
   portal('purchase', '/purchase', Truck, 'vendors.view'),
-  portal('accounts', '/accounts', BookOpen, 'accounts.view'),
+  // The chart and expenses open for expenses.manage too; the books and statements check their own.
+  portal('accounts', '/accounts', BookOpen, [
+    'accounts.view',
+    'accounts.journal',
+    'expenses.manage',
+  ]),
   portal('reports', '/reports', ChartColumn, 'reports.sales'),
   // Device screens: opened by paired TVs and guest phones, never listed in the staff nav.
   portal('tokenDisplay', '/token-display', Monitor, null),
