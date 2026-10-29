@@ -12,7 +12,23 @@ export const REPORT_KEYS = {
   /** `null`: today's business day, as the Hub reckons it. */
   dayEnd: (date: string | null) => ['reports', 'day-end', date] as const,
   sales: (query: SalesReportQuery) => ['reports', 'sales', query] as const,
+  schedules: ['reports', 'schedules'],
+  files: ['reports', 'files'],
 } as const;
+
+/** The branch's report schedules (those this user may read). */
+export function useReportSchedules() {
+  return useQuery({ queryKey: REPORT_KEYS.schedules, queryFn: api.reportSchedules.list });
+}
+
+/** Files the schedules made, newest first; refreshed every minute while on screen. */
+export function useReportFiles() {
+  return useQuery({
+    queryKey: REPORT_KEYS.files,
+    queryFn: api.reportFiles.list,
+    refetchInterval: 60_000,
+  });
+}
 
 /** The owner's dashboard; refreshed every minute while it is on screen. */
 export function useDashboard() {

@@ -81,6 +81,7 @@ export {
   PackageX,
   Pencil,
   Percent,
+  Play,
   Plus,
   Printer,
   QrCode,

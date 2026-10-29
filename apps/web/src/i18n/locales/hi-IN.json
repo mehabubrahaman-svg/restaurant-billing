@@ -2570,7 +2570,8 @@
       "dashboard": "डैशबोर्ड",
       "dayEnd": "दिन का अंत",
       "sales": "बिक्री",
-      "gst": "GST रिटर्न"
+      "gst": "GST रिटर्न",
+      "scheduled": "तय समय पर"
     },
     "export": {
       "excel": "Excel",
@@ -2731,6 +2732,49 @@
         "bills": "शराब के बिल",
         "vat": "VAT",
         "surcharge": "सरचार्ज"
+      }
+    },
+    "scheduled": {
+      "title": "तय समय पर बनने वाली रिपोर्ट",
+      "description": "हर दिन, हफ़्ता (सोमवार से रविवार) या महीना ख़त्म होते ही हब ये रिपोर्ट अपने आप बनाता है, और फ़ाइलें 400 दिन तक यहाँ रखता है।",
+      "add": "रिपोर्ट को तय समय पर बनवाएँ",
+      "addButton": "शेड्यूल जोड़ें",
+      "added": "{report} {frequency} बनेगी।",
+      "report": "रिपोर्ट",
+      "frequency": "कितनी बार",
+      "format": "फ़ाइल",
+      "lastMade": "आख़िरी बार बनी",
+      "notYet": "अभी नहीं",
+      "upTo": "{date} तक",
+      "failed": "पिछली कोशिश नाकाम",
+      "active": "चालू",
+      "activeNamed": "{report} शेड्यूल पर",
+      "actions": "काम",
+      "run": "अभी बनाएँ",
+      "runNamed": "{report} अभी बनाएँ",
+      "made": "{name} बन गई।",
+      "schedules": "शेड्यूल",
+      "noSchedules": "अभी कोई रिपोर्ट शेड्यूल नहीं है।",
+      "files": "फ़ाइलें",
+      "noFiles": "अभी कोई फ़ाइल नहीं। शेड्यूल जोड़ने के कुछ मिनट बाद पहली फ़ाइलें बनती हैं।",
+      "period": "अवधि",
+      "madeAt": "कब बनी",
+      "bySchedule": "शेड्यूल से",
+      "size": "आकार",
+      "download": "डाउनलोड",
+      "downloadNamed": "{name} डाउनलोड करें",
+      "reports": {
+        "SALES": "बिक्री रिपोर्ट",
+        "SALES_REGISTER": "बिक्री रजिस्टर",
+        "DAY_END": "दिन के अंत की रिपोर्ट",
+        "GSTR1": "GSTR-1",
+        "GSTR3B": "GSTR-3B",
+        "VAT_REGISTER": "VAT रजिस्टर"
+      },
+      "frequencies": {
+        "DAILY": "रोज़",
+        "WEEKLY": "हर हफ़्ते",
+        "MONTHLY": "हर महीने"
       }
     },
     "refresh": "रीफ़्रेश",

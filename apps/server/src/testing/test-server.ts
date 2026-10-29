@@ -98,6 +98,8 @@ export async function createTestServer(
     backupDir: join(database.dir, 'backups'),
     backupCopyDir: null,
     backups: false,
+    reportsDir: join(database.dir, 'reports'),
+    reportsCopyDir: null,
     migrationsDir: undefined,
     webDist: undefined,
     logLevel: 'silent',

@@ -59,6 +59,11 @@ export { SqliteInvoiceRepository } from './billing/sqlite-invoice-repository';
 export { SqliteShiftRepository } from './billing/sqlite-shift-repository';
 export { SqliteReportQueries } from './reporting/sqlite-report-queries';
 export { SqliteGstQueries } from './reporting/sqlite-gst-queries';
+export {
+  SqliteReportFileRepository,
+  SqliteReportScheduleRepository,
+} from './reporting/sqlite-report-schedules';
+export { FileReportStore } from './reporting/file-report-store';
 export { writeXlsx } from './reporting/xlsx';
 export {
   applyPendingRestore,

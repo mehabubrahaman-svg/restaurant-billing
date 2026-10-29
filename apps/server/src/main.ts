@@ -76,6 +76,21 @@ async function main() {
       }, 60 * 60_000)
     : undefined;
   backupJob?.unref();
+  // Scheduled reports: a file as soon as each day, week or month has ended.
+  const runReports = () => {
+    try {
+      const { made, failed } = container.cradle.reportScheduleService.runDue();
+      for (const file of made) logger.info({ file: file.fileName }, 'scheduled report made');
+      for (const f of failed)
+        logger.error({ schedule: f.scheduleId, err: f.error }, 'scheduled report failed');
+    } catch (error) {
+      logger.error({ err: error }, 'scheduled reports failed to run');
+    }
+  };
+  const reportJob = setInterval(runReports, 15 * 60_000);
+  reportJob.unref();
+  const firstReports = setTimeout(runReports, 60_000);
+  firstReports.unref();
   const setupCode = new SetupCode(logger, config.setupCode);
   if (container.cradle.setupService.needsSetup()) setupCode.announce();
   const app = await buildApp(container, { setupCode });
@@ -143,6 +158,8 @@ async function main() {
   shutdown = async (signal: string, exitCode = 0) => {
     logger.info({ signal }, 'shutting down');
     clearInterval(backupJob);
+    clearInterval(reportJob);
+    clearTimeout(firstReports);
     auditCheck.stop();
     stopKotPrinting();
     clearInterval(addressWatch);

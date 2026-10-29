@@ -200,6 +200,11 @@ Implemented in Sprint 5B (WP 5.7) and Phase 5 (the report engine and GST returns
 | GET | `/reports/gstr1.xlsx`, `/reports/gstr1.csv`, `/reports/gstr1/{section}.csv` | `reports.financial` | GSTR-1 in three forms:<br>• `.xlsx`: a workbook laid out like the sheets of the GST offline tool (b2b, b2cl, b2cs, cdnr, cdnur, exemp, hsn(b2b), hsn(b2c), docs, eco). Dates are dd-Mon-yyyy and places look like "19-West Bengal".<br>• `.csv`: the whole return as one CSV.<br>• `/{section}.csv`: one section's CSV, for import. `404` for an unknown section |
 | GET | `/reports/gstr3b?from=&to=` (+ `.xlsx`, `.csv`) | `reports.financial` | GSTR-3B by table:<br>• 3.1 (a) to (e).<br>• 3.1.1 (ii): supplies through operators under section 9(5).<br>• 3.2: inter-state supplies to unregistered persons.<br>• 4: input tax credit, from the books' input tax accounts. `allowed: false` when every GST line is at 5% (restaurant service without input tax credit).<br>• 5: purchases from unregistered vendors.<br>• 6.1: output tax less the input tax credit that can be used, head by head, without cross-utilisation |
 | GET | `/reports/vat-register?from=&to=` (+ `.xlsx`, `.csv`) | `reports.financial` | The liquor VAT sales register: bill by bill (credit notes negative) and by VAT rate, with surcharge |
+| GET | `/report-schedules` | `reports.export` | Scheduled reports (Phase 5), only those the caller may read. Each one is `{report: SALES|SALES_REGISTER|DAY_END|GSTR1|GSTR3B|VAT_REGISTER, frequency: DAILY|WEEKLY|MONTHLY, format: XLSX|CSV, isActive, lastPeriodTo, lastRunAt, lastError}` |
+| POST | `/report-schedules` `{report, frequency, format}` | `reports.export` | The day-end report is `DAILY` and `CSV` only (`422` otherwise). GSTR-1, GSTR-3B and the VAT register also need `reports.financial` (`403`). Every 15 minutes the Hub makes a file for each active schedule's last whole period that has none yet: the business day before, Monday to Sunday, or the calendar month. A Hub that was off catches up with the latest period only. Files are kept for 400 days |
+| PATCH | `/report-schedules/{id}` `{frequency?, format?, isActive?, version}` | `reports.export` | A new frequency starts again from the last whole period |
+| POST | `/report-schedules/{id}/run` | `reports.export` | "Make now": makes the last whole period's file (again, if it was made already) and returns it |
+| GET | `/report-files`, `/report-files/{id}/download` | `reports.export` | The newest 200 files (no paths on the Hub), and one file to download. With `RESTRO_REPORTS_COPY_DIR` set, each file is also copied to that folder |
 
 CSV files start with a byte-order mark and use CRLF so Excel shows Hindi and Bengali text. Amounts are rupees with two decimals. Text that a spreadsheet would run as a formula is prefixed with `'`.
 
@@ -304,7 +309,7 @@ Journals for bills, credit notes, payments, cancellations, GRNs, vendor payments
 
 | Phase | Group | Key endpoints |
 |---|---|---|
-| 5 | Reporting | Built: the sales report engine, GSTR-1, GSTR-3B, the VAT register and XLSX export (see Reports above). Still to do: inventory valuation, scheduled reports |
+| 5 | Reporting | Built: the sales report engine, GSTR-1, GSTR-3B, the VAT register, XLSX export and scheduled reports (see Reports above). Still to do: inventory valuation |
 | 6 | Sync | `/sync/status`, `/sync/conflicts` (+`/resolve`), `/sync/retry` · cloud side: `POST /sync/push`, `GET /sync/pull` |
 
 ## 4. Bluetooth LE interface

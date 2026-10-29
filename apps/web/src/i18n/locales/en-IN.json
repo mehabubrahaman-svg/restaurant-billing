@@ -2570,7 +2570,8 @@
       "dashboard": "Dashboard",
       "dayEnd": "Day-end",
       "sales": "Sales",
-      "gst": "GST returns"
+      "gst": "GST returns",
+      "scheduled": "Scheduled"
     },
     "export": {
       "excel": "Excel",
@@ -2731,6 +2732,49 @@
         "bills": "Liquor bills",
         "vat": "VAT",
         "surcharge": "Surcharge"
+      }
+    },
+    "scheduled": {
+      "title": "Scheduled reports",
+      "description": "The Hub makes these by itself as soon as each day, week (Monday to Sunday) or month has ended, and keeps the files here for 400 days.",
+      "add": "Make a report on a schedule",
+      "addButton": "Add schedule",
+      "added": "{report} will be made {frequency}.",
+      "report": "Report",
+      "frequency": "How often",
+      "format": "File",
+      "lastMade": "Last made",
+      "notYet": "Not yet",
+      "upTo": "Up to {date}",
+      "failed": "Last try failed",
+      "active": "On",
+      "activeNamed": "{report} on schedule",
+      "actions": "Actions",
+      "run": "Make now",
+      "runNamed": "Make {report} now",
+      "made": "Made {name}.",
+      "schedules": "Schedules",
+      "noSchedules": "No reports are scheduled yet.",
+      "files": "Files",
+      "noFiles": "No files yet. The first ones are made a few minutes after a schedule is added.",
+      "period": "Period",
+      "madeAt": "Made",
+      "bySchedule": "by the schedule",
+      "size": "Size",
+      "download": "Download",
+      "downloadNamed": "Download {name}",
+      "reports": {
+        "SALES": "Sales report",
+        "SALES_REGISTER": "Sales register",
+        "DAY_END": "Day-end report",
+        "GSTR1": "GSTR-1",
+        "GSTR3B": "GSTR-3B",
+        "VAT_REGISTER": "VAT register"
+      },
+      "frequencies": {
+        "DAILY": "Daily",
+        "WEEKLY": "Weekly",
+        "MONTHLY": "Monthly"
       }
     },
     "refresh": "Refresh",

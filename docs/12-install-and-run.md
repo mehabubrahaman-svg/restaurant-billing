@@ -144,6 +144,9 @@ Stop the Hub with **Ctrl+C**; `pnpm hub` again starts it with the same data.
   RESTRO_PORT=8080 pnpm hub
   ```
 
+- Scheduled reports (Reports → Scheduled) are kept in `reports/` in the data
+  folder. `RESTRO_REPORTS_COPY_DIR` copies each one to a second folder too,
+  for example a shared or synced folder the accountant reads.
 - A backup restore restarts the Hub; `pnpm hub` starts it again by itself.
 - After `git pull`, run `pnpm install` and `pnpm build` again. Database
   migrations apply on the next start, after an automatic backup.

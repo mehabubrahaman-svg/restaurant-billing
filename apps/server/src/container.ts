@@ -30,6 +30,7 @@ import {
   type OrderQueries,
   type PrinterTransport,
   MenuImporter,
+  ReportScheduleService,
   RoleAdminService,
   SettingsService,
   SetupService,
@@ -59,6 +60,10 @@ import {
   SqliteBillingQueries,
   SqliteReportQueries,
   SqliteGstQueries,
+  FileReportStore,
+  SqliteReportFileRepository,
+  SqliteReportScheduleRepository,
+  writeXlsx,
   FileBackupStore,
   SqliteBackupRepository,
   SqliteCouponRepository,
@@ -144,6 +149,7 @@ export interface Cradle {
   billingQueries: BillingQueries;
   reportQueries: ReportQueries;
   gstQueries: GstReturnQueries;
+  reportScheduleService: ReportScheduleService;
   billingService: BillingService;
   couponService: CouponService;
   shiftService: ShiftService;
@@ -406,6 +412,27 @@ export function buildContainer(
     ),
     reportQueries: single((c) => new SqliteReportQueries(c.db, c.calendar)),
     gstQueries: single((c) => new SqliteGstQueries(c.db)),
+    reportScheduleService: single(
+      (c) =>
+        new ReportScheduleService({
+          schedules: new SqliteReportScheduleRepository(c.db),
+          files: new SqliteReportFileRepository(c.db),
+          store: new FileReportStore({
+            dir: config.reportsDir,
+            copyDir: config.reportsCopyDir,
+            onCopyError: (error) =>
+              c.logger.warn({ err: error }, 'could not copy the report to the second folder'),
+          }),
+          reports: c.reportQueries,
+          gst: c.gstQueries,
+          settings: new SqliteSettingsRepository(c.db),
+          calendar: c.calendar,
+          xlsx: writeXlsx,
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
     billingQueries: single(
       (c) =>
         new SqliteBillingQueries(

@@ -48,6 +48,7 @@ export * from './reporting/csv';
 export * from './reporting/periods';
 export * from './reporting/workbook';
 export * from './reporting/sales-workbook';
+export * from './reporting/schedules';
 export * from './reporting/gst';
 export * from './backup/backup-service';
 export type * from './backup/ports';

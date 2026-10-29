@@ -41,6 +41,8 @@ const EnvSchema = z.object({
   RESTRO_TIMEZONE: z.string().default('Asia/Kolkata'),
   /** A second folder (USB drive, NAS share) every backup is copied to. */
   RESTRO_BACKUP_COPY_DIR: z.string().optional(),
+  /** A folder (shared or synced, for the accountant) every scheduled report is copied to. */
+  RESTRO_REPORTS_COPY_DIR: z.string().optional(),
   /** Hourly backups; turn off only for throwaway Hubs. */
   RESTRO_BACKUPS: z.enum(['on', 'off']).default('on'),
   /** Fixed setup code, for the desktop shell to display. Random when unset. */
@@ -61,6 +63,9 @@ export interface ServerConfig {
   readonly backupDir: string;
   readonly backupCopyDir: string | null;
   readonly backups: boolean;
+  /** Scheduled report files; and a second folder each is copied to. */
+  readonly reportsDir: string;
+  readonly reportsCopyDir: string | null;
   readonly migrationsDir: string | undefined;
   readonly webDist: string | undefined;
   readonly logLevel: string;
@@ -101,6 +106,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     backupDir: resolve(dataDir, 'backups'),
     backupCopyDir: e.RESTRO_BACKUP_COPY_DIR ? resolve(e.RESTRO_BACKUP_COPY_DIR) : null,
     backups: e.RESTRO_BACKUPS === 'on',
+    reportsDir: resolve(dataDir, 'reports'),
+    reportsCopyDir: e.RESTRO_REPORTS_COPY_DIR ? resolve(e.RESTRO_REPORTS_COPY_DIR) : null,
     migrationsDir: e.RESTRO_MIGRATIONS_DIR && resolve(e.RESTRO_MIGRATIONS_DIR),
     webDist: e.RESTRO_WEB_DIST && resolve(e.RESTRO_WEB_DIST),
     logLevel: e.RESTRO_LOG_LEVEL,

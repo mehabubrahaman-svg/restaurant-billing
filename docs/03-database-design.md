@@ -20,6 +20,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0013_loyalty` | `loyalty_transactions.note` (why a manager adjusted points) and indexes by customer and invoice. The program's settings are `settings` keys `loyalty.enabled`, `loyalty.earn_per_100`, `loyalty.point_value`, `loyalty.min_redeem`. Points are spent as the `LOYALTY` payment method; `customers.loyalty_points` is the ledger's cached balance |
 | `0014_gst_returns` | `sales_channels.operator_gstin`: the GSTIN of the e-commerce operator that pays the GST on the channel's orders under section 9(5), for GSTR-1 table 14 |
 | `0015_membership_tiers` | `membership_tiers`: name, lifetime spend and visits needed, points multiplier, discount. `customers.membership_tier` (since 0001) holds a tier a manager pinned; otherwise a guest's tier is worked out from `lifetime_value` and `visit_count` when it's read |
+| `0016_scheduled_reports` | `report_schedules` (report, frequency, format, the last period made, the last error) and `report_files` (one file the Hub made, under `reports/` in its data folder). Files are marked `PRUNED` after 400 days. Both tables refuse a physical DELETE |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

@@ -54,6 +54,11 @@ import {
   type AdjustLoyaltyRequest,
   ReservationSchema,
   SalesReportSchema,
+  ReportFileSchema,
+  ReportFilesResponseSchema,
+  ReportScheduleSchema,
+  ReportSchedulesResponseSchema,
+  type SaveReportScheduleRequest,
   Gstr1Schema,
   Gstr3bSchema,
   VatRegisterSchema,
@@ -399,6 +404,12 @@ export interface RefundBody {
   method: RefundMethod;
   reference?: string;
   reason: string;
+}
+export interface UpdateReportScheduleBody {
+  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  format?: 'XLSX' | 'CSV';
+  isActive?: boolean;
+  version: number;
 }
 export interface SaveMembershipTierBody {
   name?: string;
@@ -857,6 +868,19 @@ export const api = {
     loyalty: (id: string) => c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema),
     adjustLoyalty: (id: string, body: AdjustLoyaltyRequest) =>
       c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema, { method: POST, body }),
+  },
+  reportSchedules: {
+    list: () => c.json('/report-schedules', ReportSchedulesResponseSchema),
+    create: (body: SaveReportScheduleRequest) =>
+      c.json('/report-schedules', ReportScheduleSchema, { method: POST, body }),
+    update: (id: string, body: UpdateReportScheduleBody) =>
+      c.json(`/report-schedules/${id}`, ReportScheduleSchema, { method: PATCH, body }),
+    /** "Make now": the file for the last whole period. */
+    run: (id: string) => c.json(`/report-schedules/${id}/run`, ReportFileSchema, { method: POST }),
+  },
+  reportFiles: {
+    list: () => c.json('/report-files', ReportFilesResponseSchema),
+    download: (id: string) => c.blob(`/report-files/${id}/download`),
   },
   membershipTiers: {
     list: () => c.json('/membership-tiers', MembershipTiersResponseSchema),

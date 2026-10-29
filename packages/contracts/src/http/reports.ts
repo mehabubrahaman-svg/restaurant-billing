@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CalendarDateSchema, PaiseSchema } from './common';
+import { CalendarDateSchema, IdSchema, PaiseSchema } from './common';
 
 const Money = PaiseSchema;
 
@@ -187,3 +187,68 @@ export const SalesReportSchema = z.object({
   taxes: z.array(z.object({ code: z.string(), rateBp: Int, taxable: Money, tax: Money })),
 });
 export type SalesReport = z.infer<typeof SalesReportSchema>;
+
+// ---- scheduled reports (Phase 5) ----------------------------------------------------
+
+export const ScheduledReportSchema = z.enum([
+  'SALES',
+  'SALES_REGISTER',
+  'DAY_END',
+  'GSTR1',
+  'GSTR3B',
+  'VAT_REGISTER',
+]);
+export type ScheduledReport = z.infer<typeof ScheduledReportSchema>;
+export const ScheduleFrequencySchema = z.enum(['DAILY', 'WEEKLY', 'MONTHLY']);
+export const ReportFileFormatSchema = z.enum(['XLSX', 'CSV']);
+
+/** A report made by itself for the last whole day, week (Mon–Sun) or month. */
+export const ReportScheduleSchema = z.object({
+  id: IdSchema,
+  report: ScheduledReportSchema,
+  frequency: ScheduleFrequencySchema,
+  format: ReportFileFormatSchema,
+  isActive: z.boolean(),
+  /** The last period a file was made for (its last day). */
+  lastPeriodTo: CalendarDateSchema.nullable(),
+  lastRunAt: z.string().nullable(),
+  /** Why the last run failed, until one succeeds. */
+  lastError: z.string().nullable(),
+  version: z.number().int(),
+});
+export type ReportSchedule = z.infer<typeof ReportScheduleSchema>;
+export const ReportSchedulesResponseSchema = z.object({ data: z.array(ReportScheduleSchema) });
+
+/** The day-end report is one business day, as a CSV. */
+const dayEndShape = (s: { report?: string; frequency?: string; format?: string }) =>
+  s.report !== 'DAY_END' || (s.frequency === 'DAILY' && s.format === 'CSV');
+export const SaveReportScheduleRequestSchema = z
+  .object({
+    report: ScheduledReportSchema,
+    frequency: ScheduleFrequencySchema,
+    format: ReportFileFormatSchema,
+  })
+  .refine(dayEndShape, 'the day-end report is made daily, as a CSV');
+export type SaveReportScheduleRequest = z.infer<typeof SaveReportScheduleRequestSchema>;
+export const UpdateReportScheduleRequestSchema = z.object({
+  frequency: ScheduleFrequencySchema.optional(),
+  format: ReportFileFormatSchema.optional(),
+  isActive: z.boolean().optional(),
+  version: z.number().int(),
+});
+
+export const ReportFileSchema = z.object({
+  id: IdSchema,
+  scheduleId: IdSchema.nullable(),
+  report: ScheduledReportSchema,
+  periodFrom: CalendarDateSchema,
+  periodTo: CalendarDateSchema,
+  format: ReportFileFormatSchema,
+  fileName: z.string(),
+  sizeBytes: z.number().int(),
+  createdAt: z.string(),
+  /** Null: made by the schedule; else who pressed "Make now". */
+  createdBy: IdSchema.nullable(),
+});
+export type ReportFile = z.infer<typeof ReportFileSchema>;
+export const ReportFilesResponseSchema = z.object({ data: z.array(ReportFileSchema) });

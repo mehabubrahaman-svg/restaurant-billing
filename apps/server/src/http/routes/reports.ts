@@ -1,4 +1,5 @@
 import {
+  FINANCIAL_REPORTS,
   dayEndCsv,
   gstr1Workbook,
   gstr3bWorkbook,
@@ -8,11 +9,16 @@ import {
   sheetToCsv,
   vatRegisterWorkbook,
   workbookToCsv,
+  type ReportFileRecord,
   type Workbook,
 } from '@restroos/application';
 import {
   PrintRequestSchema,
   ReportRangeQuerySchema,
+  SaveReportScheduleRequestSchema,
+  UpdateReportScheduleRequestSchema,
+  type ReportFile,
+  type ScheduledReport,
   SalesReportQuerySchema,
   type Dashboard,
   type SalesReport,
@@ -25,9 +31,11 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Cradle } from '../../container';
 import { commandContext } from '../context';
+import { HttpProblem } from '../problem';
 
 const DateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const DayQuery = z.object({ date: DateString.optional() });
+const IdParams = z.object({ id: z.uuid() });
 const RangeQuery = z.object({ from: DateString, to: DateString });
 const MAX_RANGE_DAYS = 366;
 /** The report engine reads up to five years (by month or financial year). */
@@ -57,6 +65,20 @@ export function sendWorkbook(
         .header('content-disposition', disposition)
         .send(workbookToCsv(workbook));
 }
+
+/** A report file as listed: where it sits on the Hub stays on the Hub. */
+const fileView = (f: ReportFileRecord): ReportFile => ({
+  id: f.id,
+  scheduleId: f.scheduleId,
+  report: f.report,
+  periodFrom: f.periodFrom,
+  periodTo: f.periodTo,
+  format: f.format,
+  fileName: f.fileName,
+  sizeBytes: f.sizeBytes,
+  createdAt: f.createdAt,
+  createdBy: f.createdBy,
+});
 
 /** WP 5.7: day-end report, owner dashboard and CSV exports (docs/05 §2 Reports). */
 export async function reportRoutes(app: FastifyInstance, { cradle }: { cradle: Cradle }) {
@@ -227,4 +249,64 @@ export async function reportRoutes(app: FastifyInstance, { cradle }: { cradle: C
       );
     },
   );
+
+  // ---- scheduled reports (Phase 5) -------------------------------------------------
+  const EXPORT = { permission: 'reports.export' } as const;
+  const schedules = cradle.reportScheduleService;
+  /** GST returns and the VAT register also need reports.financial. */
+  const mayRead = (r: FastifyRequest, report: ScheduledReport) =>
+    !FINANCIAL_REPORTS.has(report) || r.principal!.permissions.has('reports.financial');
+  const mustRead = (r: FastifyRequest, report: ScheduledReport) => {
+    if (mayRead(r, report)) return;
+    throw new HttpProblem(
+      'FORBIDDEN',
+      'you need the reports.financial permission',
+      undefined,
+      'reports.financial',
+    );
+  };
+
+  app.get('/report-schedules', { config: EXPORT }, async (request) => ({
+    data: schedules.list(branchOf(request)).filter((s) => mayRead(request, s.report)),
+  }));
+  app.post('/report-schedules', { config: EXPORT }, async (request, reply) => {
+    const body = SaveReportScheduleRequestSchema.parse(request.body);
+    mustRead(request, body.report);
+    const schedule = schedules.create(body, commandContext(request));
+    reply.status(201);
+    return schedule;
+  });
+  app.patch('/report-schedules/:id', { config: EXPORT }, async (request) => {
+    const { id } = IdParams.parse(request.params);
+    mustRead(request, schedules.get(id, branchOf(request)).report);
+    return schedules.update(
+      id,
+      UpdateReportScheduleRequestSchema.parse(request.body),
+      commandContext(request),
+    );
+  });
+  /** "Make now": the file for the last whole period. */
+  app.post('/report-schedules/:id/run', { config: EXPORT }, async (request, reply) => {
+    const { id } = IdParams.parse(request.params);
+    mustRead(request, schedules.get(id, branchOf(request)).report);
+    const file = schedules.runNow(id, commandContext(request));
+    reply.status(201);
+    return fileView(file);
+  });
+
+  app.get('/report-files', { config: EXPORT }, async (request) => ({
+    data: schedules
+      .files(branchOf(request))
+      .filter((f) => mayRead(request, f.report))
+      .map(fileView),
+  }));
+  app.get('/report-files/:id/download', { config: EXPORT }, async (request, reply) => {
+    const { id } = IdParams.parse(request.params);
+    const { file, content } = schedules.download(id, branchOf(request));
+    mustRead(request, file.report);
+    return reply
+      .type(file.format === 'XLSX' ? XLSX : 'text/csv; charset=utf-8')
+      .header('content-disposition', `attachment; filename="${file.fileName}"`)
+      .send(Buffer.from(content));
+  });
 }
