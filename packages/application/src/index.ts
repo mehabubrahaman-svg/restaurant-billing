@@ -41,6 +41,7 @@ export * from './printing/print-service';
 export * from './printing/templates';
 export * from './ordering/channels';
 export * from './ordering/qr-ordering';
+export * from './integrations/relay';
 export * from './crm/customers';
 export * from './crm/loyalty';
 export * from './crm/membership';

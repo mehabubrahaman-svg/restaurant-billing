@@ -73,6 +73,37 @@ importers:
         specifier: 9.0.0
         version: 9.0.0(jiti@2.7.0)(postcss@8.5.32)(tsx@4.23.15)(typescript@6.0.3)
 
+  apps/relay:
+    dependencies:
+      '@restroos/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      better-sqlite3-multiple-ciphers:
+        specifier: 13.0.3
+        version: 13.0.3
+      fastify:
+        specifier: 5.12.7
+        version: 5.12.7
+      pino:
+        specifier: 10.4.0
+        version: 10.4.0
+      ws:
+        specifier: 8.22.0
+        version: 8.22.0
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/ws':
+        specifier: 8.18.2
+        version: 8.18.2
+      tsup:
+        specifier: 9.0.0
+        version: 9.0.0(jiti@2.7.0)(postcss@8.5.32)(tsx@4.23.15)(typescript@6.0.3)
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
   apps/server:
     dependencies:
       '@fastify/cookie':
@@ -115,6 +146,9 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
     devDependencies:
+      '@restroos/relay':
+        specifier: workspace:*
+        version: link:../relay
       '@types/ws':
         specifier: 8.18.2
         version: 8.18.2

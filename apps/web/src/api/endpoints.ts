@@ -55,6 +55,9 @@ import {
   ReservationSchema,
   SalesReportSchema,
   QrMenuSchema,
+  RelayOverviewSchema,
+  RelayRetryResponseSchema,
+  type SaveRelayLinkRequest,
   QrRequestStatusResponseSchema,
   QrRequestsResponseSchema,
   type SubmitQrRequest,
@@ -891,6 +894,17 @@ export const api = {
       ),
   },
   /** Guests' QR orders and calls, waiting for a captain. */
+  /** Admin → Online orders: the link to the cloud relay. */
+  integrations: {
+    relay: () => c.json('/integrations/relay', RelayOverviewSchema),
+    saveRelay: (body: SaveRelayLinkRequest) =>
+      c.json('/integrations/relay', RelayOverviewSchema, { method: PUT, body }),
+    pushMenu: () => c.void('/integrations/relay/menu', { method: POST }),
+    retry: (id: string) =>
+      c.json(`/integrations/relay/messages/${id}/retry`, RelayRetryResponseSchema, {
+        method: POST,
+      }),
+  },
   qrRequests: {
     list: () => c.json('/qr-requests', QrRequestsResponseSchema),
     accept: (id: string, fire: boolean) =>

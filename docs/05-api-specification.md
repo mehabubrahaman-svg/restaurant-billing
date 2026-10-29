@@ -227,6 +227,27 @@ Implemented in Phase 5. Contracts: `packages/contracts/src/http/qr.ts`. A table 
 
 Every change sends `floor.qr_requests.changed` to the `floor` topic. Captains see waiting requests at the top of their floor.
 
+### Online orders (cloud relay, Phase 5)
+Contracts: `packages/contracts/src/http/integrations.ts` (the Hub's API) and `packages/contracts/src/relay.ts` (the relay protocol). The relay is `apps/relay`; ADR 0007 has the design.
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/integrations/relay` | `settings.manage` | `{link (relayUrl, hubId, keySet, isEnabled, version) or null, status (OFF, CONNECTING, CONNECTED, DISCONNECTED; lastConnectedAt, lastError), counts (pendingOut, failedIn), recent}`. `recent` is the latest 50 messages |
+| PUT | `/integrations/relay` | `settings.manage` | `{relayUrl, hubId, hubKey?, isEnabled, version?}`. The key is needed the first time; leave it out later to keep it. Reconnects at once |
+| POST | `/integrations/relay/menu` | `settings.manage` | Queues the whole menu (`202`). It also goes by itself 5 s after any menu change |
+| POST | `/integrations/relay/messages/{id}/retry` | `settings.manage` | Tries a `FAILED` online order again, once staff have fixed the cause (a missing channel, a dish off the menu) |
+
+How it works:
+- The Hub connects out to `<relay>/hub?hub=<hubId>` with `Authorization: Bearer <key>`. It reconnects with backoff (1 s, doubling to 60 s) and pings every 25 s.
+- The middleware posts `{event: "order.created" | "order.cancelled", order}` to `<relay>/webhooks/<hubId>`, signed with `X-Relay-Signature: sha256=<HMAC of the body with the hub's webhook secret>`. Each event for an order is kept once.
+- Orders refer to the Hub's own menu item, size and add-on ids, because the menu the platforms show was pushed from the Hub.
+- The relay delivers each webhook until the Hub acknowledges it. The Hub handles each relay id once, and an aggregator order id once per channel.
+- A new order becomes an aggregator order (`DELIVERY`, the channel's markup), sent to the kitchen at once, entered as the "Online orders" user. That user is hidden from Admin → Users and can't sign in.
+- An order the Hub can't enter (unknown channel, unavailable dish) is acknowledged as failed. It is kept for staff, who can key it in or retry it, and the platform isn't told to reject it.
+- A cancellation from the platform cancels the order while it is still open; a billed order is left for the counter.
+- Back to the platform: `order-status` ACCEPTED when the order is entered, READY once every item is ready, CANCELLED when staff cancel it. `menu` lists active dishes in active categories, without liquor (it can't be sold through an aggregator). `availability` goes when a dish is turned off or on.
+- The relay stores everything first and forwards it to `<middleware>/<menu | availability | order-status>`. It sends `Authorization: Bearer <middleware key>` and `Idempotency-Key`, and retries failures from 5 s, doubling up to an hour, 12 times.
+
 ### Admin / platform
 `GET /audit-logs?entityType=&entityId=&actorId=` [`audit.view`] · `GET /health` (no auth: db, disk, printer, sync status)
 

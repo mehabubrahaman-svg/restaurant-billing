@@ -112,6 +112,11 @@ const CustomerDetailPage = lazy(() =>
     default: m.CustomerDetailPage,
   })),
 );
+const OnlineOrdersPage = lazy(() =>
+  import('../features/admin/online-orders/online-orders-page').then((m) => ({
+    default: m.OnlineOrdersPage,
+  })),
+);
 const MembershipPage = lazy(() =>
   import('../features/admin/membership/membership-page').then((m) => ({
     default: m.MembershipPage,
@@ -275,7 +280,8 @@ function AdminGuard({
     | 'admin.tabs.backups'
     | 'admin.tabs.channels'
     | 'admin.tabs.customers'
-    | 'admin.tabs.membership';
+    | 'admin.tabs.membership'
+    | 'admin.tabs.onlineOrders';
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -386,6 +392,7 @@ function adminRoutes(): RouteObject {
           ['coupons', 'admin.tabs.coupons', <CouponsPage key="cp" />],
           ['printers', 'admin.tabs.printers', <PrintersPage key="p" />],
           ['sales-channels', 'admin.tabs.channels', <SalesChannelsPage key="sc" />],
+          ['online-orders', 'admin.tabs.onlineOrders', <OnlineOrdersPage key="oo" />],
         ] as const
       ).map(([path, labelKey, page]) => ({
         path,

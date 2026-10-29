@@ -1442,7 +1442,8 @@
       "backups": "Backups",
       "channels": "Sales channels",
       "customers": "Customers",
-      "membership": "Membership"
+      "membership": "Membership",
+      "onlineOrders": "Online orders"
     }
   },
   "users": {
@@ -3082,6 +3083,62 @@
       "reason": "Why",
       "reasonHint": "The guest sees this on their phone.",
       "reasonShort": "Say why, in a few words."
+    }
+  },
+  "online": {
+    "title": "Online orders",
+    "description": "Swiggy, Zomato and other platforms, through an aggregator middleware and the RestroOS relay. Orders go straight to the kitchen; the menu, what’s available and each order’s status go back by themselves.",
+    "states": {
+      "CONNECTED": "Connected",
+      "CONNECTING": "Connecting…",
+      "DISCONNECTED": "Not connected",
+      "OFF": "Off"
+    },
+    "lastConnected": "Last connected {when}",
+    "pushMenu": "Send the menu now",
+    "menuQueued": "The menu will go to the platforms.",
+    "pendingOut": "{count, plural, =0 {nothing waiting to send} one {# message waiting to send} other {# messages waiting to send}}",
+    "failedIn": "{count, plural, =0 {no orders to check} one {# order couldn’t be entered} other {# orders couldn’t be entered}}",
+    "link": "Relay",
+    "relayUrl": "Relay address",
+    "relayUrlHint": "From whoever runs your relay, like wss://relay.example.com.",
+    "urlInvalid": "Starts with wss:// or https://.",
+    "hubId": "Hub ID",
+    "hubIdInvalid": "The hub ID the relay gave.",
+    "hubKey": "Hub key",
+    "keyHint": "The key the relay gave when this Hub was added.",
+    "keyKept": "A key is saved. Leave this empty to keep it.",
+    "keyInvalid": "The key is at least 16 characters.",
+    "enabled": "Take online orders",
+    "enabledHint": "Off: the Hub disconnects and online orders wait at the relay.",
+    "saved": "Saved. Connecting to the relay…",
+    "messages": "Recent messages",
+    "noMessages": "Nothing yet.",
+    "when": "When",
+    "what": "What",
+    "order": "Order",
+    "status": "Status",
+    "actions": "Actions",
+    "retry": "Try again",
+    "retried": "The order is entered.",
+    "retryFailed": "The order still couldn’t be entered.",
+    "kinds": {
+      "IN": {
+        "orderCreated": "New order",
+        "orderCancelled": "Cancelled by the platform"
+      },
+      "OUT": {
+        "menu": "Menu sent",
+        "availability": "Availability sent",
+        "orderStatus": "Order status sent"
+      }
+    },
+    "statuses": {
+      "PENDING": "Waiting",
+      "SENT": "Sent",
+      "DONE": "Done",
+      "FAILED": "Couldn’t enter",
+      "SKIPPED": "Replaced"
     }
   },
   "customers": {

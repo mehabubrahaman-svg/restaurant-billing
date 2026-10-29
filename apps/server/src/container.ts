@@ -31,6 +31,7 @@ import {
   type PrinterTransport,
   MenuImporter,
   QrOrderingService,
+  RelayIntegrationService,
   ReportScheduleService,
   RoleAdminService,
   SettingsService,
@@ -62,6 +63,7 @@ import {
   SqliteReportQueries,
   SqliteGstQueries,
   SqliteQrRequestRepository,
+  SqliteRelayRepository,
   FileReportStore,
   SqliteReportFileRepository,
   SqliteReportScheduleRepository,
@@ -106,6 +108,7 @@ import {
   uuidv7Generator,
   type SqliteDatabase,
 } from '@restroos/infrastructure';
+import { RelayClient } from './relay/relay-client';
 import { asFunction, asValue, createContainer, type AwilixContainer } from 'awilix';
 import type { Logger } from 'pino';
 import { randomInt } from 'node:crypto';
@@ -148,6 +151,8 @@ export interface Cradle {
   kitchenQueries: KitchenQueries;
   orderService: OrderService;
   qrOrderingService: QrOrderingService;
+  relayIntegrationService: RelayIntegrationService;
+  relayClient: RelayClient;
   kitchenService: KitchenService;
   billingQueries: BillingQueries;
   reportQueries: ReportQueries;
@@ -352,6 +357,29 @@ export function buildContainer(
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
+        }),
+    ),
+    relayIntegrationService: single(
+      (c) =>
+        new RelayIntegrationService({
+          relay: new SqliteRelayRepository(c.db),
+          orderService: c.orderService,
+          orders: new SqliteOrderRepository(c.db, now),
+          channels: new SqliteSalesChannelRepository(c.db),
+          catalog: new SqliteCatalogRepository(c.db),
+          settings: new SqliteSettingsRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    relayClient: single(
+      (c) =>
+        new RelayClient({
+          service: c.relayIntegrationService,
+          branchId: () =>
+            c.relayIntegrationService.links().find((l) => l.isEnabled)?.branchId ?? null,
+          logger: c.logger,
         }),
     ),
     customerService: single(

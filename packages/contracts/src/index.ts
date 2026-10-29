@@ -16,6 +16,7 @@ export * from './http/printing';
 export * from './http/reports';
 export * from './http/ordering';
 export * from './http/qr';
+export * from './http/integrations';
 export * from './http/problem';
 export * from './http/purchasing';
 export * from './http/reservations';
@@ -23,6 +24,7 @@ export * from './http/settings';
 export * from './http/setup';
 export * from './http/users';
 export * from './ws/messages';
+export * from './relay';
 
 /** Base path of the versioned REST API. */
 export const API_PREFIX = '/api/v1';

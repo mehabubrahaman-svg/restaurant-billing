@@ -82,6 +82,10 @@ export {
 } from './printing/chromium-raster';
 export { SqliteSalesChannelRepository } from './ordering/sqlite-sales-channel-repository';
 export { SqliteQrRequestRepository } from './ordering/sqlite-qr-request-repository';
+export {
+  ONLINE_ORDERS_USERNAME,
+  SqliteRelayRepository,
+} from './integrations/sqlite-relay-repository';
 export { SqliteCustomerRepository } from './crm/sqlite-customer-repository';
 export { SqliteLoyaltyRepository } from './crm/sqlite-loyalty-repository';
 export { SqliteMembershipTierRepository } from './crm/sqlite-membership-tier-repository';

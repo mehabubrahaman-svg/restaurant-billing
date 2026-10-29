@@ -15,6 +15,9 @@ restaurant-billing/
 │   │   ├── src/main/                #   main process: window, tray, auto-start, auto-update
 │   │   ├── src/preload/             #   contextBridge (printers, backup paths) — no Node in renderer
 │   │   └── electron-builder.yml     #   Windows NSIS + Linux AppImage/deb
+│   ├── relay/                       # Cloud relay (Phase 5): middleware webhooks in, Hub socket out
+│   │   ├── src/app.ts               #   webhooks (HMAC), the Hub's WebSocket, forwarding to the middleware
+│   │   └── src/store.ts             #   its own SQLite: hubs, inbox (to the Hub), outbox (to the middleware)
 │   ├── server/                      # Fastify composition root (also runnable headless as a service)
 │   │   ├── src/main.ts              #   bootstrap: config → DB → migrate → DI container → routes
 │   │   ├── src/container.ts         #   awilix registrations

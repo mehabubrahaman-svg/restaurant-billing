@@ -195,6 +195,41 @@ the Hub's address and opens full screen. CSV exports go to the share sheet.
    Safari, not the app.
 5. Shake the device to connect to another Hub.
 
+## Online orders: the cloud relay
+
+Swiggy, Zomato and other platforms reach the Hub through an aggregator
+middleware and a small relay on the internet. The restaurant opens no ports:
+the Hub connects out to the relay.
+
+1. On a small cloud server, build and start the relay (Node.js 22):
+
+   ```bash
+   pnpm install && pnpm --filter @restroos/relay build
+   ```
+
+   ```bash
+   RELAY_DATA_DIR=/var/lib/restroos-relay RELAY_PORT=7800 node apps/relay/dist/main.js
+   ```
+
+   Put it behind HTTPS (a reverse proxy such as Caddy or nginx), so the Hub
+   connects with `wss://`. Its data is one SQLite file in `RELAY_DATA_DIR`.
+2. Add the restaurant's Hub. This prints the hub id, the Hub's key, the
+   webhook URL and the webhook secret, once:
+
+   ```bash
+   RELAY_DATA_DIR=/var/lib/restroos-relay node apps/relay/dist/main.js add-hub --name "Park Street" --middleware-url https://middleware.example/restroos --middleware-key <key>
+   ```
+
+3. Give the middleware the webhook URL (`https://<relay>/webhooks/<hubId>`)
+   and the secret. It signs each order as described in
+   [docs/05](05-api-specification.md) ("Online orders").
+4. On the Hub, open **Admin → Online orders**. Enter the relay address, the
+   hub id and the key, and turn it on. The status turns to *Connected*.
+   **Send the menu now** pushes the menu with the Hub's own ids, which the
+   platforms' orders then refer to.
+5. Each platform needs an active **Admin → Sales channels** entry whose code
+   matches what the middleware sends (SWIGGY, ZOMATO …).
+
 ## Check that everything works
 
 `pnpm check` runs formatting, lint, typecheck and the unit and integration

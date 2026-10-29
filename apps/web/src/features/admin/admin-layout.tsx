@@ -1,5 +1,6 @@
 import {
   Bike,
+  Wifi,
   cn,
   Contact,
   Crown,
@@ -44,7 +45,8 @@ export interface AdminSection {
     | 'admin.tabs.backups'
     | 'admin.tabs.channels'
     | 'admin.tabs.customers'
-    | 'admin.tabs.membership';
+    | 'admin.tabs.membership'
+    | 'admin.tabs.onlineOrders';
   readonly permission: PermissionRequirement;
 }
 
@@ -93,6 +95,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     path: 'sales-channels',
     icon: Bike,
     labelKey: 'admin.tabs.channels',
+    permission: 'settings.manage',
+  },
+  {
+    path: 'online-orders',
+    icon: Wifi,
+    labelKey: 'admin.tabs.onlineOrders',
     permission: 'settings.manage',
   },
   {

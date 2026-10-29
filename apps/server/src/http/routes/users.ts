@@ -12,6 +12,7 @@ import {
   type UsersResponse,
 } from '@restroos/contracts';
 import { DomainError, type Role, type User } from '@restroos/domain';
+import { ONLINE_ORDERS_USERNAME } from '@restroos/infrastructure';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Cradle } from '../../container';
@@ -65,11 +66,12 @@ export async function userRoutes(app: FastifyInstance, { cradle }: { cradle: Cra
   // ---- users -------------------------------------------------------------
   app.get('/users', { config: MANAGE_USERS }, async (request): Promise<UsersResponse> => {
     const ids = db
-      .prepare<[], string>(
-        'SELECT id FROM users WHERE deleted_at IS NULL ORDER BY is_active DESC, full_name',
+      .prepare<[string], string>(
+        // The relay's "Online orders" user is not staff.
+        'SELECT id FROM users WHERE deleted_at IS NULL AND username <> ? ORDER BY is_active DESC, full_name',
       )
       .pluck()
-      .all();
+      .all(ONLINE_ORDERS_USERNAME);
     return { data: ids.map((id) => toUser(loadUser(id), branchOf(request))) };
   });
 

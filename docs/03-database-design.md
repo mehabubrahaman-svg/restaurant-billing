@@ -22,6 +22,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0015_membership_tiers` | `membership_tiers`: name, lifetime spend and visits needed, points multiplier, discount. `customers.membership_tier` (since 0001) holds a tier a manager pinned; otherwise a guest's tier is worked out from `lifetime_value` and `visit_count` when it's read |
 | `0016_scheduled_reports` | `report_schedules` (report, frequency, format, the last period made, the last error) and `report_files` (one file the Hub made, under `reports/` in its data folder). Files are marked `PRUNED` after 400 days. Both tables refuse a physical DELETE |
 | `0017_qr_ordering` | `qr_requests`: a guest's QR order (its items as JSON, with the names they saw), or a call for a server or the bill. It waits as `PENDING` until a captain accepts it (`order_id`), declines it (`reject_reason`) or marks it done. `client_key` is unique per table, so a resend isn't a second order. Refuses a physical DELETE |
+| `0018_relay` | `relay_links`: one per branch. Holds the relay address, hub id and key (a secret never returned by the API), and the "Online orders" user that relay orders are entered as. `relay_messages`: every message both ways. `IN` uses the relay's id, so a redelivery is handled once. `OUT` waits as `PENDING` until the relay has stored it; an older menu push still waiting becomes `SKIPPED`. Refuses a physical DELETE |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 
