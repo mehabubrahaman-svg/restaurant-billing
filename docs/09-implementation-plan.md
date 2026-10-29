@@ -69,6 +69,20 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 | 5.9 | Electron packaging (Windows NSIS, Linux AppImage/deb), auto-start service, auto-update channel |
 | 5.10 | E2E golden paths, k6 load test, pilot runbook & training guide |
 
+## After Phase 1: Stock, Purchase, Accounts, reservations, loyalty
+
+> **Status (2026-10-28)**: delivered, each phase with its backend, web portal in three languages, tests, an end-to-end golden path and screenshots. Open items are listed in `docs/HANDOFF.md` ("Known gaps").
+>
+> - **Phase 2 (Stock):** migration 0010. Items with per-branch levels, recipes for dishes, sizes and add-ons. Receipts, opening stock, wastage and adjustments through one `StockLedger` (FEFO batches, weighted average cost). Counts post what was counted against the books when the line was saved. Automatic consumption from KOTs by `InventoryProjector`, exactly once per event. Alerts for low, out, negative, expiring and over the maximum, and the consumption report with variance. Screenshots: `docs/screenshots/phase-2/`.
+> - **Phase 3 (Purchase):** migration 0011. Vendors (the GSTIN decides CGST + SGST, IGST or no credit). POs with approval, send, receive, close and cancel. GRNs from a PO or direct, posting stock and the bill. Vendor payments against a bill or on account. Statements and dues ageing. Screenshots: `docs/screenshots/phase-3/`.
+> - **Phase 4 (Accounts):** migration 0012. A chart of accounts seeded for every organisation. Automatic journals from bills, credit notes, cancellations, payments, GRNs, vendor payments and stock movements (`AccountingProjector`). Manual journals and reversals, expenses with GST, ledgers by account and party. Trial balance, P&L, balance sheet, cash flow and GST summary; the books balance to the paisa in the tests. Screenshots: `docs/screenshots/phase-4/`.
+> - **Phase 5, CRM part:** reservations for captains, shown on the floor tiles and updated live, with seating that opens the order. Loyalty points (migration 0013): earned on paid bills, spent with the POS Points tender, adjusted by managers, and given back when a bill is cancelled.
+> - **Admin → Overview** replaced the last "Coming soon" screen. It shows today's sales and the dashboard, stock needing attention, today's bookings and vendor dues. Users without `dashboard.view` go to their first Admin tab instead.
+> - **iPad/iPhone app** (`apps/ios`, ADR 0011), built and smoke-tested on GitHub Actions.
+> - **Fixed on the way:** cancelling a bill already paid in the same shift always failed. Credit sales were journaled as cash. Counts compared against the stock at posting time.
+> - **Tests:** web 357, server 135, domain 148, contracts 148, infrastructure 31, UI 32, application 5, desktop 10, spike 55. End-to-end: 8 golden paths (setup, dine-in, delivery, day-end, stock, purchase, accounts).
+> - **Still to do in Phase 5:** the report engine with PDF/XLSX and scheduled reports, GSTR-1/3B, membership tiers, QR self-ordering GA, and aggregator middleware.
+
 ## Definition of Done (every WP)
 
 - Domain logic is unit tested. Each command has an integration test that covers permission denied, happy path, and invalid state.

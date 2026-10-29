@@ -1282,6 +1282,11 @@
       "bookingsToday": "{count, plural, =0 {आज कोई बुकिंग बाकी नहीं} one {आज # बुकिंग, {guests} मेहमान} other {आज # बुकिंग, {guests} मेहमान}}",
       "nextBooking": "अगली: {time}, {name}",
       "viewBookings": "सभी आरक्षण",
+      "dues": "वेंडर बकाया",
+      "duesTotal": "वेंडरों का {amount} बकाया",
+      "duesOverdue": "{amount} समय से ऊपर, {count, plural, one {# वेंडर} other {# वेंडर}}",
+      "duesNoneOverdue": "कुछ भी समय से ऊपर नहीं।",
+      "viewDues": "उम्र के हिसाब से बकाया",
       "manage": "प्रबंधन"
     },
     "tabs": {

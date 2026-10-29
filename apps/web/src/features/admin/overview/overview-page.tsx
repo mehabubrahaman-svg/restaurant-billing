@@ -1,3 +1,4 @@
+import { Money } from '@restroos/domain';
 import {
   Button,
   CalendarDays,
@@ -7,10 +8,13 @@ import {
   Package,
   RefreshCw,
   TriangleAlert,
+  Truck,
 } from '@restroos/ui';
+import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate } from 'react-router';
+import { api } from '../../../api/endpoints';
 import { DashboardBody } from '../../../portals/reports/dashboard-page';
 import { useSession } from '../../auth/auth-store';
 import { hasPermission, usePermission } from '../../auth/permissions';
@@ -107,9 +111,41 @@ function Attention() {
   const format = useFormat();
   const canStock = usePermission('inventory.view');
   const canBookings = usePermission(['tables.view', 'reservations.manage']);
+  const canDues = usePermission(['vendors.view', 'reports.financial']);
+  const canPurchase = usePermission('vendors.view');
   const alerts = useStockAlerts(canStock);
   const reservations = useReservations(canBookings);
+  const dues = useQuery({
+    queryKey: ['purchasing', 'dues', 'today'],
+    queryFn: () => api.purchasing.dues(),
+    enabled: canDues,
+  });
   const cards: ReactNode[] = [];
+
+  if (canDues && dues.data !== undefined) {
+    const { totals, rows } = dues.data;
+    const overdue = totals.d1to30 + totals.d31to60 + totals.d61to90 + totals.over90;
+    const late = rows.filter((r) => r.d1to30 + r.d31to60 + r.d61to90 + r.over90 > 0).length;
+    cards.push(
+      <AttentionCard
+        key="dues"
+        to={canPurchase ? '/purchase/dues' : null}
+        icon={late > 0 ? TriangleAlert : Truck}
+        tone={totals.over90 > 0 ? 'danger' : 'calm'}
+        title={t('admin.overview.dues')}
+        lines={[
+          t('admin.overview.duesTotal', { amount: format.money(Money.ofPaise(totals.due)) }),
+          late > 0
+            ? t('admin.overview.duesOverdue', {
+                amount: format.money(Money.ofPaise(overdue)),
+                count: late,
+              })
+            : t('admin.overview.duesNoneOverdue'),
+        ]}
+        action={t('admin.overview.viewDues')}
+      />,
+    );
+  }
 
   if (canStock && alerts.data !== undefined) {
     const out = alerts.data.levels.filter((l) => l.level === 'OUT').length;
@@ -190,7 +226,8 @@ function AttentionCard({
   lines,
   action,
 }: {
-  to: string;
+  /** `null`: no link (the user can't open that screen). */
+  to: string | null;
   icon: typeof Package;
   tone: 'danger' | 'calm';
   title: string;
@@ -219,13 +256,15 @@ function AttentionCard({
           <li key={line}>{line}</li>
         ))}
       </ul>
-      <Link
-        to={to}
-        className="inline-flex items-center gap-1 self-start text-sm font-medium text-primary underline-offset-2 hover:underline"
-      >
-        {action}
-        <ChevronRight aria-hidden="true" className="size-4 rtl:rotate-180" />
-      </Link>
+      {to !== null && (
+        <Link
+          to={to}
+          className="inline-flex items-center gap-1 self-start text-sm font-medium text-primary underline-offset-2 hover:underline"
+        >
+          {action}
+          <ChevronRight aria-hidden="true" className="size-4 rtl:rotate-180" />
+        </Link>
+      )}
     </Card>
   );
 }

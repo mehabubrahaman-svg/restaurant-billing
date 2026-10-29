@@ -1282,6 +1282,11 @@
       "bookingsToday": "{count, plural, =0 {আজ আর কোনো বুকিং নেই} one {আজ # বুকিং, {guests} জন অতিথি} other {আজ # বুকিং, {guests} জন অতিথি}}",
       "nextBooking": "পরের: {time}, {name}",
       "viewBookings": "সব রিজার্ভেশন",
+      "dues": "ভেন্ডরের বকেয়া",
+      "duesTotal": "ভেন্ডরদের {amount} বকেয়া",
+      "duesOverdue": "{amount} মেয়াদ পেরিয়েছে, {count, plural, one {# ভেন্ডর} other {# ভেন্ডর}}",
+      "duesNoneOverdue": "কিছুই মেয়াদ পেরোয়নি।",
+      "viewDues": "বয়স অনুযায়ী বকেয়া",
       "manage": "পরিচালনা"
     },
     "tabs": {

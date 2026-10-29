@@ -1,111 +1,123 @@
 # Handoff: where the work stands
 
-Branch: `claude/nifty-shannon-ahib6j`. Phase 1 (Sprints 1–5) is complete and
-pushed; see `docs/09-implementation-plan.md` for its status notes. The owner
-asked to build **Stock (Phase 2), then Purchase (Phase 3), then Accounts
-(Phase 4)** in that order (`docs/08-roadmap.md`). The menu entries for them
-exist and show "Coming soon" (`apps/web/src/portals/portal-placeholder.tsx`).
-The database tables for all three are already in
-`database/migrations/0001_initial_schema.sql` (§6 Inventory, §10 Vendors &
-purchasing, §11 Accounting); permissions and the INVENTORY and ACCOUNTANT role
-templates exist (`packages/domain/src/identity/`).
+Branch: `claude/nifty-shannon-ahib6j`. Phases 1–4 are complete: the Core POS,
+Stock, Purchase and Accounts, each with its backend, web portal, tests and
+screenshots. So are reservations and loyalty points (Phase 5 CRM), the
+owner's Overview, and an iPad/iPhone app. No role reaches a "Coming soon"
+screen. Status notes per phase are in `docs/09-implementation-plan.md`.
 
-## Phase 2 (Stock): done so far
+## What each role has
 
-- `packages/domain/src/inventory/stock.ts` (+ tests): stock value, cost per
-  1000 base units, weighted average cost, recipe consumption with trim loss
-  and add-ons, FEFO batch allocation, stock level (OUT/LOW/OK/OVER).
-- `database/migrations/0010_inventory.sql`: `inventory_items.name_translations`,
-  `stock_counts.notes`, `projection_checkpoints` (seeded at the current
-  `domain_events` seq so old orders aren't consumed), two indexes.
-- Steps 1–5 below (backend): contracts `packages/contracts/src/http/inventory.ts`;
-  `packages/application/src/inventory/` (`InventoryService`, `StockLedger`
-  shared by every stock change, `InventoryProjector`); SQLite repository,
-  queries and `SqliteProjectionLog`; routes `apps/server/src/http/routes/inventory.ts`,
-  projector wired in `app.ts` (subscribed to `KotFired` and
-  `OrderItemCancelled`, catches up at start); tests `apps/server/src/http/inventory.test.ts`.
+| Role | Portals and features |
+|---|---|
+| Admin, Manager | Admin (Overview, menu, floor, customers with loyalty points, staff, roles, branch with loyalty settings, taxes, charges, coupons, printers, sales channels, devices, backups, audit log), plus every portal below |
+| Captain | Captain: floor (filters, takeaway and delivery, move, merge, cleaning), order pad, **reservations** (book, change, seat and take the order, cancel, no-show; bookings show on the table tiles). Customers (guest list) |
+| Cashier | POS: counter, bills, refunds, delivery, cash shift with X/Z. The **Points** tender spends a guest's loyalty points. Captain screens; reports |
+| Kitchen | KDS, out-of-stock list |
+| Inventory staff | Stock: items, stock in and out, counts, alerts, consumption. Purchase: vendors, orders, goods received |
+| Accountant | Accounts: chart, day book, manual journals, ledgers, expenses, statements (trial balance, P&L, balance sheet, cash flow, GST summary). Purchase: vendor payments and dues. Reports, audit log, Overview |
 
-## Phase 2: the plan for what's left
+`sync.manage` (Phase 6 cloud sync) is the only permission with no screen;
+nothing shows it.
 
-Units: quantities are integer milli-units of the item's base unit (g, ml,
-pc), costs are paise per 1000 base units (`units` table seeded in 0002).
+## Where things are
 
-1. **Contracts** `packages/contracts/src/http/inventory.ts` (export from
-   `index.ts`): units; inventory item (sku, name, translations, category, base
-   unit, purchase unit, perishable, shelf life, per-branch reorder/max levels,
-   stock qty, avg cost, value, level); save/update (use `patchSchema` from
-   `common.ts` for PATCH bodies); recipe `{menuItemId, variantId|null,
-   yieldPortions, ingredients[{inventoryItemId, qtyMilli, wastageBp}]}` with
-   cost per portion and food-cost %; add-on ingredients; receipts (direct
-   purchase with optional batch no. and expiry), opening stock, wastage,
-   adjustment; movements list; stock counts (draft → lines → post); alerts
-   (low/out/over, batches expiring in 3 days, negative stock); consumption
-   report (opening, received, sold, wastage, count variance, closing,
-   variance %). New problem codes in `http/problem.ts`.
-2. **Application** `packages/application/src/inventory/`: ports
-   (repositories + queries), `InventoryService` (items, recipes, add-on
-   ingredients, receipts/opening/wastage/adjustments, counts; every command
-   through `UnitOfWork.run` with `scope.audit` and `recordChanged` events,
-   like `billing/shift-service.ts`), `InventoryProjector`.
-3. **Automatic consumption** (`InventoryProjector`): reads `domain_events`
-   after its `projection_checkpoints` row, in one transaction with its writes.
-   `KotFired` (payload `itemIds` = order item ids) → for each item, recipe for
-   its variant else the item-level recipe, plus add-on ingredients →
-   `consumptionFor` → `SALE_CONSUMPTION` movements (reference
-   `ORDER_ITEM`), FEFO from batches, at average cost. `OrderItemCancelled`
-   with `wasSent` → `SALE_REVERSAL` of that item's movements; when
-   `isWastage` also a `WASTAGE` movement. Run it after each publish
-   (`eventBus.subscribe('*')`) and once at start-up; wire it in
-   `apps/server/src/http/app.ts` so tests get it too. Stock may go negative;
-   never block a sale.
-4. **Infrastructure** `packages/infrastructure/src/inventory/`: SQLite
-   repositories and queries; `inventory_stock` row updated in the same
-   transaction as each `stock_movements` insert (append-only by trigger).
-5. **Server** `apps/server/src/http/routes/inventory.ts` (`/inventory-items`,
-   `/recipes`, `/addons/{id}/ingredients`, `/stock/receipts|opening|wastage|adjustments`,
-   `/stock/movements`, `/stock-counts`, `/stock/alerts`,
-   `/reports/consumption`), container wiring, integration tests in the style
-   of `apps/server/src/http/billing.test.ts` (fixture
-   `apps/server/src/testing/restaurant.ts`). Permissions: `inventory.view`,
-   `inventory.manage_items`, `inventory.adjust`, `inventory.count`,
-   `reports.inventory`.
-6. **Web** `apps/web/src/portals/inventory/` replacing the placeholder: items
-   with levels, recipe editor on menu items, receive/opening/wastage forms,
-   stock count sheet, alerts, consumption report. Three languages; follow
-   `portals/pos` patterns and tests.
-7. Docs: `docs/03` (migration 0010), `docs/05` (Inventory section), `docs/09`
-   status; screenshots in `docs/screenshots/phase-2/`; extend `e2e/`.
+- **Stock:** `packages/application/src/inventory/` (`InventoryService`,
+  `StockLedger`, `InventoryProjector`), routes `apps/server/src/http/routes/inventory.ts`,
+  web `apps/web/src/portals/inventory/`.
+- **Purchase:** `packages/application/src/purchasing/`, routes `purchasing.ts`,
+  web `apps/web/src/portals/purchase/`.
+- **Accounts:** `packages/application/src/accounting/` (`AccountingService`,
+  `AccountingProjector`, `JournalWriter`), routes `accounting.ts`, web
+  `apps/web/src/portals/accounts/`. The test server fails any test in which a
+  projector skipped an event.
+- **Reservations:** `packages/application/src/floor/reservation-service.ts`,
+  routes `reservations.ts`, web `apps/web/src/portals/captain/reservations-page.tsx`.
+  Live updates use the `floor.reservations.changed` WebSocket message.
+- **Loyalty:** `packages/domain/src/crm/loyalty.ts` (the rules),
+  `packages/application/src/crm/loyalty.ts` (`LoyaltyService`, used inside
+  billing transactions), migration `0013_loyalty.sql`. Web: Admin → Branch
+  (settings), Admin → Customers (balance, history, adjust), and the POS
+  payment pad (Points tender).
+- **Overview:** `apps/web/src/features/admin/overview/overview-page.tsx`.
+- **iOS app:** `apps/ios` (SwiftUI WKWebView shell, ADR 0011),
+  `.github/workflows/ios.yml`; see `apps/ios/README.md`.
+- **Windows/Linux Hub:** `apps/desktop`, `.github/workflows/desktop.yml`.
 
-Then Phase 3 (vendors, PO → approval → GRN posts `PURCHASE` movements and
-batches, vendor payments, dues ageing). **Phase 3 backend is done**:
-migration `0011_purchasing.sql` (PO sent/cancel columns, GRN due date, notes,
-`input_tax_kind`, draft-only GRN line deletes, indexes); domain
-`packages/domain/src/purchasing/purchase.ts` (line amounts, PO status flow,
-unit conversion, input-tax kind, dues ageing); contracts
-`packages/contracts/src/http/purchasing.ts`; `PurchasingService` (GRN posting
-goes through the shared `StockLedger`); SQLite repository and queries; routes
-`apps/server/src/http/routes/purchasing.ts`; tests
-`apps/server/src/http/purchasing.test.ts`. Its web portal (`/purchase`) is
-still the placeholder.
+## Releases
 
-**Phase 4 backend is done**: migration `0012_accounting.sql` (chart template
-seeded for every organisation, also by a trigger on new ones; journal tables
-rebuilt so system postings have no user, a `STOCK` source type and one
-original entry per document; expense reference and cancel reason); domain
-`packages/domain/src/accounting/journal.ts`; contracts
-`packages/contracts/src/http/accounting.ts`; `AccountingService` (chart,
-manual journals and reversals, expenses, ledgers, statements),
-`AccountingProjector` (bills, credit notes, cancellations, payments, GRNs,
-vendor payments from events; stock from a cursor over `stock_movements`),
-`JournalWriter`; SQLite repository, posting sources and queries; routes
-`apps/server/src/http/routes/accounting.ts`; tests
-`apps/server/src/http/accounting.test.ts`. The test server fails any test in
-which a projector skipped an event. Its web portal (`/accounts`) is still the
-placeholder.
+- **Windows and Linux installers:** push a tag `hub-v<version>` (the version
+  in `apps/desktop/package.json`), or run **Desktop installers** from the
+  Actions tab. The artifacts are `restroos-hub-Windows` and
+  `restroos-hub-Linux`.
+- **iOS:** every push that changes `apps/ios` builds it; tag `ios-v<version>`
+  for a release. The artifact `restroos-ios` holds the unsigned `.ipa` (to
+  sideload) and, once the signing secrets are set, a signed one.
 
-Phase 4 scope as planned: (chart of accounts,
-automatic journals from sales, purchases, payments and COGS, ledgers, P&L,
-balance sheet, cash flow, GST summaries).
+## Known gaps (not fixed)
+
+**Stock and accounts**
+- Receipts and opening stock are journaled at the rounded unit cost, which is
+  out by under 0.5 paise per kg.
+- No revaluation is posted for negative stock.
+- On first start, the accounting projector journals all history in one go
+  (synchronously).
+- Migration 0012's copy step works only on empty tables (true everywhere so far).
+
+**Purchase**
+- GRNs aren't checked against the PO's quantity or price, so the approval can
+  be bypassed.
+- `po.create` can cancel or close an approved PO.
+- A direct receipt (Stock → Received) credits Cash under `inventory.adjust`.
+
+**Billing, customers and loyalty**
+- A credit sale without a phone number has no customer party, so it can't be
+  followed on a customer ledger.
+- A cancelled bill's reversal is dated on the bill's own day.
+- The GST summary reads the current `tax_groups.tax_type`.
+- Expense "paid from" also accepts untagged asset accounts.
+- Refunds by credit note don't take back earned loyalty points.
+- Cancelling a paid bill doesn't undo the visit count.
+- Points earned aren't a liability in the books; they post to Sales returns
+  only when spent.
+- Aggregator settlement isn't posted.
+
+**Ordering and stock consumption**
+- Deducting stock at invoice, instead of at KOT, isn't built.
+- Cancelling a whole order leaves its consumption in place.
+
+**Data the Hub returns in English**
+- These come back in English and the web rebuilds or shows them as they are:
+  stock-movement and journal narrations, vendor statement descriptions, and
+  ingredient names other than on stock items.
+- `/reports/consumption` needs explicit dates.
+- A receipt's bill reference isn't stored on its movements.
+- A posted count's lines and its total can differ by a paisa.
+
+**Permissions**
+- A custom role with `po.create` but neither `inventory.view` nor
+  `menu.manage` can't pick items.
+- The Accountant role can't search customers in the party ledger.
+- Manual journal lines have no party picker, though the contract supports one.
+- Vendor payments can't be edited or refunded.
+
+**Apps**
+- The iOS app is unsigned until an Apple Developer account's secrets are added.
+- Scanning a pairing QR with the iPad camera pairs Safari, not the app; type
+  the code instead.
+
+## Next (docs/08-roadmap.md)
+
+1. **Phase 1.5:** BLE command channel for the Wi-Fi-down mode, and the
+   Capacitor Android app.
+2. **Phase 5, still to do:**
+   - the report engine (daily, weekly, monthly and annual) with PDF/XLSX
+     export and scheduled reports;
+   - the GSTR-1/3B returns and the liquor VAT registers;
+   - membership tiers;
+   - general availability of QR self-ordering;
+   - the cloud relay and aggregator middleware.
+3. **Phase 6:** cloud sync and multi-branch (`sync.manage`); **Phase 7:** AI.
 
 ## Checks before every commit
 
@@ -121,5 +133,7 @@ pnpm db:validate
 pnpm --filter @restroos/e2e test:e2e
 ```
 
-(The end-to-end run needs `pnpm build` first and Chromium:
-`pnpm --filter @restroos/e2e exec playwright install chromium`.)
+The end-to-end run needs `pnpm build` first and Chromium
+(`pnpm --filter @restroos/e2e exec playwright install chromium`). On a busy
+machine, run the unit tests one package at a time
+(`pnpm turbo run test --concurrency=1`).

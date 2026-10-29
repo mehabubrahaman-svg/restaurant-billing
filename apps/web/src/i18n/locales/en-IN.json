@@ -1416,6 +1416,11 @@
       "bookingsToday": "{count, plural, =0 {No bookings left today} one {# booking today, {guests} guests} other {# bookings today, {guests} guests}}",
       "nextBooking": "Next: {time}, {name}",
       "viewBookings": "All reservations",
+      "dues": "Vendor dues",
+      "duesTotal": "{amount} owed to vendors",
+      "duesOverdue": "{amount} overdue, {count, plural, one {# vendor} other {# vendors}}",
+      "duesNoneOverdue": "Nothing overdue.",
+      "viewDues": "Dues by age",
       "manage": "Manage"
     },
     "tabs": {
