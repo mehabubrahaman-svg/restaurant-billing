@@ -156,6 +156,28 @@ nothing shows it.
 - Scanning a pairing QR with the iPad camera pairs Safari, not the app; type
   the code instead.
 
+## Waiting on the owner (2026-10-28)
+
+- **A release.** Nothing has been released since 0.2.0: Phase 5 is on the branch only. If the owner asks, do the 0.3.0 release:
+  - bump `apps/desktop/package.json` and the version in docs/12;
+  - push the tags `hub-v0.3.0` and `ios-v0.3.0` (see Releases above).
+- **Online orders going live.** This needs an aggregator middleware account (UrbanPiper, for example) and a small cloud server for the relay. Then write an adapter from that provider's webhook and API format to `packages/contracts/src/relay.ts`.
+- **GSTR-1.** Check the workbook's column headings against the current GST offline tool before the first filing.
+- **Hub on an Android tablet.** The owner asked; the answer was not today, since the Hub is Node with a native SQLite library, and Android stops background apps. The options given:
+  - Termux, for a demo only;
+  - a real Android Hub app (nodejs-mobile, a foreground service, starting on boot), as new work after Phase 5 of about a week or more;
+  - a small always-on PC or a Raspberry Pi 4/5 running from source (recommended). The published Linux installer is x64 only.
+
+  Waiting for the owner to choose.
+
+## Working notes for the next session
+
+- CI (`ci.yml`) runs only on `main` and pull requests. Pushes to this branch aren't checked on GitHub, so the local checks below are the gate. The desktop and iOS workflows run on their tags and paths.
+- **Locale files:** add keys as text, never by a `JSON.parse`/`JSON.stringify` round trip. The round trip moves integer-like keys, such as the state codes ("19"), to the front of their object. Check for duplicate keys afterwards.
+- **Flaky tests:** under full-suite load, a few web tests can time out (device pairing, the recipe section). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
+- **Relay tests:** both the relay's own tests and the Hub's `relay.test.ts` run a real relay and WebSocket on 127.0.0.1, on a random port.
+- **Migrations:** 0014 to 0018 were added in Phase 5. Every new business table has a no-delete trigger, as in 0004.
+
 ## Next (docs/08-roadmap.md)
 
 1. **Phase 1.5:** BLE command channel for the Wi-Fi-down mode, and the
