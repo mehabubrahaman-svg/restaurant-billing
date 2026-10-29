@@ -7,7 +7,8 @@ type Row = Omit<SalesChannelRecord, 'gstPaidByOperator' | 'isActive'> & {
   isActive: number;
 };
 const COLUMNS = `id, code, name, kind, integration, commission_bp AS commissionBp, price_markup_bp AS priceMarkupBp,
-                 gst_paid_by_operator AS gstPaidByOperator, is_active AS isActive, version`;
+                 gst_paid_by_operator AS gstPaidByOperator, operator_gstin AS operatorGstin,
+                 is_active AS isActive, version`;
 const toRecord = (r: Row): SalesChannelRecord => ({
   ...r,
   gstPaidByOperator: r.gstPaidByOperator === 1,
@@ -44,8 +45,8 @@ export class SqliteSalesChannelRepository implements SalesChannelRepository {
     this.db
       .prepare(
         `INSERT INTO sales_channels (id, organization_id, code, name, kind, integration, commission_bp, price_markup_bp,
-                                     gst_paid_by_operator, is_active, created_at, updated_at, version)
-         VALUES (?, (SELECT id FROM organizations LIMIT 1), ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+                                     gst_paid_by_operator, operator_gstin, is_active, created_at, updated_at, version)
+         VALUES (?, (SELECT id FROM organizations LIMIT 1), ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
       )
       .run(
         r.id,
@@ -56,6 +57,7 @@ export class SqliteSalesChannelRepository implements SalesChannelRepository {
         r.commissionBp,
         r.priceMarkupBp,
         r.gstPaidByOperator ? 1 : 0,
+        r.operatorGstin,
         at.toISOString(),
         at.toISOString(),
         r.version,
@@ -66,7 +68,7 @@ export class SqliteSalesChannelRepository implements SalesChannelRepository {
     const result = this.db
       .prepare(
         `UPDATE sales_channels SET code = ?, name = ?, kind = ?, commission_bp = ?, price_markup_bp = ?,
-                gst_paid_by_operator = ?, is_active = ?, updated_at = ?, version = ?
+                gst_paid_by_operator = ?, operator_gstin = ?, is_active = ?, updated_at = ?, version = ?
           WHERE id = ? AND version = ?`,
       )
       .run(
@@ -76,6 +78,7 @@ export class SqliteSalesChannelRepository implements SalesChannelRepository {
         r.commissionBp,
         r.priceMarkupBp,
         r.gstPaidByOperator ? 1 : 0,
+        r.operatorGstin,
         r.isActive ? 1 : 0,
         at.toISOString(),
         r.version,

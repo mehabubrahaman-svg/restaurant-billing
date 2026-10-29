@@ -33,6 +33,8 @@ import { QueryState } from '../query-state';
 type Kind = NonNullable<SaveSalesChannelBody['kind']>;
 const KINDS: readonly Kind[] = ['AGGREGATOR', 'OWN_ONLINE'];
 const CODE = /^[A-Z0-9_]{2,20}$/;
+/** The Hub's check on an operator's GSTIN (15 characters, state code first). */
+const OPERATOR_GSTIN = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z][A-Z0-9][0-9A-Z]$/;
 
 /** /admin/sales-channels: Swiggy, Zomato and other channels, with their commission and pricing. */
 export function SalesChannelsPage() {
@@ -138,6 +140,7 @@ interface Errors {
   name?: string;
   commission?: string;
   markup?: string;
+  gstin?: string;
 }
 
 function ChannelDialog({
@@ -160,6 +163,7 @@ function ChannelDialog({
   );
   const [markup, setMarkup] = useState(channel === null ? '' : bpToPercent(channel.priceMarkupBp));
   const [operatorGst, setOperatorGst] = useState(channel?.gstPaidByOperator ?? true);
+  const [gstin, setGstin] = useState(channel?.operatorGstin ?? '');
   const [active, setActive] = useState(channel?.isActive ?? true);
   const [errors, setErrors] = useState<Errors>({});
 
@@ -195,6 +199,10 @@ function ChannelDialog({
     if (name.trim().length < 2 || name.trim().length > 60) found.name = t('channels.nameInvalid');
     if (commissionBp === null) found.commission = t('channels.percentInvalid');
     if (markupBp === null) found.markup = t('channels.percentInvalid');
+    const cleanGstin = gstin.trim().toUpperCase();
+    if (operatorGst && cleanGstin !== '' && !OPERATOR_GSTIN.test(cleanGstin)) {
+      found.gstin = t('channels.gstinInvalid');
+    }
     setErrors(found);
     if (Object.keys(found).length > 0 || commissionBp === null || markupBp === null) return;
     save.mutate({
@@ -204,6 +212,7 @@ function ChannelDialog({
       commissionBp,
       priceMarkupBp: markupBp,
       gstPaidByOperator: operatorGst,
+      operatorGstin: operatorGst && cleanGstin !== '' ? cleanGstin : null,
     });
   }
 
@@ -318,6 +327,23 @@ function ChannelDialog({
           checked={operatorGst}
           onCheckedChange={setOperatorGst}
         />
+        {operatorGst && (
+          <Field
+            label={t('channels.gstinLabel')}
+            hint={t('channels.gstinHint')}
+            error={errors.gstin}
+          >
+            {(p) => (
+              <Input
+                {...p}
+                autoComplete="off"
+                maxLength={15}
+                value={gstin}
+                onChange={(e) => setGstin(e.target.value)}
+              />
+            )}
+          </Field>
+        )}
         {channel !== null && (
           <Switch label={t('common.active')} checked={active} onCheckedChange={setActive} />
         )}

@@ -17,6 +17,7 @@ import {
   ShiftService,
   type BillingQueries,
   type ReportQueries,
+  type GstReturnQueries,
   BackupService,
   type HubLifecycle,
   DeviceService,
@@ -56,6 +57,7 @@ import {
   SqlitePostingSources,
   SqliteBillingQueries,
   SqliteReportQueries,
+  SqliteGstQueries,
   FileBackupStore,
   SqliteBackupRepository,
   SqliteCouponRepository,
@@ -138,6 +140,7 @@ export interface Cradle {
   kitchenService: KitchenService;
   billingQueries: BillingQueries;
   reportQueries: ReportQueries;
+  gstQueries: GstReturnQueries;
   billingService: BillingService;
   couponService: CouponService;
   shiftService: ShiftService;
@@ -388,6 +391,7 @@ export function buildContainer(
         }),
     ),
     reportQueries: single((c) => new SqliteReportQueries(c.db, c.calendar)),
+    gstQueries: single((c) => new SqliteGstQueries(c.db)),
     billingQueries: single(
       (c) =>
         new SqliteBillingQueries(

@@ -4,10 +4,11 @@ import {
   DayEndReportSchema,
   FireKotsResponseSchema,
   InvoiceSchema,
+  SalesReportSchema,
 } from '@restroos/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
 import { restaurantServer } from '../testing/restaurant';
-import { signInAs } from '../testing/staff';
+import { caller, signInAs } from '../testing/staff';
 import type { TestServer } from '../testing/test-server';
 
 let s: TestServer | undefined;
@@ -176,6 +177,119 @@ describe('reports', () => {
 
     const tooLong = await admin('GET', '/reports/sales-register.csv?from=2025-01-01&to=2026-10-31');
     expect(tooLong.json().code).toBe('VALIDATION_FAILED');
+  });
+
+  it('reports any range by day, week, month or year, and exports it as XLSX and CSV', async () => {
+    const r = await dayOfTrade();
+    const { s, openAt, tables, menu } = r;
+    // The next business day: one naan on T3 (₹63 with GST). A day on, the owner signs in again.
+    s.clock.advance(86_400_000);
+    const admin = caller(s, (await s.login()).accessToken);
+    const next = await openAt(admin, tables.t3.id, 1);
+    await admin('POST', `/orders/${next.id}/items`, {
+      items: [{ menuItemId: menu.naan.id, quantity: 1 }],
+    });
+    await admin('POST', `/orders/${next.id}/kots`);
+    const bill = BillResponseSchema.parse(
+      (await admin('POST', `/orders/${next.id}/invoice`, {})).json(),
+    ).invoices[0]!;
+    await admin('POST', `/invoices/${bill.id}/payments`, {
+      payments: [{ method: 'UPI', amount: bill.grandTotal, reference: 'RRN77' }],
+    });
+
+    const byDay = SalesReportSchema.parse(
+      (await admin('GET', '/reports/sales?from=2026-10-26&to=2026-11-01&groupBy=day')).json(),
+    );
+    expect(byDay.periods).toHaveLength(7);
+    expect(byDay.periods.find((p) => p.key === '2026-10-28')).toMatchObject({
+      invoices: 2,
+      total: 114000,
+      refunds: 6300,
+      net: 107700,
+      orders: 3,
+      covers: 5,
+    });
+    expect(byDay.periods.find((p) => p.key === '2026-10-29')).toMatchObject({
+      invoices: 1,
+      total: 6300,
+      net: 6300,
+    });
+    expect(byDay.totals).toMatchObject({
+      invoices: 3,
+      total: 120300,
+      refunds: 6300,
+      net: 114000,
+      averageBill: 40100,
+    });
+    // Breakdowns over the whole range.
+    expect(byDay.orderTypes.find((t) => t.orderType === 'DELIVERY')).toMatchObject({
+      orders: 1,
+      sales: 13200,
+    });
+    expect(byDay.payments.map((p) => p.method)).toEqual(['CARD', 'CASH', 'AGGREGATOR', 'UPI']);
+    expect(byDay.items.find((i) => i.name === 'Butter Naan')).toMatchObject({ quantity: 7 });
+    expect(byDay.categories.reduce((n, c) => n + c.amount, 0)).toBe(
+      byDay.items.reduce((n, i) => n + i.amount, 0),
+    );
+    expect(byDay.staff[0]).toMatchObject({ name: 'Ananya Sen', bills: 3, billed: 120300 });
+    expect(byDay.hourly.reduce((n, h) => n + h.invoices, 0)).toBe(3);
+    // Bills at 12:00 UTC are at 17:00 in India.
+    expect(byDay.hourly.map((h) => h.hour)).toEqual([17]);
+    expect(byDay.weekdays.map((d) => d.weekday)).toEqual([3, 4]);
+
+    const byWeek = SalesReportSchema.parse(
+      (await admin('GET', '/reports/sales?from=2026-10-26&to=2026-11-01&groupBy=week')).json(),
+    );
+    expect(byWeek.periods).toEqual([
+      expect.objectContaining({
+        key: '2026-10-26',
+        from: '2026-10-26',
+        to: '2026-11-01',
+        net: 114000,
+      }),
+    ]);
+    const byMonth = SalesReportSchema.parse(
+      (await admin('GET', '/reports/sales?from=2026-10-01&to=2026-11-30&groupBy=month')).json(),
+    );
+    expect(byMonth.periods.map((p) => [p.key, p.net])).toEqual([
+      ['2026-10', 114000],
+      ['2026-11', 0],
+    ]);
+    const byYear = SalesReportSchema.parse(
+      (await admin('GET', '/reports/sales?from=2025-04-01&to=2027-03-31&groupBy=year')).json(),
+    );
+    expect(byYear.periods.map((p) => [p.key, p.net])).toEqual([
+      ['2025-26', 0],
+      ['2026-27', 114000],
+    ]);
+
+    const xlsx = await admin('GET', '/reports/sales.xlsx?from=2026-10-26&to=2026-11-01');
+    expect(xlsx.headers['content-type']).toBe(
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    expect(xlsx.headers['content-disposition']).toContain(
+      'sales-2026-10-26-to-2026-11-01-by-day.xlsx',
+    );
+    expect(xlsx.rawPayload.subarray(0, 4).toString('hex')).toBe('504b0304');
+    const csv = await admin('GET', '/reports/sales.csv?from=2026-10-26&to=2026-11-01');
+    expect(csv.body).toContain('\r\nNet sales,1140.00\r\n');
+    expect(csv.body).toContain('\r\nTotal,,3,4,6,');
+    const register = await admin(
+      'GET',
+      '/reports/sales-register.xlsx?from=2026-10-01&to=2026-10-31',
+    );
+    expect(register.statusCode).toBe(200);
+
+    expect((await admin('GET', '/reports/sales?from=2020-01-01&to=2026-10-31')).json().code).toBe(
+      'VALIDATION_FAILED',
+    );
+    expect((await admin('GET', '/reports/sales?from=2026-10-31&to=2026-10-01')).json().code).toBe(
+      'VALIDATION_FAILED',
+    );
+    const captain = await signInAs(s, admin, 'CAPTAIN', 'rahul');
+    expect((await captain('GET', '/reports/sales?from=2026-10-01&to=2026-10-31')).statusCode).toBe(
+      403,
+    );
   });
 
   it("shows the owner today's numbers and the last two weeks; staff without rights can't see it", async () => {

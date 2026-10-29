@@ -219,6 +219,8 @@ export const SalesChannelSchema = z.object({
   priceMarkupBp: z.number().int(),
   /** CGST Act s.9(5): the operator pays the GST, so the bill charges none. */
   gstPaidByOperator: z.boolean(),
+  /** The operator's GSTIN, listed in GSTR-1 table 14. */
+  operatorGstin: z.string().nullable().default(null),
   isActive: z.boolean(),
   version: Version,
 });
@@ -236,6 +238,13 @@ export const SaveSalesChannelRequestSchema = z.object({
   commissionBp: z.number().int().min(0).max(10_000).default(0),
   priceMarkupBp: z.number().int().min(0).max(10_000).default(0),
   gstPaidByOperator: z.boolean().default(true),
+  operatorGstin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z][A-Z0-9][0-9A-Z]$/, 'a 15-character GSTIN')
+    .nullable()
+    .default(null),
 });
 export const UpdateSalesChannelRequestSchema = patchSchema(SaveSalesChannelRequestSchema).extend({
   version: Version,

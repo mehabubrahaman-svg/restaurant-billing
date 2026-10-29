@@ -61,6 +61,7 @@ export {
   Info,
   KeyRound,
   Keyboard,
+  Landmark,
   LayoutDashboard,
   LayoutGrid,
   Link,

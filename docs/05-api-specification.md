@@ -175,8 +175,8 @@ Implemented in Sprint 5B (WP 5.6). Contracts: `packages/contracts/src/http/custo
 
 `GET /customers?q=` (phone or name) [`customers.view`, `customers.manage` or `billing.create`] · `GET /customers/{id}` (visits, lifetime value, recent bills) · `POST /customers` · `PATCH /customers/{id}` [`customers.manage`]. Indian mobile numbers are stored as `+91XXXXXXXXXX`. Giving `customer.phone` on a bill finds or creates the customer; a visit and the amount are added when the order is paid, and a refund lowers the lifetime value. Loyalty points: `GET /customers/{id}/loyalty` (balance, the latest 100 entries, the branch's program) [same as viewing] · `POST /customers/{id}/loyalty` `{points (signed), note}` [`loyalty.adjust`]; the balance can't go below zero (`409 LOYALTY_INSUFFICIENT`). With points on (Admin → Branch: `loyaltyEnabled`, `loyaltyEarnPer100`, `loyaltyPointValue` in paise, `loyaltyMinRedeem`), a guest on the bill earns points per whole ₹100 paid (not counting points or an aggregator) when the order is paid, and spends them with the `LOYALTY` payment method: whole points, at least the minimum, within the balance (`409 LOYALTY_INSUFFICIENT`, `409 LOYALTY_DISABLED`). Cancelling the bill in the same shift gives the spent points back and takes the earned ones away. Refunds by credit note don't change points. Points are posted as Sales returns when spent.
 
-### Reports (Phase 1 subset)
-Implemented in Sprint 5B (WP 5.7). Contracts: `packages/contracts/src/http/reports.ts`.
+### Reports
+Implemented in Sprint 5B (WP 5.7) and Phase 5 (the report engine and GST returns). Contracts: `packages/contracts/src/http/reports.ts`, `gst.ts`.
 
 | Method | Path | Perm | Notes |
 |---|---|---|---|
@@ -185,8 +185,19 @@ Implemented in Sprint 5B (WP 5.7). Contracts: `packages/contracts/src/http/repor
 | GET | `/reports/day-end.csv?date=` | `reports.export` | The same as one CSV of labelled sections |
 | GET | `/reports/sales-register.csv?from=&to=` | `reports.export` | Every invoice and credit note in the range (up to 366 days) with CGST, SGST, IGST, VAT per row; credit notes negative. For the accountant's GSTR-1 and VAT returns |
 | GET | `/reports/dashboard` | `reports.sales` or `dashboard.view` (Admin → Overview) | Net sales, bills, covers and average bill for today, the month and the financial year (from 1 April); the last 14 days; today's payment mix; the month's top items; kitchen pending/late/average; open orders and tables |
+| GET | `/reports/sales?from=&to=&groupBy=day\|week\|month\|year` | `reports.sales` | The report engine: any range of business dates, up to 1,830 days. Gives the totals and one row per period. Weeks start on Monday and years are financial years from 1 April; periods are clipped to the range. Each row has bills, orders, guests, gross, discounts, charges, taxable, tax, round-off, total, credit notes, net and average bill. Over the whole range it also gives: order types; sales channels (with commission and net revenue); payments; categories; every item sold (up to 1,000); sales by hour (branch time) and by weekday; staff (orders taken as captain and their sales, bills made as cashier); discounts by kind; taxes by code and rate |
+| GET | `/reports/sales.xlsx`, `/reports/sales.csv` (same query) | `reports.export` | The sales report as a workbook (Summary, By period, Order types, Channels, Payments, Categories, Items, Hours, Weekdays, Staff, Discounts, Taxes) or as one CSV of those sections |
+| GET | `/reports/sales-register.xlsx?from=&to=` | `reports.export` | The sales register as a workbook |
+| GET | `/reports/gstr1?from=&to=` | `reports.financial` | GSTR-1 for up to 366 days, by table:<br>• B2B (4A): by invoice and rate.<br>• B2CL (5): inter-state B2C bills above ₹1,00,000.<br>• B2CS (7): by place of supply and rate, net of B2C credit notes.<br>• CDNR and CDNUR (9B): credit notes.<br>• Table 8: nil-rated, exempt and non-GST supplies; liquor is non-GST.<br>• HSN summary (12): split B2B and B2C, net of credit notes. Lines without a code, and charges, count as SAC 996331; services use UQC NA.<br>• Documents issued (13): per series, with cancelled ones counted.<br>• Table 14: supplies through e-commerce operators who pay the GST under section 9(5), by the channel's `operatorGstin` |
+| GET | `/reports/gstr1.xlsx`, `/reports/gstr1.csv`, `/reports/gstr1/{section}.csv` | `reports.financial` | GSTR-1 in three forms:<br>• `.xlsx`: a workbook laid out like the sheets of the GST offline tool (b2b, b2cl, b2cs, cdnr, cdnur, exemp, hsn(b2b), hsn(b2c), docs, eco). Dates are dd-Mon-yyyy and places look like "19-West Bengal".<br>• `.csv`: the whole return as one CSV.<br>• `/{section}.csv`: one section's CSV, for import. `404` for an unknown section |
+| GET | `/reports/gstr3b?from=&to=` (+ `.xlsx`, `.csv`) | `reports.financial` | GSTR-3B by table:<br>• 3.1 (a) to (e).<br>• 3.1.1 (ii): supplies through operators under section 9(5).<br>• 3.2: inter-state supplies to unregistered persons.<br>• 4: input tax credit, from the books' input tax accounts. `allowed: false` when every GST line is at 5% (restaurant service without input tax credit).<br>• 5: purchases from unregistered vendors.<br>• 6.1: output tax less the input tax credit that can be used, head by head, without cross-utilisation |
+| GET | `/reports/vat-register?from=&to=` (+ `.xlsx`, `.csv`) | `reports.financial` | The liquor VAT sales register: bill by bill (credit notes negative) and by VAT rate, with surcharge |
 
-CSV files start with a byte-order mark and use CRLF so Excel shows Hindi and Bengali text; amounts are rupees with two decimals; text that a spreadsheet would run as a formula is prefixed with `'`. PDF and XLSX exports wait until an owner asks for them (each would add a dependency).
+CSV files start with a byte-order mark and use CRLF so Excel shows Hindi and Bengali text. Amounts are rupees with two decimals. Text that a spreadsheet would run as a formula is prefixed with `'`.
+
+The Hub writes XLSX files itself (`packages/infrastructure/src/reporting/xlsx.ts`), with no dependency. Numbers are stored as numbers, the header and totals are bold, and the header row is frozen.
+
+PDF comes from the browser: print and choose "Save as PDF". This keeps Hindi and Bengali text correct.
 
 ### Public QR ordering (no auth, rate-limited)
 `GET /public/qr/{qrToken}/menu` · `POST /public/qr/{qrToken}/orders` → order in `PENDING_APPROVAL`, captain notified to confirm.
@@ -285,7 +296,7 @@ Journals for bills, credit notes, payments, cancellations, GRNs, vendor payments
 
 | Phase | Group | Key endpoints |
 |---|---|---|
-| 5 | Reporting | `/reports/{sales\|items\|tax\|gstr1\|inventory-valuation}`, PDF/XLSX export, scheduled reports |
+| 5 | Reporting | Built: the sales report engine, GSTR-1, GSTR-3B, the VAT register and XLSX export (see Reports above). Still to do: inventory valuation, scheduled reports |
 | 6 | Sync | `/sync/status`, `/sync/conflicts` (+`/resolve`), `/sync/retry` · cloud side: `POST /sync/push`, `GET /sync/pull` |
 
 ## 4. Bluetooth LE interface

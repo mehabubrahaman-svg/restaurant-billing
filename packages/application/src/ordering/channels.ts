@@ -17,6 +17,8 @@ export interface SalesChannelRecord {
   priceMarkupBp: number;
   /** CGST Act s.9(5): the operator pays GST on restaurant food sold through it. */
   gstPaidByOperator: boolean;
+  /** The operator's GSTIN, for GSTR-1 table 14 (supplies through e-commerce operators). */
+  operatorGstin: string | null;
   isActive: boolean;
   version: number;
 }

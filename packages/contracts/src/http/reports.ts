@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PaiseSchema } from './common';
+import { CalendarDateSchema, PaiseSchema } from './common';
 
 const Money = PaiseSchema;
 
@@ -104,3 +104,86 @@ export const DashboardSchema = z.object({
   openTables: z.number().int(),
 });
 export type Dashboard = z.infer<typeof DashboardSchema>;
+
+// ---- report engine (Phase 5) -----------------------------------------------------
+
+export const ReportGroupingSchema = z.enum(['day', 'week', 'month', 'year']);
+export type ReportGrouping = z.infer<typeof ReportGroupingSchema>;
+
+/** Business dates, both included. At most 1,830 days (5 years). */
+export const ReportRangeQuerySchema = z.object({
+  from: CalendarDateSchema,
+  to: CalendarDateSchema,
+});
+export const SalesReportQuerySchema = ReportRangeQuerySchema.extend({
+  /** Weeks start on Monday; years are Indian financial years (April to March). */
+  groupBy: ReportGroupingSchema.default('day'),
+});
+export type SalesReportQuery = z.input<typeof SalesReportQuerySchema>;
+
+const Int = z.number().int();
+const SalesFiguresSchema = z.object({
+  invoices: Int,
+  orders: Int,
+  covers: Int,
+  gross: Money,
+  discounts: Money,
+  charges: Money,
+  taxable: Money,
+  tax: Money,
+  roundOff: Money,
+  total: Money,
+  /** Credit notes issued in the period. */
+  refunds: Money,
+  /** total − refunds. */
+  net: Money,
+  averageBill: Money,
+});
+export type SalesFigures = z.infer<typeof SalesFiguresSchema>;
+
+/** Sales over any range, by period, with the breakdowns owners ask for. Amounts in paise. */
+export const SalesReportSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  groupBy: ReportGroupingSchema,
+  branchName: z.string(),
+  generatedAt: z.string(),
+  totals: SalesFiguresSchema,
+  /** Key: the date, the week's Monday, "YYYY-MM" or the financial year "2026-27". */
+  periods: z.array(
+    SalesFiguresSchema.extend({ key: z.string(), from: z.string(), to: z.string() }),
+  ),
+  orderTypes: z.array(z.object({ orderType: z.string(), orders: Int, covers: Int, sales: Money })),
+  channels: z.array(
+    z.object({
+      name: z.string(),
+      orders: Int,
+      sales: Money,
+      commission: Money,
+      netRevenue: Money,
+    }),
+  ),
+  payments: z.array(z.object({ method: z.string(), count: Int, amount: Money })),
+  categories: z.array(z.object({ name: z.string(), quantity: Int, amount: Money })),
+  /** Every dish sold (up to 1,000), by taxable value. */
+  items: z.array(
+    z.object({ name: z.string(), category: z.string().nullable(), quantity: Int, amount: Money }),
+  ),
+  hourly: z.array(z.object({ hour: Int, invoices: Int, total: Money })),
+  /** 0 = Sunday. */
+  weekdays: z.array(z.object({ weekday: Int, invoices: Int, total: Money })),
+  /** Orders taken (captain) and bills made (cashier). */
+  staff: z.array(
+    z.object({
+      name: z.string(),
+      orders: Int,
+      covers: Int,
+      orderSales: Money,
+      bills: Int,
+      billed: Money,
+    }),
+  ),
+  discounts: z.array(z.object({ kind: z.string(), count: Int, amount: Money })),
+  taxes: z.array(z.object({ code: z.string(), rateBp: Int, taxable: Money, tax: Money })),
+});
+export type SalesReport = z.infer<typeof SalesReportSchema>;

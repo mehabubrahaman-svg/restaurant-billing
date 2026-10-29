@@ -18,6 +18,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0011_purchasing` | PO sent time and cancel reason; GRN due date, notes, cancel reason and `input_tax_kind` (CGST_SGST / IGST / NONE); a draft GRN's lines can be replaced (refused once posted); purchasing indexes |
 | `0012_accounting` | `account_templates` and the chart of accounts seeded for every organisation (a trigger seeds new ones); `journal_entries` and `journal_lines` rebuilt so system postings have no user (`created_by` NULL), stock posts as `STOCK` and a document has one original entry (`ux_journal_source_original`); expense reference and cancel reason |
 | `0013_loyalty` | `loyalty_transactions.note` (why a manager adjusted points) and indexes by customer and invoice. The program's settings are `settings` keys `loyalty.enabled`, `loyalty.earn_per_100`, `loyalty.point_value`, `loyalty.min_redeem`. Points are spent as the `LOYALTY` payment method; `customers.loyalty_points` is the ledger's cached balance |
+| `0014_gst_returns` | `sales_channels.operator_gstin`: the GSTIN of the e-commerce operator that pays the GST on the channel's orders under section 9(5), for GSTR-1 table 14 |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

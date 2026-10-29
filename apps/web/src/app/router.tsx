@@ -118,6 +118,12 @@ const DashboardPage = lazy(() =>
 const DayEndPage = lazy(() =>
   import('../portals/reports/day-end-page').then((m) => ({ default: m.DayEndPage })),
 );
+const SalesPage = lazy(() =>
+  import('../portals/reports/sales-page').then((m) => ({ default: m.SalesPage })),
+);
+const GstPage = lazy(() =>
+  import('../portals/reports/gst-page').then((m) => ({ default: m.GstPage })),
+);
 const ItemsPage = lazy(() =>
   import('../portals/inventory/items-page').then((m) => ({ default: m.ItemsPage })),
 );
@@ -495,6 +501,15 @@ function reportsRoutes(): RouteObject {
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'day-end', element: <DayEndPage /> },
+      { path: 'sales', element: <SalesPage /> },
+      {
+        path: 'gst',
+        element: (
+          <SectionGuard permission="reports.financial" labelKey="reports.tabs.gst">
+            <GstPage />
+          </SectionGuard>
+        ),
+      },
       {
         path: 'consumption',
         element: (
@@ -514,7 +529,7 @@ function SectionGuard({
   children,
 }: {
   permission: PermissionRequirement;
-  labelKey: 'inventory.tabs.stock' | 'inventory.tabs.consumption';
+  labelKey: 'inventory.tabs.stock' | 'inventory.tabs.consumption' | 'reports.tabs.gst';
   children: ReactNode;
 }) {
   const { t } = useTranslation();

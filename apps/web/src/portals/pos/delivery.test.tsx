@@ -229,6 +229,12 @@ describe('Sales channels admin', () => {
     fireEvent.change(within(dialog).getByLabelText('Price markup (%)'), {
       target: { value: '१०' },
     });
+    // The operator pays the GST, so its GSTIN goes in GSTR-1 table 14.
+    const gstin = within(dialog).getByLabelText('Operator’s GSTIN');
+    fireEvent.change(gstin, { target: { value: '29AAFCB7707D1Z' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByText('That isn’t a 15-character GSTIN.')).toBeInTheDocument();
+    fireEvent.change(gstin, { target: { value: '29aafcb7707d1zq' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await screen.findByText('Saved Swiggy.');
     expect(bodyOf(callsTo(fetchMock, 'POST', '/sales-channels')[0]!)).toEqual({
@@ -238,6 +244,7 @@ describe('Sales channels admin', () => {
       commissionBp: 2200,
       priceMarkupBp: 1000,
       gstPaidByOperator: true,
+      operatorGstin: '29AAFCB7707D1ZQ',
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit Swiggy' }));

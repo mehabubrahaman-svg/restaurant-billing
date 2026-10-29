@@ -50,41 +50,46 @@ describe('backups', () => {
     expect((await captain('GET', '/backups')).statusCode).toBe(403);
   });
 
-  it('restores: checks the backup, keeps a safety copy, stages it and restarts', async () => {
-    const { s, admin } = await hub();
-    const before = BackupSchema.parse((await admin('POST', '/backups')).json());
-    await admin('POST', '/customers', { phone: '9830012345', name: 'After Backup' });
+  // Four encrypted copies (backup, safety copy, staged, replaced): over 4 s on a loaded laptop.
+  it(
+    'restores: checks the backup, keeps a safety copy, stages it and restarts',
+    { timeout: 20_000 },
+    async () => {
+      const { s, admin } = await hub();
+      const before = BackupSchema.parse((await admin('POST', '/backups')).json());
+      await admin('POST', '/customers', { phone: '9830012345', name: 'After Backup' });
 
-    expect((await admin('POST', `/backups/${before.id}/restore`, {})).statusCode).toBe(422);
-    const res = await admin('POST', `/backups/${before.id}/restore`, { confirm: 'RESTORE' });
-    expect(res.statusCode).toBe(202);
-    expect(res.json()).toMatchObject({ restarting: true, backup: { id: before.id } });
-    expect(s.restarts).toEqual([`restoring backup ${before.id}`]);
+      expect((await admin('POST', `/backups/${before.id}/restore`, {})).statusCode).toBe(422);
+      const res = await admin('POST', `/backups/${before.id}/restore`, { confirm: 'RESTORE' });
+      expect(res.statusCode).toBe(202);
+      expect(res.json()).toMatchObject({ restarting: true, backup: { id: before.id } });
+      expect(s.restarts).toEqual([`restoring backup ${before.id}`]);
 
-    const list = BackupsResponseSchema.parse((await admin('GET', '/backups')).json());
-    expect(list.data.map((b) => b.kind)).toEqual(['PRE_RESTORE', 'MANUAL']);
-    const audit = (await admin('GET', '/audit-logs?entityType=Backup')).json().data;
-    expect(audit.map((a: { action: string }) => a.action)).toContain('backup.restore');
+      const list = BackupsResponseSchema.parse((await admin('GET', '/backups')).json());
+      expect(list.data.map((b) => b.kind)).toEqual(['PRE_RESTORE', 'MANUAL']);
+      const audit = (await admin('GET', '/audit-logs?entityType=Backup')).json().data;
+      expect(audit.map((a: { action: string }) => a.action)).toContain('backup.restore');
 
-    // What the Hub opens after the restart: the backup's data, under the Hub's own key.
-    const staged = pendingRestorePath(s.database.path);
-    const restored = openDatabase({ path: staged, key: s.database.key });
-    const names = restored.prepare('SELECT name FROM customers').pluck().all();
-    restored.close();
-    expect(names).not.toContain('After Backup');
+      // What the Hub opens after the restart: the backup's data, under the Hub's own key.
+      const staged = pendingRestorePath(s.database.path);
+      const restored = openDatabase({ path: staged, key: s.database.key });
+      const names = restored.prepare('SELECT name FROM customers').pluck().all();
+      restored.close();
+      expect(names).not.toContain('After Backup');
 
-    s.database.db.close();
-    const replaced = applyPendingRestore(s.database.path, new Date());
-    expect(replaced).toMatch(/restore[\\/]replaced-.*\.db$/);
-    expect(existsSync(staged)).toBe(false);
-    const live = openDatabase({ path: s.database.path, key: s.database.key });
-    expect(live.prepare('SELECT count(*) FROM customers').pluck().get()).toBe(0);
-    live.close();
-    // The data it replaced is kept aside.
-    const old = openDatabase({ path: replaced!, key: s.database.key });
-    expect(old.prepare('SELECT name FROM customers').pluck().all()).toEqual(['After Backup']);
-    old.close();
-  });
+      s.database.db.close();
+      const replaced = applyPendingRestore(s.database.path, new Date());
+      expect(replaced).toMatch(/restore[\\/]replaced-.*\.db$/);
+      expect(existsSync(staged)).toBe(false);
+      const live = openDatabase({ path: s.database.path, key: s.database.key });
+      expect(live.prepare('SELECT count(*) FROM customers').pluck().get()).toBe(0);
+      live.close();
+      // The data it replaced is kept aside.
+      const old = openDatabase({ path: replaced!, key: s.database.key });
+      expect(old.prepare('SELECT name FROM customers').pluck().all()).toEqual(['After Backup']);
+      old.close();
+    },
+  );
 
   it('imports a backup from another Hub with its passphrase, and refuses a wrong one', async () => {
     const { s, admin } = await hub();

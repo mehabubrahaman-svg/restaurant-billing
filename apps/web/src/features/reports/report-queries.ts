@@ -1,5 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { SalesReportQuery } from '@restroos/contracts';
 import { api } from '../../api/endpoints';
 import { saveBlob } from '../../lib/download';
 import { useErrorMessage } from '../../lib/errors';
@@ -10,6 +11,7 @@ export const REPORT_KEYS = {
   dashboard: ['reports', 'dashboard'],
   /** `null`: today's business day, as the Hub reckons it. */
   dayEnd: (date: string | null) => ['reports', 'day-end', date] as const,
+  sales: (query: SalesReportQuery) => ['reports', 'sales', query] as const,
 } as const;
 
 /** The owner's dashboard; refreshed every minute while it is on screen. */
@@ -18,6 +20,16 @@ export function useDashboard() {
     queryKey: REPORT_KEYS.dashboard,
     queryFn: api.reports.dashboard,
     refetchInterval: 60_000,
+  });
+}
+
+/** The sales report for a range; `enabled: false` while the range is not valid. */
+export function useSalesReport(query: SalesReportQuery, enabled: boolean) {
+  return useQuery({
+    queryKey: REPORT_KEYS.sales(query),
+    queryFn: () => api.reports.sales(query),
+    enabled,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -58,6 +58,8 @@ export { SqliteCouponRepository } from './billing/sqlite-coupon-repository';
 export { SqliteInvoiceRepository } from './billing/sqlite-invoice-repository';
 export { SqliteShiftRepository } from './billing/sqlite-shift-repository';
 export { SqliteReportQueries } from './reporting/sqlite-report-queries';
+export { SqliteGstQueries } from './reporting/sqlite-gst-queries';
+export { writeXlsx } from './reporting/xlsx';
 export {
   applyPendingRestore,
   BACKUP_EXTENSION,

@@ -50,6 +50,11 @@ import {
   LoyaltyLedgerSchema,
   type AdjustLoyaltyRequest,
   ReservationSchema,
+  SalesReportSchema,
+  Gstr1Schema,
+  Gstr3bSchema,
+  VatRegisterSchema,
+  type SalesReportQuery,
   ReservationsResponseSchema,
   type SaveReservationRequest,
   type UpdateReservationRequest,
@@ -420,6 +425,8 @@ export interface SaveSalesChannelBody {
   commissionBp?: number;
   priceMarkupBp?: number;
   gstPaidByOperator?: boolean;
+  /** For GSTR-1 table 14; null clears it. */
+  operatorGstin?: string | null;
   isActive?: boolean;
   version?: number;
 }
@@ -844,6 +851,23 @@ export const api = {
     /** Every invoice and credit note of the range (at most 366 days). */
     salesRegisterCsv: (from: string, to: string) =>
       c.blob('/reports/sales-register.csv', { query: { from, to } }),
+    salesRegisterXlsx: (from: string, to: string) =>
+      c.blob('/reports/sales-register.xlsx', { query: { from, to } }),
+    /** The report engine: any range up to 5 years, by day, week, month or financial year. */
+    sales: (query: SalesReportQuery) =>
+      c.json('/reports/sales', SalesReportSchema, { query: { ...query } }),
+    salesFile: (query: SalesReportQuery, format: 'xlsx' | 'csv') =>
+      c.blob(`/reports/sales.${format}`, { query: { ...query } }),
+    /** GST returns and the liquor VAT register for a period of up to 366 days. */
+    gstr1: (from: string, to: string) =>
+      c.json('/reports/gstr1', Gstr1Schema, { query: { from, to } }),
+    gstr3b: (from: string, to: string) =>
+      c.json('/reports/gstr3b', Gstr3bSchema, { query: { from, to } }),
+    vatRegister: (from: string, to: string) =>
+      c.json('/reports/vat-register', VatRegisterSchema, { query: { from, to } }),
+    /** `gstr1`, `gstr3b` or `vat-register` as .xlsx/.csv, or one GSTR-1 section (`gstr1/b2cs`) as .csv. */
+    returnFile: (name: string, format: 'xlsx' | 'csv', from: string, to: string) =>
+      c.blob(`/reports/${name}.${format}`, { query: { from, to } }),
     dashboard: () => c.json('/reports/dashboard', DashboardSchema),
     /** Recipe (theoretical) against counted consumption per item, for 1 to 366 days. */
     consumption: (from: string, to: string) =>

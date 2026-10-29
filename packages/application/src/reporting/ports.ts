@@ -114,4 +114,64 @@ export interface ReportQueries {
   dayEnd(branchId: string, businessDate: string, now: Date): DayEndReportView;
   dashboard(branchId: string, businessDate: string, now: Date): DashboardView;
   salesRegister(branchId: string, from: string, to: string): SalesRegisterRow[];
+  sales(
+    branchId: string,
+    from: string,
+    to: string,
+    groupBy: SalesReportView['groupBy'],
+    now: Date,
+  ): SalesReportView;
+}
+
+/** Money figures of a set of business days. Credit notes are `refunds`; `net` = total − refunds. */
+export interface SalesFigures {
+  invoices: number;
+  orders: number;
+  covers: number;
+  gross: number;
+  discounts: number;
+  charges: number;
+  taxable: number;
+  tax: number;
+  roundOff: number;
+  total: number;
+  refunds: number;
+  net: number;
+  averageBill: number;
+}
+
+/** The report engine's sales report: any range, grouped by day, week, month or financial year. */
+export interface SalesReportView {
+  from: string;
+  to: string;
+  groupBy: 'day' | 'week' | 'month' | 'year';
+  branchName: string;
+  generatedAt: string;
+  totals: SalesFigures;
+  periods: (SalesFigures & { key: string; from: string; to: string })[];
+  orderTypes: { orderType: string; orders: number; covers: number; sales: number }[];
+  channels: {
+    name: string;
+    orders: number;
+    sales: number;
+    commission: number;
+    netRevenue: number;
+  }[];
+  payments: { method: string; count: number; amount: number }[];
+  categories: { name: string; quantity: number; amount: number }[];
+  items: { name: string; category: string | null; quantity: number; amount: number }[];
+  hourly: { hour: number; invoices: number; total: number }[];
+  /** 0 = Sunday. */
+  weekdays: { weekday: number; invoices: number; total: number }[];
+  /** Orders taken as captain, and bills made as cashier. */
+  staff: {
+    name: string;
+    orders: number;
+    covers: number;
+    orderSales: number;
+    bills: number;
+    billed: number;
+  }[];
+  discounts: { kind: string; count: number; amount: number }[];
+  taxes: { code: string; rateBp: number; taxable: number; tax: number }[];
 }

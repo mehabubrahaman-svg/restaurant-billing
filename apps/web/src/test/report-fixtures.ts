@@ -151,6 +151,7 @@ export function makeChannel(overrides: Partial<SalesChannel> = {}): SalesChannel
     commissionBp: 2200,
     priceMarkupBp: 1000,
     gstPaidByOperator: true,
+    operatorGstin: null,
     isActive: true,
     version: 1,
     ...overrides,

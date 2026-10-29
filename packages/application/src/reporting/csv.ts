@@ -19,7 +19,7 @@ export const rupees = (paise: number) => hundredths(paise);
 const pct = (bp: number) => hundredths(bp);
 
 /** An integer in hundredths as a decimal string, without floating point. */
-function hundredths(n: number): string {
+export function hundredths(n: number): string {
   const abs = Math.abs(n);
   return `${n < 0 ? '-' : ''}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }

@@ -4,9 +4,12 @@ import type {
   DayEndReportView,
   PeriodView,
   ReportQueries,
+  SalesFigures,
   SalesRegisterRow,
+  SalesReportView,
   TopItemView,
 } from '@restroos/application';
+import { periodsIn } from '@restroos/application';
 import type { SqliteDatabase } from '../db/connection';
 
 /** Tax invoices that count as sales: not credit notes, not cancelled. */
@@ -22,6 +25,49 @@ function addDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+function emptyFigures(): SalesFigures {
+  return {
+    invoices: 0,
+    orders: 0,
+    covers: 0,
+    gross: 0,
+    discounts: 0,
+    charges: 0,
+    taxable: 0,
+    tax: 0,
+    roundOff: 0,
+    total: 0,
+    refunds: 0,
+    net: 0,
+    averageBill: 0,
+  };
+}
+
+function addFigures(into: SalesFigures, f: SalesFigures): void {
+  for (const k of Object.keys(into) as (keyof SalesFigures)[]) into[k] += f[k];
+}
+
+/** Net and the average bill, from the sums. */
+function finish(f: SalesFigures): SalesFigures {
+  return { ...f, net: f.total - f.refunds, averageBill: average(f.total, f.invoices) };
+}
+
+/** Minutes the time zone is ahead of UTC at that moment (330 for India). */
+function offsetMinutes(timeZone: string, at: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+  }).formatToParts(at);
+  const n = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  const local = Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'));
+  return Math.round((local - Math.floor(at.getTime() / 60_000) * 60_000) / 60_000);
 }
 
 /** 1 April of the Indian financial year the date falls in. */
@@ -318,6 +364,259 @@ export class SqliteReportQueries implements ReportQueries {
           GROUP BY i.id ORDER BY i.business_date, i.created_at, i.invoice_no`,
       )
       .all(branchId, from, to);
+  }
+
+  sales(
+    branchId: string,
+    from: string,
+    to: string,
+    groupBy: SalesReportView['groupBy'],
+    now: Date,
+  ): SalesReportView {
+    const db = this.db;
+    const range = { branchId, from, to };
+    const branch = db
+      .prepare<[string], { name: string; timezone: string }>(
+        'SELECT name, timezone FROM branches WHERE id = ?',
+      )
+      .get(branchId) ?? { name: '', timezone: 'Asia/Kolkata' };
+
+    // Per business date, then summed into periods and the total.
+    const days = new Map<string, SalesFigures>();
+    const dayOf = (date: string) => {
+      let d = days.get(date);
+      if (!d) {
+        d = emptyFigures();
+        days.set(date, d);
+      }
+      return d;
+    };
+    for (const r of db
+      .prepare<
+        typeof range,
+        Omit<SalesFigures, 'orders' | 'covers' | 'refunds' | 'net' | 'averageBill'> & {
+          date: string;
+        }
+      >(
+        `SELECT i.business_date AS date, count(*) AS invoices, sum(i.subtotal) AS gross,
+                sum(i.discount_total) AS discounts, sum(i.charges_total) AS charges,
+                sum(i.taxable_total) AS taxable, sum(i.tax_total) AS tax, sum(i.round_off) AS roundOff,
+                sum(i.grand_total) AS total
+           FROM invoices i
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY i.business_date`,
+      )
+      .all(range)) {
+      const { date, ...figures } = r;
+      Object.assign(dayOf(date), figures);
+    }
+    for (const r of db
+      .prepare<typeof range, { date: string; refunds: number }>(
+        `SELECT business_date AS date, sum(grand_total) AS refunds FROM invoices
+          WHERE branch_id = @branchId AND business_date BETWEEN @from AND @to AND kind = 'CREDIT_NOTE'
+          GROUP BY business_date`,
+      )
+      .all(range)) {
+      dayOf(r.date).refunds = r.refunds;
+    }
+    for (const r of db
+      .prepare<typeof range, { date: string; orders: number; covers: number }>(
+        `SELECT o.business_date AS date, count(*) AS orders, coalesce(sum(o.covers), 0) AS covers
+           FROM orders o
+          WHERE o.branch_id = @branchId AND o.business_date BETWEEN @from AND @to
+            AND o.status <> 'CANCELLED' AND ${REAL_ORDER}
+          GROUP BY o.business_date`,
+      )
+      .all(range)) {
+      Object.assign(dayOf(r.date), { orders: r.orders, covers: r.covers });
+    }
+    const totals = emptyFigures();
+    const periods = periodsIn(from, to, groupBy).map((p) => {
+      const figures = emptyFigures();
+      for (const [date, d] of days) if (date >= p.from && date <= p.to) addFigures(figures, d);
+      addFigures(totals, figures);
+      return { ...p, ...finish(figures) };
+    });
+
+    const orderTypes = db
+      .prepare<typeof range, Omit<SalesReportView['orderTypes'][number], 'sales'>>(
+        `SELECT o.order_type AS orderType, count(*) AS orders, coalesce(sum(o.covers), 0) AS covers
+           FROM orders o
+          WHERE o.branch_id = @branchId AND o.business_date BETWEEN @from AND @to
+            AND o.status <> 'CANCELLED' AND ${REAL_ORDER}
+          GROUP BY o.order_type`,
+      )
+      .all(range);
+    const salesByType = new Map(
+      db
+        .prepare<typeof range, { orderType: string; sales: number }>(
+          `SELECT o.order_type AS orderType, sum(i.grand_total) AS sales
+             FROM invoices i JOIN orders o ON o.id = i.order_id
+            WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+            GROUP BY o.order_type`,
+        )
+        .all(range)
+        .map((r) => [r.orderType, r.sales]),
+    );
+
+    // Commission is charged on the food value (before GST, which the operator pays).
+    const channels = db
+      .prepare<
+        typeof range,
+        { name: string; orders: number; sales: number; taxable: number; commission_bp: number }
+      >(
+        `SELECT c.name, count(DISTINCT o.id) AS orders, coalesce(sum(i.grand_total), 0) AS sales,
+                coalesce(sum(i.taxable_total), 0) AS taxable, c.commission_bp
+           FROM orders o JOIN sales_channels c ON c.id = o.sales_channel_id
+           LEFT JOIN invoices i ON i.order_id = o.id AND ${SOLD}
+          WHERE o.branch_id = @branchId AND o.business_date BETWEEN @from AND @to
+            AND o.status <> 'CANCELLED' AND ${REAL_ORDER}
+          GROUP BY c.id ORDER BY sum(i.grand_total) DESC, c.name`,
+      )
+      .all(range)
+      .map((c) => {
+        const commission = Math.round((c.taxable * c.commission_bp) / 10_000);
+        return {
+          name: c.name,
+          orders: c.orders,
+          sales: c.sales,
+          commission,
+          netRevenue: c.sales - commission,
+        };
+      });
+
+    const payments = db
+      .prepare<typeof range, SalesReportView['payments'][number]>(
+        `SELECT method, count(CASE WHEN amount > 0 THEN 1 END) AS count, sum(amount) AS amount
+           FROM payments WHERE branch_id = @branchId AND business_date BETWEEN @from AND @to
+          GROUP BY method ORDER BY sum(amount) DESC`,
+      )
+      .all(range);
+
+    const lines = `FROM invoice_lines l JOIN invoices i ON i.id = l.invoice_id
+           LEFT JOIN order_items oi ON oi.id = l.order_item_id
+           LEFT JOIN menu_items m ON m.id = oi.menu_item_id
+           LEFT JOIN categories c ON c.id = m.category_id
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}`;
+    const categories = db
+      .prepare<typeof range, SalesReportView['categories'][number]>(
+        `SELECT coalesce(c.name, '—') AS name, sum(l.quantity) AS quantity, sum(l.taxable_value) AS amount
+         ${lines} GROUP BY c.id ORDER BY sum(l.taxable_value) DESC`,
+      )
+      .all(range);
+    const items = db
+      .prepare<typeof range, SalesReportView['items'][number]>(
+        `SELECT l.description AS name, c.name AS category, sum(l.quantity) AS quantity,
+                sum(l.taxable_value) AS amount
+         ${lines} GROUP BY l.description, c.id ORDER BY sum(l.taxable_value) DESC, l.description
+         LIMIT 1000`,
+      )
+      .all(range);
+
+    // India has one fixed offset; strftime works in UTC, so shift by the branch's.
+    const offset = offsetMinutes(branch.timezone, now);
+    const hourly = db
+      .prepare<typeof range & { offset: string }, SalesReportView['hourly'][number]>(
+        `SELECT CAST(strftime('%H', i.created_at, @offset) AS INTEGER) AS hour, count(*) AS invoices,
+                sum(i.grand_total) AS total
+           FROM invoices i
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY hour ORDER BY hour`,
+      )
+      .all({ ...range, offset: `${offset >= 0 ? '+' : ''}${offset} minutes` });
+    const weekdays = db
+      .prepare<typeof range, SalesReportView['weekdays'][number]>(
+        `SELECT CAST(strftime('%w', i.business_date) AS INTEGER) AS weekday, count(*) AS invoices,
+                sum(i.grand_total) AS total
+           FROM invoices i
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY weekday ORDER BY weekday`,
+      )
+      .all(range);
+
+    const staff = new Map<string, SalesReportView['staff'][number]>();
+    const person = (id: string, name: string) => {
+      let s = staff.get(id);
+      if (!s) {
+        s = { name, orders: 0, covers: 0, orderSales: 0, bills: 0, billed: 0 };
+        staff.set(id, s);
+      }
+      return s;
+    };
+    for (const r of db
+      .prepare<typeof range, { id: string; name: string; orders: number; covers: number }>(
+        `SELECT u.id, u.full_name AS name, count(*) AS orders, coalesce(sum(o.covers), 0) AS covers
+           FROM orders o JOIN users u ON u.id = o.captain_id
+          WHERE o.branch_id = @branchId AND o.business_date BETWEEN @from AND @to
+            AND o.status <> 'CANCELLED' AND ${REAL_ORDER}
+          GROUP BY u.id`,
+      )
+      .all(range)) {
+      Object.assign(person(r.id, r.name), { orders: r.orders, covers: r.covers });
+    }
+    for (const r of db
+      .prepare<typeof range, { id: string; name: string; sales: number }>(
+        `SELECT u.id, u.full_name AS name, sum(i.grand_total) AS sales
+           FROM invoices i JOIN orders o ON o.id = i.order_id JOIN users u ON u.id = o.captain_id
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY u.id`,
+      )
+      .all(range)) {
+      person(r.id, r.name).orderSales = r.sales;
+    }
+    for (const r of db
+      .prepare<typeof range, { id: string; name: string; bills: number; billed: number }>(
+        `SELECT u.id, u.full_name AS name, count(*) AS bills, sum(i.grand_total) AS billed
+           FROM invoices i JOIN users u ON u.id = i.created_by
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY u.id`,
+      )
+      .all(range)) {
+      Object.assign(person(r.id, r.name), { bills: r.bills, billed: r.billed });
+    }
+
+    const discounts = db
+      .prepare<typeof range, SalesReportView['discounts'][number]>(
+        `SELECT d.kind, count(*) AS count, sum(d.amount) AS amount
+           FROM invoice_discounts d JOIN invoices i ON i.id = d.invoice_id
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY d.kind ORDER BY sum(d.amount) DESC`,
+      )
+      .all(range);
+    const taxes = db
+      .prepare<typeof range, SalesReportView['taxes'][number]>(
+        `SELECT t.tax_code AS code, t.rate_bp AS rateBp, sum(t.taxable_value) AS taxable, sum(t.tax_amount) AS tax
+           FROM invoice_taxes t JOIN invoices i ON i.id = t.invoice_id
+          WHERE i.branch_id = @branchId AND i.business_date BETWEEN @from AND @to AND ${SOLD}
+          GROUP BY t.tax_code, t.rate_bp
+          ORDER BY CASE t.tax_code WHEN 'CGST' THEN 0 WHEN 'SGST' THEN 1 WHEN 'IGST' THEN 2 WHEN 'VAT' THEN 3 ELSE 4 END, t.rate_bp`,
+      )
+      .all(range);
+
+    return {
+      from,
+      to,
+      groupBy,
+      branchName: branch.name,
+      generatedAt: now.toISOString(),
+      totals: finish(totals),
+      periods,
+      orderTypes: orderTypes
+        .map((t) => ({ ...t, sales: salesByType.get(t.orderType) ?? 0 }))
+        .sort((a, b) => b.sales - a.sales),
+      channels,
+      payments,
+      categories,
+      items,
+      hourly,
+      weekdays,
+      staff: [...staff.values()].sort(
+        (a, b) =>
+          b.orderSales + b.billed - (a.orderSales + a.billed) || a.name.localeCompare(b.name),
+      ),
+      discounts,
+      taxes,
+    };
   }
 
   /** Net sales (invoices less credit notes) per business date. */
