@@ -1,6 +1,6 @@
 {
   "name": "@restroos/desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "RestroOS Hub: the desktop app that runs the restaurant's server",
   "main": "dist/main.cjs",

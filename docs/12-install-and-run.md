@@ -38,9 +38,9 @@ installer* workflow.
 The installers are built by GitHub Actions, on Windows and Linux:
 
 1. On GitHub, open the repository → **Actions** → **Desktop installers** →
-   **Run workflow** (pick the branch), or push a tag such as `hub-v0.1.0`.
+   **Run workflow** (pick the branch), or push a tag such as `hub-v0.2.0`.
 2. When the run finishes (about 10–15 minutes), open it and download the
-   artifact: **restroos-hub-Windows** (`RestroOS Hub Setup 0.1.0.exe`) or
+   artifact: **restroos-hub-Windows** (`RestroOS Hub Setup 0.2.0.exe`) or
    **restroos-hub-Linux** (`.AppImage` and `.deb`).
 
 The Linux job starts the AppImage and checks that the Hub answers before
@@ -48,7 +48,7 @@ it publishes the files.
 
 ### 2. Install
 
-**Windows 10/11**: run `RestroOS Hub Setup 0.1.0.exe`. The installer isn't
+**Windows 10/11**: run `RestroOS Hub Setup 0.2.0.exe`. The installer isn't
 code-signed yet, so Windows SmartScreen says *Windows protected your PC*:
 choose **More info → Run anyway**. Choose the folder and finish; RestroOS
 starts.
@@ -56,18 +56,18 @@ starts.
 **Ubuntu / Debian**:
 
 ```bash
-sudo apt install ./restroos-hub_0.1.0_amd64.deb
+sudo apt install ./restroos-hub_0.2.0_amd64.deb
 ```
 
 Then start **RestroOS Hub** from the applications menu. Or, with the
 AppImage (no install):
 
 ```bash
-chmod +x RestroOS-Hub-0.1.0.AppImage
+chmod +x RestroOS-Hub-0.2.0.AppImage
 ```
 
 ```bash
-./RestroOS-Hub-0.1.0.AppImage
+./RestroOS-Hub-0.2.0.AppImage
 ```
 
 (On Ubuntu 22.04+ the AppImage needs `libfuse2`: `sudo apt install libfuse2`.)
