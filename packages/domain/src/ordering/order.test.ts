@@ -115,6 +115,24 @@ describe('Order', () => {
     );
   });
 
+  it('reopens when its bill is cancelled, billed or already paid, but not once cancelled', () => {
+    const order = open();
+    order.addLines([line('l1')], at);
+    order.markSent(new Map([['l1', 'k1']]), at);
+    order.markBilled(at);
+    order.reopen(later);
+    expect(order.state).toMatchObject({ status: 'OPEN', closedAt: null });
+    order.markBilled(later);
+    order.markPaid(later);
+    expect(order.state.closedAt).toEqual(later);
+    order.reopen(later);
+    expect(order.state).toMatchObject({ status: 'OPEN', closedAt: null });
+    order.cancel({ reason: 'Guests left', by: 'm1' }, later);
+    expect(() => order.reopen(later)).toThrow(
+      expect.objectContaining({ code: 'INVALID_STATE_TRANSITION' }),
+    );
+  });
+
   it('merges every line into another order and closes itself', () => {
     const a = open();
     const b = Order.open('o2', {

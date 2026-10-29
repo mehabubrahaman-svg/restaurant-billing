@@ -13,6 +13,8 @@ import {
   BackupsResponseSchema,
   CustomerDetailSchema,
   CustomersResponseSchema,
+  LoyaltyLedgerSchema,
+  type AdjustLoyaltyRequest,
   ReservationSchema,
   ReservationsResponseSchema,
   type SaveReservationRequest,
@@ -611,6 +613,10 @@ export const api = {
         ...(signal === undefined ? {} : { signal }),
       }),
     get: (id: string) => c.json(`/customers/${id}`, CustomerDetailSchema),
+    /** The points balance and latest entries. */
+    loyalty: (id: string) => c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema),
+    adjustLoyalty: (id: string, body: AdjustLoyaltyRequest) =>
+      c.json(`/customers/${id}/loyalty`, LoyaltyLedgerSchema, { method: POST, body }),
   },
   reports: {
     /** The business day's report; today's business date when `date` is left out. */

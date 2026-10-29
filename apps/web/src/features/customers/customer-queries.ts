@@ -7,6 +7,7 @@ export const CUSTOMER_KEYS = {
   all: ['customers'],
   search: (q: string) => ['customers', 'search', q] as const,
   detail: (id: string) => ['customers', 'detail', id] as const,
+  loyalty: (id: string) => ['customers', 'loyalty', id] as const,
 } as const;
 
 /** Searching starts at this many characters (a few digits of a mobile number, or a name). */
@@ -44,6 +45,15 @@ export function useCustomerSearch(input: string) {
 
 export function useCustomer(id: string) {
   return useQuery({ queryKey: CUSTOMER_KEYS.detail(id), queryFn: () => api.customers.get(id) });
+}
+
+/** A guest's points and their history; `null` id: no guest on the bill yet. */
+export function useLoyalty(id: string | null) {
+  return useQuery({
+    queryKey: CUSTOMER_KEYS.loyalty(id ?? ''),
+    queryFn: () => api.customers.loyalty(id!),
+    enabled: id !== null,
+  });
 }
 
 /** +919830012345 → "+91 98300 12345". Anything else is shown as stored. */

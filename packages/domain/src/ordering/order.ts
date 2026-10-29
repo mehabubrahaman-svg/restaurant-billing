@@ -371,14 +371,16 @@ export class Order extends AggregateRoot {
   }
 
   /** The bill was cancelled before payment: the order can change again. */
+  /** Its bill was cancelled: billed, or paid in the same shift (the payments are reversed). */
   reopen(at: Date): void {
-    if (this.s.status !== 'BILLED') {
+    if (this.s.status !== 'BILLED' && this.s.status !== 'PAID') {
       throw new DomainError(
         'INVALID_STATE_TRANSITION',
         `a ${this.s.status.toLowerCase()} order can't be reopened`,
       );
     }
     this.s.status = 'OPEN';
+    this.s.closedAt = null;
     this.raise('OrderReopened', {}, at);
   }
 

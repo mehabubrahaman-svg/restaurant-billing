@@ -49,6 +49,8 @@ const CODE_KEYS = {
   DEVICE_MUST_REPAIR: 'errors.deviceMustRepair',
   TABLE_NOT_FREE: 'errors.tableNotFree',
   TABLE_ALREADY_RESERVED: 'errors.tableAlreadyReserved',
+  LOYALTY_INSUFFICIENT: 'errors.loyaltyInsufficient',
+  LOYALTY_DISABLED: 'errors.loyaltyDisabled',
   ORDER_NOT_OPEN: 'errors.orderNotOpen',
   ITEM_ALREADY_SENT: 'errors.itemAlreadySent',
   NOTHING_TO_FIRE: 'errors.nothingToFire',

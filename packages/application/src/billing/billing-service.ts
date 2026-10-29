@@ -15,6 +15,7 @@ import {
 } from '@restroos/domain';
 import type { CatalogRepository } from '../catalog/ports';
 import type { CustomerRepository, CustomerService } from '../crm/customers';
+import type { LoyaltyService } from '../crm/loyalty';
 import type { FloorRepository } from '../floor/ports';
 import type { SalesChannelRepository } from '../ordering/channels';
 import type { BusinessCalendar, OrderRepository } from '../ordering/ports';
@@ -36,6 +37,7 @@ export interface BillingServiceDeps {
   readonly channels: SalesChannelRepository;
   readonly customers: CustomerRepository;
   readonly customerService: CustomerService;
+  readonly loyalty: LoyaltyService;
   readonly calendar: BusinessCalendar;
   /** billing.default_tax_group_id: for menu items without a tax group of their own. */
   readonly defaultTaxGroupId: () => string | null;
@@ -195,6 +197,14 @@ export class BillingService {
           );
         }
       }
+      for (const p of payments) {
+        if (p.method !== 'LOYALTY') continue;
+        this.d.loyalty.redeemIn(scope, ctx, {
+          customerId: invoice.state.customerId,
+          invoiceId: invoice.id,
+          amount: p.amount,
+        });
+      }
       invoice.pay(
         payments.map((p) => ({
           id: this.d.ids.next(),
@@ -221,7 +231,7 @@ export class BillingService {
         order.markPaid(now);
         this.d.orders.save(order);
         this.setTable(scope, ctx.branchId, order, 'CLEANING', now);
-        this.recordVisit(order.id, now);
+        this.recordVisit(scope, ctx, order.id, now);
       }
       scope.audit({
         action: 'billing.payment.record',
@@ -290,6 +300,12 @@ export class BillingService {
         );
         this.d.invoices.save(invoice);
       }
+      // Points spent on these bills come back; points they earned go.
+      this.d.loyalty.reverseIn(
+        scope,
+        ctx,
+        siblings.map((i) => i.id),
+      );
       const order = this.loadOrder(ctx.branchId, target.state.orderId);
       order.reopen(now);
       this.d.orders.save(order);
@@ -582,16 +598,31 @@ export class BillingService {
     ]);
   }
 
-  /** One visit per paid order for its guest, worth what the order's bills came to. */
-  private recordVisit(orderId: string, now: Date): void {
+  /**
+   * One visit per paid order for its guest, worth what the order's bills came
+   * to, and loyalty points on what they paid (not with points, not via an
+   * aggregator).
+   */
+  private recordVisit(
+    scope: TransactionScope,
+    ctx: CommandContext,
+    orderId: string,
+    now: Date,
+  ): void {
     const invoices = this.d.invoices.forOrder(orderId).filter((i) => i.isSettled);
-    const customerId = invoices.find((i) => i.state.customerId)?.state.customerId;
-    if (!customerId) return;
+    const first = invoices.find((i) => i.state.customerId);
+    const customerId = first?.state.customerId;
+    if (!first || !customerId) return;
     this.d.customers.recordVisit(
       customerId,
       invoices.reduce((s, i) => s + i.state.bill.grandTotal, 0),
       now,
     );
+    const paid = invoices
+      .flatMap((i) => this.d.invoices.paymentsOf(i.id))
+      .filter((p) => p.method !== 'LOYALTY' && p.method !== 'AGGREGATOR')
+      .reduce((s, p) => s + p.amount, 0);
+    this.d.loyalty.earnIn(scope, ctx, { customerId, invoiceId: first.id, paid });
   }
 
   private branch(branchId: string): BranchSettingsRecord {

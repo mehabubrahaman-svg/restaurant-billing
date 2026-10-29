@@ -55,6 +55,10 @@ export const ERROR_STATUS = {
   SHIFT_NOT_OPEN: 409,
   SHIFT_ALREADY_OPEN: 409,
   COUPON_INVALID: 422,
+  /** The guest has fewer points than the bill tries to spend. */
+  LOYALTY_INSUFFICIENT: 409,
+  /** Loyalty points are off for this branch (Admin → Branch). */
+  LOYALTY_DISABLED: 409,
   /** That aggregator order id was already entered. */
   DUPLICATE_EXTERNAL_ORDER: 409,
   /** Liquor can't be sold through Swiggy/Zomato: VAT liquor isn't an aggregator supply. */

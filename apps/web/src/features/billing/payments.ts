@@ -2,8 +2,19 @@ import type { PaymentMethod } from '@restroos/contracts';
 import type { NewPaymentBody } from '../../api/endpoints';
 import { paiseToRupees, rupeesToPaise } from '../../lib/units';
 
-/** Tenders the counter takes. AGGREGATOR settles a delivery-app order: the platform pays later. */
-export const TENDERS = ['CASH', 'CARD', 'UPI', 'WALLET', 'CREDIT', 'AGGREGATOR'] as const;
+/**
+ * Tenders the counter takes. AGGREGATOR settles a delivery-app order: the
+ * platform pays later. LOYALTY: the guest on the bill spends points.
+ */
+export const TENDERS = [
+  'CASH',
+  'CARD',
+  'UPI',
+  'WALLET',
+  'CREDIT',
+  'AGGREGATOR',
+  'LOYALTY',
+] as const;
 export type Tender = (typeof TENDERS)[number];
 
 /** One line of the payment pad, as typed. Rupee amounts stay strings until parsed. */
@@ -20,7 +31,15 @@ export interface PaymentEntry {
 }
 
 export type EntryProblem =
-  'amount' | 'tendered' | 'reference' | 'cardLast4' | 'creditNeedsCustomer';
+  'amount' | 'tendered' | 'reference' | 'cardLast4' | 'creditNeedsCustomer' | 'loyalty';
+
+/** What the guest on the bill can spend in points (paise), and what a point is worth. */
+export interface LoyaltyLimit {
+  readonly maxAmount: number;
+  readonly pointValue: number;
+  /** The fewest points spent at once. */
+  readonly minRedeem: number;
+}
 
 export interface CheckedEntry {
   readonly entry: PaymentEntry;
@@ -70,10 +89,11 @@ export function newEntry(
 export function checkPad(
   entries: readonly PaymentEntry[],
   due: number,
-  { hasCustomerName }: { hasCustomerName: boolean },
+  { hasCustomerName, loyalty = null }: { hasCustomerName: boolean; loyalty?: LoyaltyLimit | null },
 ): PadCheck {
   let total = 0;
   let change = 0;
+  let points = 0;
   const checked = entries.map((entry): CheckedEntry => {
     const problems: EntryProblem[] = [];
     const amount = rupeesToPaise(entry.amount);
@@ -100,6 +120,17 @@ export function checkPad(
       problems.push('cardLast4');
     }
     if (entry.method === 'CREDIT' && !hasCustomerName) problems.push('creditNeedsCustomer');
+    if (entry.method === 'LOYALTY' && validAmount !== null) {
+      points += validAmount;
+      if (
+        loyalty === null ||
+        validAmount % loyalty.pointValue !== 0 ||
+        validAmount / loyalty.pointValue < loyalty.minRedeem ||
+        points > loyalty.maxAmount
+      ) {
+        problems.push('loyalty');
+      }
+    }
     return { entry, amount: validAmount, tendered, problems };
   });
   const remaining = due - total;

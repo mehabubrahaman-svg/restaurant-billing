@@ -1,8 +1,10 @@
 import {
+  AdjustLoyaltyRequestSchema,
   SaveCustomerRequestSchema,
   UpdateCustomerRequestSchema,
   type CustomerDetail,
   type CustomersResponse,
+  type LoyaltyLedger,
 } from '@restroos/contracts';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -16,7 +18,7 @@ const MANAGE = { permission: 'customers.manage' } as const;
 
 /** WP 5.6: guests by mobile number, their visits, spend and favourites. */
 export async function customerRoutes(app: FastifyInstance, { cradle }: { cradle: Cradle }) {
-  const { customerService: customers } = cradle;
+  const { customerService: customers, loyaltyService: loyalty } = cradle;
 
   app.get('/customers', { config: VIEW }, async (request): Promise<CustomersResponse> => {
     const { q } = SearchQuery.parse(request.query);
@@ -44,4 +46,19 @@ export async function customerRoutes(app: FastifyInstance, { cradle }: { cradle:
       commandContext(request),
     );
   });
+
+  // ---- loyalty points (Phase 5) ---------------------------------------------------
+  app.get('/customers/:id/loyalty', { config: VIEW }, async (request): Promise<LoyaltyLedger> =>
+    loyalty.ledger(IdParams.parse(request.params).id, request.principal!.branchId),
+  );
+
+  app.post(
+    '/customers/:id/loyalty',
+    { config: { permission: 'loyalty.adjust' } },
+    async (request): Promise<LoyaltyLedger> => {
+      const { id } = IdParams.parse(request.params);
+      const { points, note } = AdjustLoyaltyRequestSchema.parse(request.body);
+      return loyalty.adjust(id, points, note, commandContext(request));
+    },
+  );
 }

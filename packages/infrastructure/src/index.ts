@@ -75,6 +75,7 @@ export {
 } from './printing/chromium-raster';
 export { SqliteSalesChannelRepository } from './ordering/sqlite-sales-channel-repository';
 export { SqliteCustomerRepository } from './crm/sqlite-customer-repository';
+export { SqliteLoyaltyRepository } from './crm/sqlite-loyalty-repository';
 export {
   SqliteInventoryRepository,
   SqliteMenuLookup,

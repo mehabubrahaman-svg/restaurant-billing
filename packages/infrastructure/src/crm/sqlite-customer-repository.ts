@@ -4,7 +4,8 @@ import { assertVersionMatched } from '../db/optimistic';
 
 type Row = Omit<CustomerRecord, 'marketingOptIn'> & { marketingOptIn: number };
 const COLUMNS = `id, phone, name, email, tax_id AS taxId, preferred_locale AS preferredLocale, visit_count AS visitCount,
-                 lifetime_value AS lifetimeValue, last_visit_at AS lastVisitAt, marketing_opt_in AS marketingOptIn, version`;
+                 lifetime_value AS lifetimeValue, last_visit_at AS lastVisitAt, marketing_opt_in AS marketingOptIn,
+                 loyalty_points AS loyaltyPoints, version`;
 const toRecord = (r: Row): CustomerRecord => ({ ...r, marketingOptIn: r.marketingOptIn === 1 });
 
 export class SqliteCustomerRepository implements CustomerRepository {

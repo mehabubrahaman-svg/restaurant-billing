@@ -41,6 +41,7 @@ export * from './printing/print-service';
 export * from './printing/templates';
 export * from './ordering/channels';
 export * from './crm/customers';
+export * from './crm/loyalty';
 export type * from './reporting/ports';
 export * from './reporting/csv';
 export * from './backup/backup-service';

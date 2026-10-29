@@ -32,6 +32,14 @@ export const BranchSettingsSchema = z.object({
   receiptFooter: z.string(),
   /** Local time the trading day rolls over, "HH:MM". */
   dayStartsAt: z.string(),
+  /** Loyalty points: guests with a phone on the bill earn on what they pay and spend points as a tender. */
+  loyaltyEnabled: z.boolean(),
+  /** Points per whole ₹100 paid. */
+  loyaltyEarnPer100: z.number().int(),
+  /** What a point is worth when spent, in paise. */
+  loyaltyPointValue: PaiseSchema,
+  /** The fewest points spent at once. */
+  loyaltyMinRedeem: z.number().int(),
   version: z.number().int(),
 });
 export type BranchSettings = z.infer<typeof BranchSettingsSchema>;
@@ -55,6 +63,10 @@ export const UpdateBranchSettingsRequestSchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
     .optional(),
+  loyaltyEnabled: z.boolean().optional(),
+  loyaltyEarnPer100: z.number().int().min(0).max(1_000).optional(),
+  loyaltyPointValue: z.number().int().min(1).max(10_000).optional(),
+  loyaltyMinRedeem: z.number().int().min(1).max(100_000).optional(),
 });
 export type UpdateBranchSettingsRequest = z.infer<typeof UpdateBranchSettingsRequestSchema>;
 

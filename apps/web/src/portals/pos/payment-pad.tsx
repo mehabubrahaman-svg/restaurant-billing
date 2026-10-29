@@ -1,5 +1,5 @@
 import type { Invoice } from '@restroos/contracts';
-import { Money } from '@restroos/domain';
+import { Money, redeemableAmount } from '@restroos/domain';
 import {
   Alert,
   Banknote,
@@ -9,6 +9,7 @@ import {
   cn,
   CreditCard,
   Field,
+  Gift,
   Input,
   SegmentedControl,
   Smartphone,
@@ -24,6 +25,7 @@ import { api } from '../../api/endpoints';
 import { withApproval } from '../../features/approval/with-approval';
 import { usePermission } from '../../features/auth/permissions';
 import { setInvoice, useCurrentShift } from '../../features/billing/billing-queries';
+import { CUSTOMER_KEYS, useLoyalty } from '../../features/customers/customer-queries';
 import {
   allocatePayments,
   checkPad,
@@ -48,6 +50,7 @@ export const TENDER_LOOK: Readonly<Record<Tender, { icon: LucideIcon; key?: stri
   WALLET: { icon: Wallet },
   CREDIT: { icon: BookUser },
   AGGREGATOR: { icon: Bike },
+  LOYALTY: { icon: Gift },
 };
 
 export interface PaymentPadHandle {
@@ -94,7 +97,20 @@ export function PaymentPad({
   );
   const due = targets.reduce((sum, i) => sum + i.balance, 0);
   const hasCustomerName = targets.every((i) => (i.customerName ?? '').trim() !== '');
-  const check = checkPad(entries, due, { hasCustomerName });
+  // Points pay one bill at a time (whole points can't be split across INV + LIQ).
+  const guestId = targets.length === 1 ? (targets[0]!.customerId ?? null) : null;
+  const ledger = useLoyalty(channel === null ? guestId : null);
+  const program = ledger.data?.program;
+  const balance = ledger.data?.balance ?? 0;
+  const loyalty =
+    program === undefined || !program.enabled
+      ? null
+      : {
+          maxAmount: redeemableAmount(due, balance, program),
+          pointValue: program.pointValue,
+          minRedeem: program.minRedeem,
+        };
+  const check = checkPad(entries, due, { hasCustomerName, loyalty });
   const tenders: Tender[] = [
     ...(channel === null ? [] : ['AGGREGATOR' as const]),
     'CASH',
@@ -102,6 +118,7 @@ export function PaymentPad({
     'UPI',
     'WALLET',
     ...(canCredit ? ['CREDIT' as const] : []),
+    ...(loyalty !== null && loyalty.maxAmount > 0 ? ['LOYALTY' as const] : []),
   ];
   const knownTerminals = useMemo(
     () => [
@@ -143,6 +160,9 @@ export function PaymentPad({
       return results;
     },
     onSuccess: (results) => {
+      if (guestId !== null && entries.some((e) => e.method === 'LOYALTY')) {
+        void queryClient.invalidateQueries({ queryKey: CUSTOMER_KEYS.loyalty(guestId) });
+      }
       for (const e of entries) {
         if (HAS_TERMINAL.has(e.method)) rememberTerminal(e.method, e.terminalLabel);
       }
@@ -156,6 +176,19 @@ export function PaymentPad({
 
   function addTender(method: Tender) {
     if (record.isPending) return;
+    if (method === 'LOYALTY' && program !== undefined) {
+      // As many whole points as the balance and the bill allow.
+      const spent = check.entries
+        .filter((c) => c.entry.method === 'LOYALTY')
+        .reduce((s, c) => s + (c.amount ?? 0), 0);
+      const amount = redeemableAmount(
+        Math.max(0, check.remaining),
+        balance - spent / program.pointValue,
+        program,
+      );
+      setEntries((list) => [...list, newEntry(method, amount)]);
+      return;
+    }
     const remaining = Math.max(0, check.remaining);
     const reference = method === 'AGGREGATOR' ? (channel?.orderId ?? '') : '';
     setEntries((list) => [...list, newEntry(method, remaining, lastTerminal(method), reference)]);
@@ -266,6 +299,11 @@ export function PaymentPad({
               key={c.entry.key}
               index={index}
               entry={c.entry}
+              loyalty={
+                c.entry.method === 'LOYALTY' && program !== undefined
+                  ? { balance, pointValue: program.pointValue, minRedeem: program.minRedeem }
+                  : null
+              }
               amount={c.amount}
               tendered={c.tendered}
               problems={c.problems}
@@ -339,11 +377,13 @@ const PROBLEM_KEYS: Readonly<Record<EntryProblem, string>> = {
   reference: 'pos.pay.referenceRequired',
   cardLast4: 'pos.pay.last4Invalid',
   creditNeedsCustomer: 'pos.pay.creditNeedsCustomer',
+  loyalty: 'pos.pay.loyaltyInvalid',
 };
 
 function EntryCard({
   index,
   entry,
+  loyalty,
   amount,
   tendered,
   problems,
@@ -353,6 +393,8 @@ function EntryCard({
 }: {
   index: number;
   entry: PaymentEntry;
+  /** LOYALTY entries: the guest's balance and the program's point value and minimum. */
+  loyalty: { balance: number; pointValue: number; minRedeem: number } | null;
   amount: number | null;
   tendered: number | null;
   problems: readonly EntryProblem[];
@@ -390,7 +432,10 @@ function EntryCard({
         </Button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={t('pos.pay.amount')} error={shown('amount', 'amount')}>
+        <Field
+          label={t('pos.pay.amount')}
+          error={shown('amount', 'amount') ?? shown('amount', 'loyalty')}
+        >
           {(p) => (
             <Input
               {...p}
@@ -513,6 +558,16 @@ function EntryCard({
       )}
       {problems.includes('creditNeedsCustomer') && (
         <Alert tone="warning">{t('pos.pay.creditNeedsCustomer')}</Alert>
+      )}
+      {loyalty !== null && (
+        <p className="text-sm text-muted-foreground">
+          {t('pos.pay.loyaltyUses', {
+            points: amount === null ? 0 : Math.floor(amount / loyalty.pointValue),
+            balance: loyalty.balance,
+            value: money(loyalty.pointValue),
+            min: loyalty.minRedeem,
+          })}
+        </p>
       )}
     </li>
   );

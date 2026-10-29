@@ -19,6 +19,11 @@ export interface BranchSettingsRecord {
   receiptHeader: string;
   receiptFooter: string;
   dayStartsAt: string;
+  /** loyalty.*: the branch's loyalty program (off until the owner turns it on). */
+  loyaltyEnabled: boolean;
+  loyaltyEarnPer100: number;
+  loyaltyPointValue: number;
+  loyaltyMinRedeem: number;
   version: number;
 }
 

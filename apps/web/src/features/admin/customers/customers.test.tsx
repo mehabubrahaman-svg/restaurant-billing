@@ -34,8 +34,30 @@ function hub(routes: Record<string, Handler> = {}, permissions = ['customers.vie
       return json({ data: all });
     },
     [`GET /customers/${CUSTOMER_ID}`]: () => json(makeCustomerDetail()),
+    [`GET /customers/${CUSTOMER_ID}/loyalty`]: () => json(ledger(140)),
     ...routes,
   });
+}
+
+const PROGRAM = { enabled: true, earnPer100: 1, pointValue: 100, minRedeem: 50 };
+function ledger(balance: number, extra: object[] = []) {
+  return {
+    balance,
+    program: PROGRAM,
+    entries: [
+      ...extra,
+      {
+        id: '0f000000-0000-4000-8000-000000000001',
+        kind: 'EARN',
+        points: 140,
+        invoiceId: '0d000000-0000-4000-8000-000000000001',
+        invoiceNo: 'KOL1/2026-27/000123',
+        note: null,
+        createdAt: '2026-10-20T15:00:00.000Z',
+        createdByName: 'Meera',
+      },
+    ],
+  };
 }
 const callsTo = (fetchMock: ReturnType<typeof mockHub>, path: string) =>
   fetchMock.mock.calls.filter(
@@ -78,6 +100,65 @@ describe('Customers', () => {
     );
     expect(screen.getByText('14 times')).toBeInTheDocument();
     await expectNoAxeViolations();
+  });
+
+  it('shows the guest’s points, and lets a manager add some with a reason', async () => {
+    const fetchMock = hub(
+      {
+        [`POST /customers/${CUSTOMER_ID}/loyalty`]: () =>
+          json(
+            ledger(165, [
+              {
+                id: '0f000000-0000-4000-8000-000000000002',
+                kind: 'ADJUST',
+                points: 25,
+                invoiceId: null,
+                invoiceNo: null,
+                note: 'Birthday gift',
+                createdAt: '2026-10-28T15:00:00.000Z',
+                createdByName: 'Ravi Kumar',
+              },
+            ]),
+          ),
+      },
+      ['customers.view', 'loyalty.adjust'],
+    );
+    renderApp(`/admin/customers/${CUSTOMER_ID}`);
+    const section = (await screen.findByRole('heading', { name: 'Loyalty points' })).closest(
+      'section',
+    )!;
+    expect(await within(section).findByText('140 points')).toBeInTheDocument();
+    expect(within(section).getByText('worth ₹140.00')).toBeInTheDocument();
+    const history = within(section).getByRole('table', { name: 'Points history' });
+    expect(within(history).getByText('Earned on a bill')).toBeInTheDocument();
+    expect(within(history).getByText('+140')).toBeInTheDocument();
+
+    fireEvent.click(within(section).getByRole('button', { name: 'Adjust points' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Adjust points' });
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Take away' }));
+    fireEvent.change(within(dialog).getByLabelText(/^Points/), { target: { value: '500' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByText('The guest has only 140 points.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Say why, in a few words.')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Add' }));
+    fireEvent.change(within(dialog).getByLabelText(/^Points/), { target: { value: '25' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Why/), { target: { value: 'Birthday gift' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(await within(section).findByText('165 points')).toBeInTheDocument();
+    expect(within(section).getByText(/Birthday gift/)).toBeInTheDocument();
+    const post = fetchMock.mock.calls.find(
+      ([u, init]) => String(u).endsWith('/loyalty') && init?.method === 'POST',
+    )!;
+    expect(JSON.parse(String(post[1]?.body))).toEqual({ points: 25, note: 'Birthday gift' });
+  });
+
+  it('shows points without the adjust button to staff without loyalty.adjust', async () => {
+    hub({}, ['customers.view']);
+    renderApp(`/admin/customers/${CUSTOMER_ID}`);
+    expect(await screen.findByText('140 points')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Adjust points' })).toBeNull();
   });
 
   it('is in the admin tabs only for customers.view or customers.manage', async () => {

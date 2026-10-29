@@ -4,7 +4,8 @@ import type { ComputedInvoice, ComputedLine } from './tax-engine';
 
 export type InvoiceStatus =
   'UNPAID' | 'PARTIALLY_PAID' | 'PAID' | 'CREDIT' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
-export type PaymentMethod = 'CASH' | 'CARD' | 'UPI' | 'WALLET' | 'CREDIT' | 'AGGREGATOR';
+export type PaymentMethod =
+  'CASH' | 'CARD' | 'UPI' | 'WALLET' | 'CREDIT' | 'AGGREGATOR' | 'LOYALTY';
 
 export interface InvoiceLineRecord extends ComputedLine {
   readonly id: string;

@@ -218,6 +218,10 @@ export const branchSettings = {
   receiptHeader: '',
   receiptFooter: '',
   dayStartsAt: '04:00',
+  loyaltyEnabled: false,
+  loyaltyEarnPer100: 1,
+  loyaltyPointValue: 100,
+  loyaltyMinRedeem: 50,
   version: 1,
 };
 

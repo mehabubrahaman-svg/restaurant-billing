@@ -15,6 +15,7 @@ import {
   Input,
   SegmentedControl,
   Select,
+  Switch,
   Textarea,
 } from '@restroos/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -26,7 +27,7 @@ import { LOCALE_OPTIONS } from '../../../i18n/config';
 import { tDynamic } from '../../../lib/dynamic-t';
 import { useErrorMessage } from '../../../lib/errors';
 import { fieldErrors } from '../../../lib/form';
-import { bpToPercent, percentToBp } from '../../../lib/units';
+import { bpToPercent, paiseToRupees, percentToBp, rupeesToPaise } from '../../../lib/units';
 import { usePermission } from '../../auth/permissions';
 import { gstinProblem } from '../../setup/gstin';
 import { RECEIPT_LANGUAGES, type ReceiptLanguage } from '../../setup/setup-form';
@@ -52,6 +53,9 @@ const MESSAGES = {
   discountLimitBp: 'branch.discountLimitError',
   receiptHeader: 'branch.receiptTextError',
   receiptFooter: 'branch.receiptTextError',
+  loyaltyEarnPer100: 'branch.loyalty.earnError',
+  loyaltyPointValue: 'branch.loyalty.valueError',
+  loyaltyMinRedeem: 'branch.loyalty.minError',
 } as const;
 type ErrorKey =
   | (typeof MESSAGES)[keyof typeof MESSAGES]
@@ -73,10 +77,23 @@ export function BranchSettingsPage() {
 
 type Draft = Omit<
   BranchSettings,
-  'id' | 'code' | 'stateCode' | 'stateName' | 'version' | 'liquorEnabled' | 'discountLimitBp'
+  | 'id'
+  | 'code'
+  | 'stateCode'
+  | 'stateName'
+  | 'version'
+  | 'liquorEnabled'
+  | 'discountLimitBp'
+  | 'loyaltyEarnPer100'
+  | 'loyaltyPointValue'
+  | 'loyaltyMinRedeem'
 > & {
   /** Percent as typed ("10", "12.5"); converted to basis points on save. */
   discountLimit: string;
+  /** As typed: points per ₹100, rupees per point, fewest points spent. */
+  loyaltyEarn: string;
+  loyaltyValue: string;
+  loyaltyMin: string;
   address: string;
   phone: string;
   gstin: string;
@@ -104,6 +121,10 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
     receiptHeader: settings.receiptHeader,
     receiptFooter: settings.receiptFooter,
     dayStartsAt: settings.dayStartsAt,
+    loyaltyEnabled: settings.loyaltyEnabled,
+    loyaltyEarn: String(settings.loyaltyEarnPer100),
+    loyaltyValue: paiseToRupees(settings.loyaltyPointValue),
+    loyaltyMin: String(settings.loyaltyMinRedeem),
   });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof MESSAGES, ErrorKey>>>({});
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
@@ -127,6 +148,10 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
         receiptFooter: draft.receiptFooter,
         dayStartsAt: draft.dayStartsAt,
         discountLimitBp: percentToBp(draft.discountLimit) ?? -1,
+        loyaltyEnabled: draft.loyaltyEnabled,
+        loyaltyEarnPer100: wholeNumber(draft.loyaltyEarn),
+        loyaltyPointValue: rupeesToPaise(draft.loyaltyValue) ?? -1,
+        loyaltyMinRedeem: wholeNumber(draft.loyaltyMin),
       };
       const parsed = UpdateBranchSettingsRequestSchema.safeParse(body);
       const found: Partial<Record<keyof typeof MESSAGES, ErrorKey>> = fieldErrors(parsed, MESSAGES);
@@ -324,6 +349,64 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
 
         <Card>
           <CardHeader>
+            <CardTitle>{t('branch.loyalty.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-3">
+            <Switch
+              className="md:col-span-3"
+              label={t('branch.loyalty.enabled')}
+              description={t('branch.loyalty.enabledHint')}
+              checked={draft.loyaltyEnabled}
+              onCheckedChange={(on) => set({ loyaltyEnabled: on })}
+              disabled={disabled}
+            />
+            <Field
+              label={t('branch.loyalty.earn')}
+              hint={t('branch.loyalty.earnHint')}
+              error={err('loyaltyEarnPer100')}
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  inputMode="numeric"
+                  value={draft.loyaltyEarn}
+                  onChange={(e) => set({ loyaltyEarn: e.target.value })}
+                />
+              )}
+            </Field>
+            <Field
+              label={t('branch.loyalty.value')}
+              hint={t('branch.loyalty.valueHint')}
+              error={err('loyaltyPointValue')}
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  inputMode="decimal"
+                  value={draft.loyaltyValue}
+                  onChange={(e) => set({ loyaltyValue: e.target.value })}
+                />
+              )}
+            </Field>
+            <Field
+              label={t('branch.loyalty.min')}
+              hint={t('branch.loyalty.minHint')}
+              error={err('loyaltyMinRedeem')}
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  inputMode="numeric"
+                  value={draft.loyaltyMin}
+                  onChange={(e) => set({ loyaltyMin: e.target.value })}
+                />
+              )}
+            </Field>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>{t('branch.languagesAndReceipt')}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
@@ -408,4 +491,10 @@ function BranchForm({ settings }: { settings: BranchSettings }) {
       )}
     </form>
   );
+}
+
+/** "12" → 12; anything else fails the request schema (-1). */
+function wholeNumber(input: string): number {
+  const text = input.trim();
+  return /^\d{1,6}$/.test(text) ? Number(text) : -1;
 }

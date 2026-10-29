@@ -30,6 +30,7 @@ import { InvoiceStatusBadge } from '../../../portals/pos/counter-page';
 import { useDayFormat } from '../../reports/use-day-format';
 import { AdminHeader } from '../admin-layout';
 import { QueryState } from '../query-state';
+import { LoyaltySection } from './loyalty-section';
 
 /** /admin/customers?q=: find guests by mobile number or name. */
 export function CustomersPage() {
@@ -177,6 +178,7 @@ export function CustomerDetailPage() {
                 </dd>
               </dl>
             </Card>
+            <LoyaltySection customerId={c.id} />
             <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               <section aria-labelledby="cust-bills" className="flex min-w-0 flex-col gap-2">
                 <h2 id="cust-bills" className="font-semibold">

@@ -22,6 +22,8 @@ export const CustomerSchema = z.object({
   lifetimeValue: PaiseSchema,
   lastVisitAt: z.string().nullable(),
   marketingOptIn: z.boolean(),
+  /** Loyalty points to spend (Phase 5). */
+  loyaltyPoints: z.number().int(),
   version: z.number().int(),
 });
 export type Customer = z.infer<typeof CustomerSchema>;
@@ -60,3 +62,42 @@ export const SaveCustomerRequestSchema = z.object({
 export const UpdateCustomerRequestSchema = patchSchema(SaveCustomerRequestSchema).extend({
   version: z.number().int(),
 });
+
+export const LoyaltyEntrySchema = z.object({
+  id: IdSchema,
+  /** EARN on a paid bill, REDEEM when spent, ADJUST by a manager (EXPIRE is not used yet). */
+  kind: z.enum(['EARN', 'REDEEM', 'EXPIRE', 'ADJUST']),
+  /** Signed: + added, − taken away. */
+  points: z.number().int(),
+  invoiceId: IdSchema.nullable(),
+  invoiceNo: z.string().nullable(),
+  note: z.string().nullable(),
+  createdAt: z.string(),
+  createdByName: z.string().nullable(),
+});
+export type LoyaltyEntry = z.infer<typeof LoyaltyEntrySchema>;
+/** The balance, the latest 100 entries (newest first), and this branch's program. */
+export const LoyaltyLedgerSchema = z.object({
+  balance: z.number().int(),
+  entries: z.array(LoyaltyEntrySchema),
+  program: z.object({
+    enabled: z.boolean(),
+    earnPer100: z.number().int(),
+    /** Paise per point. */
+    pointValue: PaiseSchema,
+    minRedeem: z.number().int(),
+  }),
+});
+export type LoyaltyLedger = z.infer<typeof LoyaltyLedgerSchema>;
+
+/** A manager adds or takes away points, with why (loyalty.adjust). */
+export const AdjustLoyaltyRequestSchema = z.object({
+  points: z
+    .number()
+    .int()
+    .min(-100_000)
+    .max(100_000)
+    .refine((n) => n !== 0, 'not zero'),
+  note: z.string().trim().min(3).max(200),
+});
+export type AdjustLoyaltyRequest = z.infer<typeof AdjustLoyaltyRequestSchema>;

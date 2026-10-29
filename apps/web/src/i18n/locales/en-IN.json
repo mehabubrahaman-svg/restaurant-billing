@@ -304,6 +304,8 @@
       "last4": "Card last 4 digits",
       "last4Invalid": "Enter exactly 4 digits.",
       "creditNeedsCustomer": "Credit needs the customer’s name on the bill. Cancel the bill and add the customer.",
+      "loyaltyInvalid": "Points are spent in whole points, at least the minimum, and no more than the guest has.",
+      "loyaltyUses": "{points, plural, one {Uses # point} other {Uses # points}} of {balance} ({value} each; at least {min} at a time).",
       "record": "Record payment {amount}",
       "paid": "Paid",
       "next": "Next order"
@@ -314,7 +316,8 @@
       "UPI": "UPI",
       "WALLET": "Wallet",
       "CREDIT": "Credit",
-      "AGGREGATOR": "Aggregator"
+      "AGGREGATOR": "Aggregator",
+      "LOYALTY": "Points"
     },
     "payments": {
       "title": "Payments",
@@ -562,6 +565,8 @@
     "pairingCodeInvalid": "This code is wrong, already used or expired. Ask the admin for a new one.",
     "deviceMustRepair": "This device was unpaired. Pair it again with a new code.",
     "tableNotFree": "This table already has guests, a bill, or is blocked.",
+    "loyaltyInsufficient": "The guest doesn’t have that many points.",
+    "loyaltyDisabled": "Loyalty points are off at this branch. Turn them on in Admin → Branch.",
     "tableAlreadyReserved": "Another booking holds this table within 2 hours of that time. Pick another table or time.",
     "orderNotOpen": "This order is billed, paid or cancelled, so it can’t change.",
     "itemAlreadySent": "This item has already gone to the kitchen.",
@@ -996,6 +1001,20 @@
   "branch": {
     "title": "Branch settings",
     "description": "Details printed on bills, registrations, and how bills are rounded.",
+    "loyalty": {
+      "title": "Loyalty points",
+      "enabled": "Guests earn and spend points",
+      "enabledHint": "Guests with their mobile number on the bill earn points on what they pay, and spend them at the counter.",
+      "earn": "Points per ₹100 paid",
+      "earnHint": "Whole ₹100s only: ₹250 earns as ₹200.",
+      "value": "Value of a point (₹)",
+      "valueHint": "What one point takes off the bill.",
+      "min": "Fewest points spent at once",
+      "minHint": "Below this, the counter doesn’t offer points.",
+      "earnError": "A whole number from 0 to 1,000.",
+      "valueError": "Between ₹0.01 and ₹100.",
+      "minError": "A whole number of at least 1."
+    },
     "business": "Business details",
     "stateFixed": "The state and branch code cannot be changed after setup.",
     "registrations": "Tax registrations",
@@ -2130,6 +2149,35 @@
   "customers": {
     "title": "Customers",
     "description": "Guests found by mobile number: their visits, spend and favourite dishes.",
+    "loyalty": {
+      "title": "Loyalty points",
+      "adjust": "Adjust points",
+      "points": "{count, plural, one {# point} other {# points}}",
+      "worth": "worth {amount}",
+      "off": "Points are off at this branch (Admin → Branch).",
+      "none": "No points yet.",
+      "history": "Points history",
+      "what": "What",
+      "change": "Points",
+      "kinds": {
+        "EARN": "Earned on a bill",
+        "REDEEM": "Spent on a bill",
+        "EXPIRE": "Expired",
+        "ADJUST": "Adjusted by a manager"
+      },
+      "adjustTitle": "Adjust points",
+      "balanceNow": "{count, plural, one {Balance now: # point} other {Balance now: # points}}",
+      "direction": "Add or take away",
+      "addPoints": "Add",
+      "removePoints": "Take away",
+      "pointsLabel": "Points",
+      "pointsError": "Enter a whole number of points.",
+      "removeError": "{count, plural, one {The guest has only # point.} other {The guest has only # points.}}",
+      "note": "Why",
+      "noteHint": "Kept with the points, e.g. “Birthday gift”.",
+      "noteError": "Say why, in a few words.",
+      "saved": "{count, plural, one {Saved. The guest now has # point.} other {Saved. The guest now has # points.}}"
+    },
     "search": "Find a guest",
     "searchPlaceholder": "Mobile number or name",
     "hint": "Type at least {min, number} characters of a mobile number or name.",

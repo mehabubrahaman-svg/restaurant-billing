@@ -262,6 +262,66 @@ describe('POS counter: payment', () => {
     expect(localStorage.getItem('restroos.pos-terminal')).toBe('{"CARD":"HDFC-1"}');
   });
 
+  it('spends the guest’s loyalty points as a tender, in whole points', async () => {
+    const guest = '0e300000-0000-4000-8000-000000000001';
+    let invoice = makeInvoice({ grandTotal: 2_07_800, customerId: guest, customerName: 'Asha' });
+    billed([invoice]);
+    const fetchMock = hub({
+      [`GET /orders/${ORDER_ID}/invoices`]: () => json({ data: [invoice] }),
+      [`GET /customers/${guest}/loyalty`]: () =>
+        json({
+          balance: 120,
+          entries: [],
+          program: { enabled: true, earnPer100: 1, pointValue: 100, minRedeem: 50 },
+        }),
+      [`POST /invoices/${INVOICE_ID}/payments`]: () => {
+        invoice = makeInvoice({
+          grandTotal: 2_07_800,
+          paidTotal: 2_07_800,
+          status: 'PAID',
+          version: 2,
+        });
+        return json(invoice);
+      },
+    });
+    renderApp(`/pos?order=${ORDER_ID}`);
+    const pad = await screen.findByRole('region', { name: 'Payment' });
+
+    // All 120 points (₹120) go towards the bill; the hint says what that uses.
+    fireEvent.click(await within(pad).findByRole('button', { name: 'Points' }));
+    const points = await waitFor(() =>
+      pad.querySelector<HTMLElement>('li[data-method="LOYALTY"]')!,
+    );
+    expect(within(points).getByLabelText('Amount (₹)')).toHaveValue('120.00');
+    expect(
+      within(points).getByText('Uses 120 points of 120 (₹1.00 each; at least 50 at a time).'),
+    ).toBeInTheDocument();
+
+    // Fewer than the minimum is refused before it reaches the Hub.
+    fireEvent.change(within(points).getByLabelText('Amount (₹)'), { target: { value: '30' } });
+    press('F8');
+    await waitFor(() => pad.querySelector('li[data-method="CASH"]'));
+    press('F9');
+    expect(
+      await within(points).findByText(
+        'Points are spent in whole points, at least the minimum, and no more than the guest has.',
+      ),
+    ).toBeInTheDocument();
+    expect(callsTo(fetchMock, 'POST', `/invoices/${INVOICE_ID}/payments`)).toHaveLength(0);
+
+    fireEvent.change(within(points).getByLabelText('Amount (₹)'), { target: { value: '120' } });
+    const cash = pad.querySelector<HTMLElement>('li[data-method="CASH"]')!;
+    fireEvent.change(within(cash).getByLabelText('Amount (₹)'), { target: { value: '1958' } });
+    press('F9');
+    expect(await screen.findByText('Paid', { selector: 'p' })).toBeInTheDocument();
+    expect(bodyOf(callsTo(fetchMock, 'POST', `/invoices/${INVOICE_ID}/payments`)[0]!)).toEqual({
+      payments: [
+        { method: 'LOYALTY', amount: 12_000 },
+        { method: 'CASH', amount: 1_95_800 },
+      ],
+    });
+  });
+
   it('pays INV + LIQ together, filling each bill in turn', async () => {
     const inv = makeInvoice({ grandTotal: 27_500 });
     const liq = makeInvoice({

@@ -16,6 +16,8 @@ export interface CustomerRecord {
   lifetimeValue: number;
   lastVisitAt: string | null;
   marketingOptIn: boolean;
+  /** Cached balance of loyalty_transactions (kept by LoyaltyRepository). */
+  loyaltyPoints: number;
   version: number;
 }
 
@@ -40,7 +42,7 @@ export interface CustomerRepository {
 
 type CustomerInput = Omit<
   CustomerRecord,
-  'id' | 'visitCount' | 'lifetimeValue' | 'lastVisitAt' | 'version'
+  'id' | 'visitCount' | 'lifetimeValue' | 'lastVisitAt' | 'loyaltyPoints' | 'version'
 >;
 
 /** Guests by mobile number: who they are, how often they come, what they spend (docs/09 WP 5.6). */
@@ -156,6 +158,7 @@ export class CustomerService {
       visitCount: 0,
       lifetimeValue: 0,
       lastVisitAt: null,
+      loyaltyPoints: 0,
       version: 1,
     };
     this.d.customers.insert(record, ctx.actorId, now);

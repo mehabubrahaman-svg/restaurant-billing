@@ -16,6 +16,10 @@ const BRANCH_SETTING_KEYS = {
   discountLimitBp: 'billing.discount_limit_bp',
   receiptHeader: 'receipt.header',
   receiptFooter: 'receipt.footer',
+  loyaltyEnabled: 'loyalty.enabled',
+  loyaltyEarnPer100: 'loyalty.earn_per_100',
+  loyaltyPointValue: 'loyalty.point_value',
+  loyaltyMinRedeem: 'loyalty.min_redeem',
 } as const;
 
 const DEFAULTS = {
@@ -25,6 +29,11 @@ const DEFAULTS = {
   discountLimitBp: 1000,
   receiptHeader: '',
   receiptFooter: '',
+  // 1 point per ₹100, worth ₹1 each, spent 50 at a time: 1% back.
+  loyaltyEnabled: false,
+  loyaltyEarnPer100: 1,
+  loyaltyPointValue: 100,
+  loyaltyMinRedeem: 50,
 } as const;
 
 export class SqliteSettingsRepository implements SettingsRepository {
@@ -80,6 +89,10 @@ export class SqliteSettingsRepository implements SettingsRepository {
       receiptFooter: get('receiptFooter'),
       dayStartsAt: get('dayStartsAt'),
       discountLimitBp: get('discountLimitBp'),
+      loyaltyEnabled: get('loyaltyEnabled'),
+      loyaltyEarnPer100: get('loyaltyEarnPer100'),
+      loyaltyPointValue: get('loyaltyPointValue'),
+      loyaltyMinRedeem: get('loyaltyMinRedeem'),
       version: row.version,
     };
   }

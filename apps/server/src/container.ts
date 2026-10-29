@@ -7,6 +7,7 @@ import {
   CouponService,
   CustomerService,
   ReservationService,
+  LoyaltyService,
   InventoryProjector,
   InventoryService,
   PurchasingService,
@@ -60,6 +61,7 @@ import {
   SqliteCouponRepository,
   SqliteCustomerRepository,
   SqliteReservationRepository,
+  SqliteLoyaltyRepository,
   SqliteInventoryQueries,
   SqliteInventoryRepository,
   SqliteMenuLookup,
@@ -126,6 +128,7 @@ export interface Cradle {
   menuImporter: MenuImporter;
   floorService: FloorService;
   reservationService: ReservationService;
+  loyaltyService: LoyaltyService;
   deviceService: DeviceService;
   hubNetwork: HubNetwork;
   calendar: BusinessCalendar;
@@ -332,6 +335,17 @@ export function buildContainer(
           ids: c.ids,
         }),
     ),
+    loyaltyService: single(
+      (c) =>
+        new LoyaltyService({
+          loyalty: new SqliteLoyaltyRepository(c.db),
+          customers: new SqliteCustomerRepository(c.db),
+          settings: new SqliteSettingsRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
     salesChannelService: single(
       (c) =>
         new SalesChannelService({
@@ -396,6 +410,7 @@ export function buildContainer(
           channels: new SqliteSalesChannelRepository(c.db),
           customers: new SqliteCustomerRepository(c.db),
           customerService: c.customerService,
+          loyalty: c.loyaltyService,
           calendar: c.calendar,
           defaultTaxGroupId: () =>
             c.db

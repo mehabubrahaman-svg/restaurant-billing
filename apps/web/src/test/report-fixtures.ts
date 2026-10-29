@@ -179,6 +179,7 @@ export function makeCustomer(overrides: Partial<Customer> = {}): Customer {
     lifetimeValue: 18_450_00,
     lastVisitAt: '2026-10-20T15:00:00.000Z',
     marketingOptIn: true,
+    loyaltyPoints: 0,
     version: 3,
     ...overrides,
   };

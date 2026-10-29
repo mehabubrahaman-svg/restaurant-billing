@@ -22,6 +22,7 @@ export const TaxCodeSchema = z.enum(['CGST', 'SGST', 'IGST', 'VAT', 'SURCHARGE',
  * Card and UPI are taken on the restaurant's own standalone terminal; the
  * cashier keys in the approval code / UPI RRN (docs/01 §5.9). CREDIT needs a
  * named customer and billing.credit_sale. AGGREGATOR: the aggregator collected.
+ * LOYALTY: the guest on the bill spends points (whole points, within their balance).
  */
 export const PaymentMethodSchema = z.enum([
   'CASH',
@@ -30,6 +31,7 @@ export const PaymentMethodSchema = z.enum([
   'WALLET',
   'CREDIT',
   'AGGREGATOR',
+  'LOYALTY',
 ]);
 export type PaymentMethod = z.infer<typeof PaymentMethodSchema>;
 
@@ -243,7 +245,7 @@ export const RefundRequestSchema = z
       .max(100)
       .optional(),
     amount: PaiseSchema.positive().optional(),
-    method: PaymentMethodSchema.exclude(['CREDIT', 'AGGREGATOR']),
+    method: PaymentMethodSchema.exclude(['CREDIT', 'AGGREGATOR', 'LOYALTY']),
     reference: z.string().trim().max(40).optional(),
     reason: z.string().trim().min(3).max(200),
   })
