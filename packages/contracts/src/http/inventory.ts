@@ -423,3 +423,63 @@ export const ConsumptionReportSchema = z.object({
   }),
 });
 export type ConsumptionReport = z.infer<typeof ConsumptionReportSchema>;
+
+// ---- stock value (inventory valuation) ------------------------------------------------------
+const ValuationTotals = {
+  openingValue: PaiseSchema,
+  receivedValue: PaiseSchema,
+  soldValue: PaiseSchema,
+  wastageValue: PaiseSchema,
+  adjustedValue: PaiseSchema,
+  closingValue: PaiseSchema,
+  differenceValue: PaiseSchema,
+};
+
+/**
+ * The stock value over a period (docs/05 §3, Phase 5). Opening and closing
+ * are at each day's weighted average cost, worked out again from the
+ * ledger; what moved in between is at the cost it was posted at, as the
+ * books have it. Stock out (or below zero) is valued at nil, so the
+ * difference is what stock sold before it was received, and rounding, left.
+ */
+export const InventoryValuationSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  branchName: z.string(),
+  generatedAt: z.string(),
+  rows: z.array(
+    z.object({
+      inventoryItemId: IdSchema,
+      sku: z.string(),
+      name: z.string(),
+      category: z.string().nullable(),
+      baseUnit: BaseUnitSchema,
+      openingMilli: z.number().int(),
+      /** Paise per 1000 base units, as `avgCostPerBase`. */
+      openingCostPerBase: z.number().int(),
+      /** Purchases, opening stock entered in the period, transfers in. */
+      receivedMilli: z.number().int(),
+      /** By recipe from KOTs, net of reversals. */
+      soldMilli: z.number().int(),
+      wastageMilli: z.number().int(),
+      /** Counts, adjustments, returns and transfers out (signed). */
+      adjustedMilli: z.number().int(),
+      closingMilli: z.number().int(),
+      closingCostPerBase: z.number().int(),
+      ...ValuationTotals,
+    }),
+  ),
+  /** By closing value, largest first. `items`: those with stock. */
+  categories: z.array(
+    z.object({
+      category: z.string().nullable(),
+      items: z.number().int(),
+      value: PaiseSchema,
+      shareBp: z.number().int().nullable(),
+    }),
+  ),
+  totals: z.object(ValuationTotals),
+  /** The Inventory account in the books on `to`, and the closing value less it. */
+  books: z.object({ inventoryAccount: PaiseSchema, difference: PaiseSchema }),
+});
+export type InventoryValuation = z.infer<typeof InventoryValuationSchema>;

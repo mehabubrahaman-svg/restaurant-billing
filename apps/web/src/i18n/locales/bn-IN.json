@@ -2772,7 +2772,8 @@
         "DAY_END": "দিনের শেষের রিপোর্ট",
         "GSTR1": "GSTR-1",
         "GSTR3B": "GSTR-3B",
-        "VAT_REGISTER": "VAT রেজিস্টার"
+        "VAT_REGISTER": "VAT রেজিস্টার",
+        "INVENTORY_VALUATION": "স্টকের মূল্য"
       },
       "frequencies": {
         "DAILY": "প্রতিদিন",
@@ -3253,7 +3254,8 @@
       "stock": "মাল আসা-যাওয়া",
       "counts": "গোনা",
       "alerts": "সতর্কতা",
-      "consumption": "মাল খরচ"
+      "consumption": "মাল খরচ",
+      "valuation": "স্টকের মূল্য"
     },
     "fields": {
       "item": "জিনিস",
@@ -3506,6 +3508,38 @@
       "total": "মোট",
       "overLimit": "সীমার বেশি",
       "flagged": "{count, plural, one {#টি জিনিস} other {#টি জিনিস}} রেসিপি থেকে {limit}%-এর বেশি সরে আছে।"
+    },
+    "valuation": {
+      "title": "স্টকের মূল্য",
+      "description": "গড় খরচে স্টকের দাম কত, এই সময়ে তা কীভাবে বদলেছে, আর হিসাবপত্রে কী লেখা আছে।",
+      "today": "আজ",
+      "thisMonth": "এই মাস",
+      "lastMonth": "গত মাস",
+      "empty": "মূল্য ধরার মতো কোনো জিনিস নেই।",
+      "printed": "{branch} · {from} থেকে {to}",
+      "openingOn": "{date}-এ শুরুর স্টক",
+      "closingOn": "{date}-এ স্টকের মূল্য",
+      "closingRow": "{date}-এ শেষের স্টক",
+      "received": "এসেছে",
+      "sold": "বিক্রিতে খরচ",
+      "wastage": "অপচয়",
+      "adjusted": "গোনা আর কম-বেশি",
+      "difference": "খরচের তফাত",
+      "legend": "শুরুর আর শেষের স্টক সেই দিনের গড় খরচে; মাঝে যা এসেছে-গেছে, তা যে খরচে লেখা হয়েছিল সেই খরচে।",
+      "differenceHint": "খরচের তফাত: আসার আগে বিক্রি হওয়া মাল পুরোনো গড় খরচে (বা শূন্যে) বেরিয়েছে, আর গড় খরচ পয়সা পর্যন্ত গোল করা হয়।",
+      "inStock": "স্টকে থাকা জিনিস",
+      "idle": "এই সময়ে কাজে লাগেনি",
+      "idleItems": "{count, plural, one {#টি জিনিস} other {#টি জিনিস}} স্টকে আছে, কিন্তু বিক্রি নেই",
+      "booksDifference": "হিসাবপত্রের সঙ্গে তফাত",
+      "booksAre": "হিসাবপত্রে Inventory খাতা: {amount}",
+      "belowZero": "{count, plural, one {#টি জিনিস} other {#টি জিনিস}} শূন্যের নিচে, তাই মূল্য শূন্য ধরা হয়েছে। মূল্য ঠিক করতে মাল তুলুন বা গুনে নিন।",
+      "belowZeroBadge": "শূন্যের নিচে",
+      "idleBadge": "কাজে লাগেনি",
+      "movement": "মূল্য কীভাবে বদলেছে",
+      "byCategory": "বিভাগ অনুযায়ী",
+      "items": "জিনিস",
+      "share": "ভাগ",
+      "total": "মোট"
     },
     "recipe": {
       "title": "রেসিপি",

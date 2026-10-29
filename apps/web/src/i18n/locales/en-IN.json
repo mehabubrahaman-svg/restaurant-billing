@@ -2772,7 +2772,8 @@
         "DAY_END": "Day-end report",
         "GSTR1": "GSTR-1",
         "GSTR3B": "GSTR-3B",
-        "VAT_REGISTER": "VAT register"
+        "VAT_REGISTER": "VAT register",
+        "INVENTORY_VALUATION": "Stock value"
       },
       "frequencies": {
         "DAILY": "Daily",
@@ -3253,7 +3254,8 @@
       "stock": "Stock in & out",
       "counts": "Counts",
       "alerts": "Alerts",
-      "consumption": "Consumption"
+      "consumption": "Consumption",
+      "valuation": "Stock value"
     },
     "fields": {
       "item": "Item",
@@ -3506,6 +3508,38 @@
       "total": "Total",
       "overLimit": "above the limit",
       "flagged": "{count, plural, one {# item is} other {# items are}} more than {limit}% off the recipes."
+    },
+    "valuation": {
+      "title": "Stock value",
+      "description": "What the stock is worth at average cost, how that changed over the period, and the books beside it.",
+      "today": "Today",
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "empty": "No stock items to value.",
+      "printed": "{branch} · {from} to {to}",
+      "openingOn": "Opening stock on {date}",
+      "closingOn": "Stock value on {date}",
+      "closingRow": "Closing stock on {date}",
+      "received": "Received",
+      "sold": "Used in sales",
+      "wastage": "Wastage",
+      "adjusted": "Counts and adjustments",
+      "difference": "Cost difference",
+      "legend": "Opening and closing stock are at that day’s average cost; what moved in between is at the cost it was booked at.",
+      "differenceHint": "The cost difference is stock sold before it was received, which went out at the old average cost (or at nil), and average costs rounded to the paisa.",
+      "inStock": "Items in stock",
+      "idle": "Not used in the period",
+      "idleItems": "{count, plural, one {# item} other {# items}} with stock and no sales",
+      "booksDifference": "Difference from the books",
+      "booksAre": "Inventory account in the books: {amount}",
+      "belowZero": "{count, plural, one {# item is} other {# items are}} below zero and valued at nil. Receive or count {count, plural, one {it} other {them}} to set the value right.",
+      "belowZeroBadge": "Below zero",
+      "idleBadge": "Not used",
+      "movement": "How the value moved",
+      "byCategory": "By category",
+      "items": "Items",
+      "share": "Share",
+      "total": "Total"
     },
     "recipe": {
       "title": "Recipe",

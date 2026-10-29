@@ -469,6 +469,7 @@ export function buildContainer(
           }),
           reports: c.reportQueries,
           gst: c.gstQueries,
+          inventory: new SqliteInventoryQueries(c.db),
           settings: new SqliteSettingsRepository(c.db),
           calendar: c.calendar,
           xlsx: writeXlsx,

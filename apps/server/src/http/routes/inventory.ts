@@ -1,3 +1,4 @@
+import { inventoryValuationWorkbook } from '@restroos/application';
 import {
   CalendarDateSchema,
   AdjustmentRequestSchema,
@@ -16,6 +17,7 @@ import {
   type AddonIngredients,
   type ConsumptionReport,
   type InventoryItem,
+  type InventoryValuation,
   type InventoryItemsResponse,
   type Recipe,
   type RecipesResponse,
@@ -24,11 +26,12 @@ import {
   type StockEntryResponse,
   type StockMovementsResponse,
 } from '@restroos/contracts';
-import { DomainError } from '@restroos/domain';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Cradle } from '../../container';
 import { commandContext } from '../context';
+import { HttpProblem } from '../problem';
+import { checkRange, sendWorkbook } from './reports';
 
 const IdParams = z.object({ id: z.uuid() });
 const ItemsQuery = z.object({ includeRetired: z.enum(['true', 'false']).default('false') });
@@ -200,16 +203,53 @@ export async function inventoryRoutes(app: FastifyInstance, { cradle }: { cradle
   );
 
   // ---- reports ------------------------------------------------------------------------
+  const REPORT = { permission: 'reports.inventory' } as const;
+  const rangeOf = (request: FastifyRequest) => {
+    const { from, to } = RangeQuery.parse(request.query);
+    checkRange(from, to, MAX_RANGE_DAYS);
+    return { from, to };
+  };
   app.get(
     '/reports/consumption',
-    { config: { permission: 'reports.inventory' } },
+    { config: REPORT },
     async (request): Promise<ConsumptionReport> => {
-      const { from, to } = RangeQuery.parse(request.query);
-      const days = (Date.parse(to) - Date.parse(from)) / 86_400_000;
-      if (days < 0 || days >= MAX_RANGE_DAYS) {
-        throw new DomainError('VALIDATION_FAILED', `the range must be 1 to ${MAX_RANGE_DAYS} days`);
-      }
+      const { from, to } = rangeOf(request);
       return inventory.consumption(branchOf(request), from, to);
     },
   );
+
+  /** Phase 5: the stock value at weighted average cost, over a period and against the books. */
+  app.get(
+    '/reports/inventory-valuation',
+    { config: REPORT },
+    async (request): Promise<InventoryValuation> => {
+      const { from, to } = rangeOf(request);
+      return inventory.valuation(branchOf(request), from, to);
+    },
+  );
+  for (const format of ['xlsx', 'csv'] as const) {
+    // Exports need reports.export, and reading the report needs reports.inventory as well.
+    app.get(
+      `/reports/inventory-valuation.${format}`,
+      { config: { permission: 'reports.export' } },
+      async (request, reply) => {
+        if (!request.principal!.permissions.has('reports.inventory')) {
+          throw new HttpProblem(
+            'FORBIDDEN',
+            'you need the reports.inventory permission',
+            undefined,
+            'reports.inventory',
+          );
+        }
+        const { from, to } = rangeOf(request);
+        const view = inventory.valuation(branchOf(request), from, to);
+        return sendWorkbook(
+          reply,
+          inventoryValuationWorkbook(view),
+          `stock-value-${from}-to-${to}`,
+          format,
+        );
+      },
+    );
+  }
 }

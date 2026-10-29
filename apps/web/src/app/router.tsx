@@ -158,6 +158,9 @@ const AlertsPage = lazy(() =>
 const ConsumptionPage = lazy(() =>
   import('../portals/inventory/consumption-page').then((m) => ({ default: m.ConsumptionPage })),
 );
+const ValuationPage = lazy(() =>
+  import('../portals/inventory/valuation-page').then((m) => ({ default: m.ValuationPage })),
+);
 const DevicesPage = lazy(() =>
   import('../features/devices/devices-page').then((m) => ({ default: m.DevicesPage })),
 );
@@ -550,6 +553,14 @@ function reportsRoutes(): RouteObject {
           </SectionGuard>
         ),
       },
+      {
+        path: 'valuation',
+        element: (
+          <SectionGuard permission={CONSUMPTION_PERMISSION} labelKey="inventory.tabs.valuation">
+            <ValuationPage />
+          </SectionGuard>
+        ),
+      },
     ],
   };
 }
@@ -564,6 +575,7 @@ function SectionGuard({
   labelKey:
     | 'inventory.tabs.stock'
     | 'inventory.tabs.consumption'
+    | 'inventory.tabs.valuation'
     | 'reports.tabs.gst'
     | 'reports.tabs.scheduled';
   children: ReactNode;
@@ -604,6 +616,14 @@ function inventoryRoutes(): RouteObject {
         element: (
           <SectionGuard permission={CONSUMPTION_PERMISSION} labelKey="inventory.tabs.consumption">
             <ConsumptionPage />
+          </SectionGuard>
+        ),
+      },
+      {
+        path: 'valuation',
+        element: (
+          <SectionGuard permission={CONSUMPTION_PERMISSION} labelKey="inventory.tabs.valuation">
+            <ValuationPage />
           </SectionGuard>
         ),
       },

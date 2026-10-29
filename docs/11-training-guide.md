@@ -108,6 +108,10 @@ bill / record payment · Esc close.
   weeks, payment mix, best sellers.
 - **Accountant**: Reports → Sales register CSV for any date range, with
   CGST, SGST and VAT per invoice and credit notes as negative rows.
+- **Stock value**: Reports → Stock value (also under Stock) shows what the
+  store room is worth at average cost on any day, how it moved over the
+  period, and the difference from the books. For the month-end closing
+  stock, schedule it monthly under Reports → Scheduled.
 - **Backups** run every hour by themselves. Keep the USB drive plugged in.
   Keep the **backup passphrase** card safe: without it a backup can't be
   restored on a new PC.

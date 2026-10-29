@@ -1,4 +1,5 @@
 import { DomainError } from '@restroos/domain';
+import type { InventoryQueries } from '../inventory/ports';
 import type { BusinessCalendar } from '../ordering/ports';
 import type { Patch } from '../patch';
 import type { Clock } from '../ports/clock';
@@ -8,22 +9,35 @@ import type { SettingsRepository } from '../settings/ports';
 import { recordChanged } from '../shared-events';
 import { dayEndCsv, salesRegisterCsv } from './csv';
 import { gstr1Workbook, gstr3bWorkbook, vatRegisterWorkbook, type GstReturnQueries } from './gst';
+import { inventoryValuationWorkbook } from './inventory-workbook';
 import { addDays, lastCompletePeriod, type Period, type PeriodGrouping } from './periods';
 import type { ReportQueries } from './ports';
 import { salesRegisterWorkbook, salesReportWorkbook } from './sales-workbook';
 import { workbookToCsv, type Workbook } from './workbook';
 
 export type ScheduledReport =
-  'SALES' | 'SALES_REGISTER' | 'DAY_END' | 'GSTR1' | 'GSTR3B' | 'VAT_REGISTER';
+  | 'SALES'
+  | 'SALES_REGISTER'
+  | 'DAY_END'
+  | 'GSTR1'
+  | 'GSTR3B'
+  | 'VAT_REGISTER'
+  | 'INVENTORY_VALUATION';
 export type ScheduleFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 export type ReportFileFormat = 'XLSX' | 'CSV';
 
-/** GST returns and the VAT register need reports.financial. */
-export const FINANCIAL_REPORTS: ReadonlySet<ScheduledReport> = new Set([
-  'GSTR1',
-  'GSTR3B',
-  'VAT_REGISTER',
-]);
+/**
+ * What reading a report needs besides reports.export: GST returns and the
+ * VAT register need reports.financial, the stock value reports.inventory.
+ */
+export const REPORT_READ_PERMISSION: Partial<
+  Record<ScheduledReport, 'reports.financial' | 'reports.inventory'>
+> = {
+  GSTR1: 'reports.financial',
+  GSTR3B: 'reports.financial',
+  VAT_REGISTER: 'reports.financial',
+  INVENTORY_VALUATION: 'reports.inventory',
+};
 
 export interface ReportScheduleRecord {
   id: string;
@@ -105,6 +119,7 @@ const SLUG: Record<ScheduledReport, string> = {
   GSTR1: 'gstr1',
   GSTR3B: 'gstr3b',
   VAT_REGISTER: 'vat-register',
+  INVENTORY_VALUATION: 'stock-value',
 };
 /** Files are kept this long, then removed. */
 export const REPORT_FILE_RETENTION_DAYS = 400;
@@ -131,6 +146,7 @@ export class ReportScheduleService {
       store: ReportFileStore;
       reports: ReportQueries;
       gst: GstReturnQueries;
+      inventory: Pick<InventoryQueries, 'valuation'>;
       settings: SettingsRepository;
       calendar: BusinessCalendar;
       /** Workbook → .xlsx bytes. */
@@ -342,6 +358,8 @@ export class ReportScheduleService {
         return gstr3bWorkbook(this.d.gst.gstr3b(branchId, from, to, now));
       case 'VAT_REGISTER':
         return vatRegisterWorkbook(this.d.gst.vatRegister(branchId, from, to, now));
+      case 'INVENTORY_VALUATION':
+        return inventoryValuationWorkbook(this.d.inventory.valuation(branchId, from, to, now));
       case 'DAY_END':
         throw new DomainError('VALIDATION_FAILED', 'the day-end report is a CSV');
     }

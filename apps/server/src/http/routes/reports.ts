@@ -1,5 +1,5 @@
 import {
-  FINANCIAL_REPORTS,
+  REPORT_READ_PERMISSION,
   dayEndCsv,
   gstr1Workbook,
   gstr3bWorkbook,
@@ -253,17 +253,15 @@ export async function reportRoutes(app: FastifyInstance, { cradle }: { cradle: C
   // ---- scheduled reports (Phase 5) -------------------------------------------------
   const EXPORT = { permission: 'reports.export' } as const;
   const schedules = cradle.reportScheduleService;
-  /** GST returns and the VAT register also need reports.financial. */
-  const mayRead = (r: FastifyRequest, report: ScheduledReport) =>
-    !FINANCIAL_REPORTS.has(report) || r.principal!.permissions.has('reports.financial');
+  /** GST returns and the VAT register also need reports.financial, the stock value reports.inventory. */
+  const mayRead = (r: FastifyRequest, report: ScheduledReport) => {
+    const needs = REPORT_READ_PERMISSION[report];
+    return needs === undefined || r.principal!.permissions.has(needs);
+  };
   const mustRead = (r: FastifyRequest, report: ScheduledReport) => {
     if (mayRead(r, report)) return;
-    throw new HttpProblem(
-      'FORBIDDEN',
-      'you need the reports.financial permission',
-      undefined,
-      'reports.financial',
-    );
+    const needs = REPORT_READ_PERMISSION[report]!;
+    throw new HttpProblem('FORBIDDEN', `you need the ${needs} permission`, undefined, needs);
   };
 
   app.get('/report-schedules', { config: EXPORT }, async (request) => ({

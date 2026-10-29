@@ -4,6 +4,9 @@ import type {
   ConsumptionRowView,
   InventoryItemView,
   InventoryQueries,
+  InventoryValuationRowView,
+  InventoryValuationTotals,
+  InventoryValuationView,
   MovementType,
   RecipeView,
   StockAlertsView,
@@ -11,7 +14,15 @@ import type {
   StockCountView,
   StockMovementView,
 } from '@restroos/application';
-import { portionCost, shareBp, stockLevel, stockValue, stockValueOfSum } from '@restroos/domain';
+import {
+  averageCostAfter,
+  portionCost,
+  shareBp,
+  stockLevel,
+  stockValue,
+  stockValueOfSum,
+  type StockInflow,
+} from '@restroos/domain';
 import type { SqliteDatabase } from '../db/connection';
 
 type ItemRow = Omit<
@@ -407,6 +418,158 @@ export class SqliteInventoryQueries implements InventoryQueries {
         varianceBp:
           totals.soldValue > 0 ? shareBp(-totals.countVarianceValue, totals.soldValue) : null,
       },
+    };
+  }
+
+  valuation(branchId: string, from: string, to: string, now: Date): InventoryValuationView {
+    type Row = Omit<
+      InventoryValuationRowView,
+      | 'openingCostPerBase'
+      | 'openingValue'
+      | 'receivedValue'
+      | 'soldValue'
+      | 'wastageValue'
+      | 'adjustedValue'
+      | 'closingCostPerBase'
+      | 'closingValue'
+      | 'differenceValue'
+    > & {
+      isActive: number;
+      receivedRaw: number;
+      soldRaw: number;
+      wastageRaw: number;
+      adjustedRaw: number;
+    };
+    const IN_PERIOD = 'sm.business_date >= @from';
+    const ADJUSTED = `(${IS_ADJUSTED} OR ${IS_COUNT})`;
+    const rows = this.db
+      .prepare<{ branchId: string; from: string; to: string }, Row>(
+        `SELECT i.id AS inventoryItemId, i.sku, i.name, i.category, i.base_unit_code AS baseUnit,
+                (i.deleted_at IS NULL) AS isActive,
+                coalesce(sum(CASE WHEN sm.business_date < @from THEN sm.qty_milli END), 0) AS openingMilli,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND sm.movement_type IN ${RECEIVED}
+                                  THEN sm.qty_milli END), 0) AS receivedMilli,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND sm.movement_type IN ${SALE}
+                                  THEN -sm.qty_milli END), 0) AS soldMilli,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND sm.movement_type = 'WASTAGE'
+                                  THEN -sm.qty_milli END), 0) AS wastageMilli,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND ${ADJUSTED}
+                                  THEN sm.qty_milli END), 0) AS adjustedMilli,
+                coalesce(sum(sm.qty_milli), 0) AS closingMilli,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND sm.movement_type IN ${RECEIVED}
+                                  THEN sm.qty_milli * sm.unit_cost_per_base END), 0) AS receivedRaw,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND sm.movement_type IN ${SALE}
+                                  THEN -sm.qty_milli * sm.unit_cost_per_base END), 0) AS soldRaw,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND sm.movement_type = 'WASTAGE'
+                                  THEN -sm.qty_milli * sm.unit_cost_per_base END), 0) AS wastageRaw,
+                coalesce(sum(CASE WHEN ${IN_PERIOD} AND ${ADJUSTED}
+                                  THEN sm.qty_milli * sm.unit_cost_per_base END), 0) AS adjustedRaw
+           FROM inventory_items i
+           LEFT JOIN stock_movements sm ON sm.inventory_item_id = i.id AND sm.branch_id = @branchId
+                                       AND sm.business_date <= @to
+          GROUP BY i.id
+          ${ITEM_ORDER}`,
+      )
+      .all({ branchId, from, to });
+
+    // Only stock coming in moves the average; replayed in the order it was posted.
+    const inflows = new Map<string, (StockInflow & { businessDate: string })[]>();
+    for (const m of this.db
+      .prepare<[string, string], StockInflow & { inventoryItemId: string; businessDate: string }>(
+        `SELECT inventory_item_id AS inventoryItemId, business_date AS businessDate, qty_milli AS qtyMilli,
+                balance_after_milli AS balanceAfterMilli, unit_cost_per_base AS unitCostPerBase
+           FROM stock_movements
+          WHERE branch_id = ? AND business_date <= ? AND qty_milli > 0
+          ORDER BY rowid`,
+      )
+      .iterate(branchId, to)) {
+      const list = inflows.get(m.inventoryItemId) ?? [];
+      list.push(m);
+      inflows.set(m.inventoryItemId, list);
+    }
+
+    const valueAt = (milli: number, cost: number) => (milli > 0 ? stockValue(milli, cost) : 0);
+    const out: InventoryValuationRowView[] = rows
+      .filter(
+        (r) =>
+          r.isActive === 1 ||
+          r.openingMilli !== 0 ||
+          r.closingMilli !== 0 ||
+          r.soldMilli !== 0 ||
+          r.receivedMilli !== 0,
+      )
+      .map(({ isActive: _active, receivedRaw, soldRaw, wastageRaw, adjustedRaw, ...r }) => {
+        const came = inflows.get(r.inventoryItemId) ?? [];
+        const openingCostPerBase = averageCostAfter(came.filter((m) => m.businessDate < from));
+        const closingCostPerBase = averageCostAfter(came);
+        const figures = {
+          openingValue: valueAt(r.openingMilli, openingCostPerBase),
+          receivedValue: stockValueOfSum(receivedRaw),
+          soldValue: stockValueOfSum(soldRaw),
+          wastageValue: stockValueOfSum(wastageRaw),
+          adjustedValue: stockValueOfSum(adjustedRaw),
+          closingValue: valueAt(r.closingMilli, closingCostPerBase),
+        };
+        return {
+          ...r,
+          ...figures,
+          openingCostPerBase,
+          closingCostPerBase,
+          differenceValue:
+            figures.closingValue -
+            figures.openingValue -
+            figures.receivedValue +
+            figures.soldValue +
+            figures.wastageValue -
+            figures.adjustedValue,
+        };
+      });
+
+    const sum = (key: keyof InventoryValuationTotals) => out.reduce((s, r) => s + r[key], 0);
+    const totals: InventoryValuationTotals = {
+      openingValue: sum('openingValue'),
+      receivedValue: sum('receivedValue'),
+      soldValue: sum('soldValue'),
+      wastageValue: sum('wastageValue'),
+      adjustedValue: sum('adjustedValue'),
+      closingValue: sum('closingValue'),
+      differenceValue: sum('differenceValue'),
+    };
+    const byCategory = new Map<string | null, { items: number; value: number }>();
+    for (const r of out) {
+      const c = byCategory.get(r.category) ?? { items: 0, value: 0 };
+      byCategory.set(r.category, {
+        items: c.items + (r.closingMilli > 0 ? 1 : 0),
+        value: c.value + r.closingValue,
+      });
+    }
+    const categories = [...byCategory]
+      .map(([category, c]) => ({ category, ...c, shareBp: shareBp(c.value, totals.closingValue) }))
+      .sort((a, b) => b.value - a.value);
+
+    // The books keep stock on the Inventory account (docs/03 §4.4).
+    const inventoryAccount = this.db
+      .prepare<{ branchId: string; to: string }, { balance: number }>(
+        `SELECT coalesce(sum(jl.debit) - sum(jl.credit), 0) AS balance
+           FROM journal_lines jl
+           JOIN journal_entries je ON je.id = jl.journal_entry_id
+           JOIN accounts a ON a.id = jl.account_id
+          WHERE je.branch_id = @branchId AND je.entry_date <= @to AND a.system_tag = 'INVENTORY'`,
+      )
+      .get({ branchId, to })!.balance;
+    const branch = this.db
+      .prepare<[string], { name: string }>('SELECT name FROM branches WHERE id = ?')
+      .get(branchId);
+
+    return {
+      from,
+      to,
+      branchName: branch?.name ?? '',
+      generatedAt: now.toISOString(),
+      rows: out,
+      categories,
+      totals,
+      books: { inventoryAccount, difference: totals.closingValue - inventoryAccount },
     };
   }
 }

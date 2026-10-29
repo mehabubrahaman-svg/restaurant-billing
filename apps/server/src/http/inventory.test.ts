@@ -2,18 +2,22 @@ import {
   ConsumptionReportSchema,
   InventoryItemSchema,
   InventoryItemsResponseSchema,
+  InventoryValuationSchema,
   OrderSchema,
   RecipeSchema,
   RecipesResponseSchema,
+  ReportScheduleSchema,
   StockAlertsSchema,
   StockCountSchema,
   StockEntryResponseSchema,
   StockMovementsResponseSchema,
+  TrialBalanceSchema,
   type InventoryItem,
+  type InventoryValuation,
 } from '@restroos/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
 import { restaurantServer } from '../testing/restaurant';
-import { signInAs, trail, type Call } from '../testing/staff';
+import { caller, signInAs, trail, type Call } from '../testing/staff';
 import type { TestServer } from '../testing/test-server';
 
 let s: TestServer | undefined;
@@ -21,6 +25,7 @@ afterEach(async () => s?.close());
 
 const KG = 1_000_000;
 const G = 1_000;
+const DAY = 24 * 60 * 60_000;
 
 /**
  * The restaurant fixture plus a store room: rice, chicken (perishable, two
@@ -530,6 +535,179 @@ describe('inventory', () => {
         expired: false,
       }),
     ]);
+  });
+
+  it('values stock on any day at that day’s average cost, against the books', async () => {
+    const r = await storeRoom();
+    const { admin, items, menu, tables, ok } = r;
+    // 28 October: a biryani with raita (curd goes 50 g below zero), and 1 kg of rice spoiled.
+    await fire(r, admin, tables.t1.id, [
+      {
+        menuItemId: menu.biryani.id,
+        variantId: menu.full.id,
+        quantity: 1,
+        addons: [{ addonId: menu.raita.id }],
+      },
+    ]);
+    await ok(
+      admin('POST', '/stock/wastage', {
+        reason: 'Rats got into the sack',
+        lines: [{ inventoryItemId: items.rice.id, qtyMilli: KG }],
+      }),
+      StockEntryResponseSchema,
+    );
+    // 29 October (signed in again): rice at ₹120 a kg, and the first curd at ₹200.
+    r.s.clock.advance(DAY);
+    const owner = caller(r.s, (await r.s.login()).accessToken);
+    const valuation = async (from: string, to: string) =>
+      ok(
+        owner('GET', `/reports/inventory-valuation?from=${from}&to=${to}`),
+        InventoryValuationSchema,
+      );
+    await ok(
+      owner('POST', '/stock/receipts', {
+        lines: [
+          { inventoryItemId: items.rice.id, qtyMilli: 10 * KG, totalCost: 120_000 },
+          { inventoryItemId: items.curd.id, qtyMilli: KG, totalCost: 20_000 },
+        ],
+      }),
+      StockEntryResponseSchema,
+    );
+
+    // The 28th, read on the 29th, is still at the 28th's ₹86.67.
+    const first = await valuation('2026-10-28', '2026-10-28');
+    const row = (v: InventoryValuation, sku: string) => v.rows.find((x) => x.sku === sku)!;
+    expect(row(first, 'RICE-BAS')).toMatchObject({
+      openingMilli: 0,
+      openingValue: 0,
+      receivedMilli: 30 * KG,
+      receivedValue: 260_000,
+      soldMilli: 250 * G,
+      soldValue: 2_167,
+      wastageMilli: KG,
+      wastageValue: 8_667,
+      adjustedMilli: 0,
+      closingMilli: 28_750 * G,
+      closingCostPerBase: 8_667,
+      closingValue: 249_176,
+      // 30 kg at ₹86.67 is 10 paise more than was paid
+      differenceValue: 10,
+    });
+    // Below zero is valued at nil.
+    expect(row(first, 'CURD')).toMatchObject({ closingMilli: -50 * G, closingValue: 0 });
+
+    // The 29th opens at the 28th's closing; the new rice moves the average to ₹95.27.
+    const second = await valuation('2026-10-29', '2026-10-29');
+    expect(row(second, 'RICE-BAS')).toMatchObject({
+      openingMilli: 28_750 * G,
+      openingCostPerBase: 8_667,
+      openingValue: 249_176,
+      receivedValue: 120_000,
+      closingMilli: 38_750 * G,
+      closingCostPerBase: 9_527,
+      closingValue: 369_171,
+      differenceValue: -5,
+    });
+    // The 50 g sold before any curd came in went out at nil: ₹10 left as a difference.
+    expect(row(second, 'CURD')).toMatchObject({
+      openingValue: 0,
+      receivedValue: 20_000,
+      closingMilli: 950 * G,
+      closingCostPerBase: 20_000,
+      closingValue: 19_000,
+      differenceValue: -1_000,
+    });
+    // Today's closing is what the items list says.
+    const list = InventoryItemsResponseSchema.parse(
+      (await owner('GET', '/inventory-items')).json(),
+    ).data;
+    expect(
+      second.rows.map((x) => [x.sku, x.closingMilli, x.closingCostPerBase, x.closingValue]),
+    ).toEqual(
+      expect.arrayContaining(list.map((i) => [i.sku, i.qtyMilli, i.avgCostPerBase, i.value])),
+    );
+    expect(second.rows).toHaveLength(list.length);
+    expect(second.totals.closingValue).toBe(list.reduce((s, i) => s + i.value, 0));
+    expect(second.categories.map((c) => [c.category, c.items])).toEqual([
+      ['Grains', 1],
+      ['Meat', 1],
+      [null, 3],
+    ]);
+
+    // Both days at once roll forward from nothing to today.
+    const both = await valuation('2026-10-28', '2026-10-29');
+    const t = both.totals;
+    expect(t.closingValue).toBe(second.totals.closingValue);
+    expect(t.openingValue).toBe(0);
+    expect(
+      t.openingValue +
+        t.receivedValue -
+        t.soldValue -
+        t.wastageValue +
+        t.adjustedValue +
+        t.differenceValue,
+    ).toBe(t.closingValue);
+
+    // The books hold stock on Inventory (1200): the same as the trial balance.
+    const tb = await ok(owner('GET', '/reports/trial-balance?asOf=2026-10-29'), TrialBalanceSchema);
+    const books = tb.rows.find((a) => a.code === '1200')!;
+    expect(second.books).toEqual({
+      inventoryAccount: books.debit - books.credit,
+      difference: second.totals.closingValue - (books.debit - books.credit),
+    });
+
+    const xlsx = await owner(
+      'GET',
+      '/reports/inventory-valuation.xlsx?from=2026-10-28&to=2026-10-29',
+    );
+    expect(xlsx.statusCode).toBe(200);
+    expect(xlsx.headers['content-disposition']).toContain(
+      'stock-value-2026-10-28-to-2026-10-29.xlsx',
+    );
+    expect(xlsx.rawPayload.subarray(0, 2).toString()).toBe('PK');
+    const csv = await owner(
+      'GET',
+      '/reports/inventory-valuation.csv?from=2026-10-29&to=2026-10-29',
+    );
+    const rupees = (paise: number) => (paise / 100).toFixed(2);
+    expect(csv.body).toContain(`Closing stock (2026-10-29),${rupees(second.totals.closingValue)}`);
+    expect(csv.body).toContain(`Closing stock less the books,${rupees(second.books.difference)}`);
+    expect(csv.body).toContain('RICE-BAS,Basmati rice,Grains,kg,28.750,2491.76,10.000,1200.00');
+
+    // Scheduled: the day before as a file, once the day has ended.
+    await ok(
+      owner('POST', '/report-schedules', {
+        report: 'INVENTORY_VALUATION',
+        frequency: 'DAILY',
+        format: 'CSV',
+      }),
+      ReportScheduleSchema,
+    );
+    const made = r.s.container.cradle.reportScheduleService.runDue();
+    expect(made.failed).toEqual([]);
+    expect(made.made.map((f) => f.fileName)).toEqual(['stock-value-2026-10-28.csv']);
+    const file = await owner('GET', `/report-files/${made.made[0]!.id}/download`);
+    expect(file.body).toContain(`Closing stock (2026-10-28),${rupees(first.totals.closingValue)}`);
+
+    // Stock staff read it but don't export it; cashiers don't see it.
+    const store = await signInAs(r.s, owner, 'INVENTORY', 'gopal');
+    const cashier = await signInAs(r.s, owner, 'CASHIER', 'meera');
+    expect(
+      (await store('GET', '/reports/inventory-valuation?from=2026-10-01&to=2026-10-29')).statusCode,
+    ).toBe(200);
+    expect(
+      (await store('GET', '/reports/inventory-valuation.xlsx?from=2026-10-01&to=2026-10-29'))
+        .statusCode,
+    ).toBe(403);
+    expect(
+      (await cashier('GET', '/reports/inventory-valuation?from=2026-10-01&to=2026-10-29'))
+        .statusCode,
+    ).toBe(403);
+    const tooLong = await owner(
+      'GET',
+      '/reports/inventory-valuation?from=2025-01-01&to=2026-10-29',
+    );
+    expect(tooLong.json().code).toBe('VALIDATION_FAILED');
   });
 
   it('checks permissions: stock staff run the store room, cashiers don’t see it', async () => {

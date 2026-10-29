@@ -8,7 +8,8 @@ screenshots. So is Phase 5 (2026-10-28):
 - GSTR-1, GSTR-3B and the VAT register;
 - scheduled reports;
 - QR self-ordering;
-- online orders through the cloud relay.
+- online orders through the cloud relay;
+- the stock value (inventory valuation).
 
 So are the owner's Overview and an iPad/iPhone app. No role reaches a "Coming soon"
 screen. Status notes per phase are in `docs/09-implementation-plan.md`.
@@ -17,12 +18,12 @@ screen. Status notes per phase are in `docs/09-implementation-plan.md`.
 
 | Role | Portals and features |
 |---|---|
-| Admin, Manager | Admin (Overview, menu, floor, customers with loyalty points and tiers, membership tiers, staff, roles, branch with loyalty settings, taxes, charges, coupons, printers, sales channels, online orders, devices, backups, audit log), plus every portal below. Reports: sales, GST returns, scheduled reports |
+| Admin, Manager | Admin (Overview, menu, floor, customers with loyalty points and tiers, membership tiers, staff, roles, branch with loyalty settings, taxes, charges, coupons, printers, sales channels, online orders, devices, backups, audit log), plus every portal below. Reports: sales, GST returns, scheduled reports, consumption, stock value |
 | Captain | Captain: floor (filters, takeaway and delivery, move, merge, cleaning), with **guest QR requests** at the top: accept an order onto the table, decline it, answer a call for a server or the bill. Order pad, **reservations** (book, change, seat and take the order, cancel, no-show; bookings show on the table tiles). Customers (guest list) |
 | Cashier | POS: counter, bills, refunds, delivery, cash shift with X/Z. The **Points** tender spends a guest's loyalty points. Captain screens; reports |
 | Kitchen | KDS, out-of-stock list |
-| Inventory staff | Stock: items, stock in and out, counts, alerts, consumption. Purchase: vendors, orders, goods received |
-| Accountant | Accounts: chart, day book, manual journals, ledgers, expenses, statements (trial balance, P&L, balance sheet, cash flow, GST summary). Purchase: vendor payments and dues. Reports (sales, GST returns, scheduled), audit log, Overview |
+| Inventory staff | Stock: items, stock in and out, counts, alerts, consumption, stock value (no export). Purchase: vendors, orders, goods received |
+| Accountant | Accounts: chart, day book, manual journals, ledgers, expenses, statements (trial balance, P&L, balance sheet, cash flow, GST summary). Purchase: vendor payments and dues. Reports (sales, GST returns, scheduled, consumption, stock value), audit log, Overview |
 
 `sync.manage` (Phase 6 cloud sync) is the only permission with no screen;
 nothing shows it.
@@ -53,6 +54,11 @@ nothing shows it.
   - `schedules.ts` (`ReportScheduleService`, run every 15 minutes from `apps/server/src/main.ts`).
 
   Queries are in `packages/infrastructure/src/reporting/`, including the XLSX writer `xlsx.ts`. Routes are in `reports.ts`; the web pages are in `apps/web/src/portals/reports/` (`sales-page`, `gst-page`, `scheduled-page`).
+- **Stock value (inventory valuation):**
+  - the query is `SqliteInventoryQueries.valuation`. It works the average cost of a past day out again with `averageCostAfter` (`packages/domain/src/inventory/stock.ts`);
+  - the workbook is `packages/application/src/reporting/inventory-workbook.ts`;
+  - routes are beside the consumption report in `inventory.ts`;
+  - the web page is `apps/web/src/portals/inventory/valuation-page.tsx`, under Stock and under Reports.
 - **Membership tiers:** `packages/domain/src/crm/membership.ts` (the rules),
   `packages/application/src/crm/membership.ts`. The member discount is added in
   `BillingService.memberDiscount`. Web: Admin → Membership, and the tier on
@@ -134,7 +140,11 @@ nothing shows it.
 - Table 5 counts purchases from unregistered vendors as intra-state.
 - PDF is the browser's print. Scheduled reports aren't emailed: they stay on the Hub and in the copy folder.
 - After the Hub was off, scheduled reports catch up with the latest period only.
-- No inventory valuation report yet.
+
+**Stock value**
+- Stock at or below zero is valued at nil, and no revaluation is posted for it. The report shows what that leaves as the cost difference, and the difference from the books.
+- A past day's average cost is replayed from receipts in the order they were posted. A movement dated an earlier business day than ones posted before it would be costed in posting order. Nothing posts such movements today.
+- The comparison with the books reads the Inventory account only, not accounts kept under it.
 
 **Membership and QR ordering**
 - A guest's tier is worked out when it is read, so there is no tier history. Tiers are the same for every branch.
@@ -174,16 +184,17 @@ nothing shows it.
 
 - CI (`ci.yml`) runs only on `main` and pull requests. Pushes to this branch aren't checked on GitHub, so the local checks below are the gate. The desktop and iOS workflows run on their tags and paths.
 - **Locale files:** add keys as text, never by a `JSON.parse`/`JSON.stringify` round trip. The round trip moves integer-like keys, such as the state codes ("19"), to the front of their object. Check for duplicate keys afterwards.
-- **Flaky tests:** under full-suite load, a few web tests can time out (device pairing, the recipe section). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
+- **Flaky tests:** under full-suite load, a few tests can time out: on the web, device pairing and the recipe section; on the server, the backup import (scrypt). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
 - **Relay tests:** both the relay's own tests and the Hub's `relay.test.ts` run a real relay and WebSocket on 127.0.0.1, on a random port.
-- **Migrations:** 0014 to 0018 were added in Phase 5. Every new business table has a no-delete trigger, as in 0004.
+- **Migrations:** 0014 to 0019 were added in Phase 5. Every new business table has a no-delete trigger, as in 0004.
+- **Rebuilding a table that others point at** (to change a CHECK): rebuild the child tables too, with their new copies pointing at the new parent, and drop the old children before the old parent. 0019 does this for `report_schedules` and `report_files`. Dropping a parent while children still point at it fails at commit, even with `defer_foreign_keys`, because SQLite counts those references when the old parent's rows go and doesn't recount them after the rename.
 
 ## Next (docs/08-roadmap.md)
 
 1. **Phase 1.5:** BLE command channel for the Wi-Fi-down mode, and the
    Capacitor Android app.
-2. **Phase 5, still to do:** the inventory valuation report, and a
-   middleware adapter once a provider account is chosen.
+2. **Phase 5, still to do:** a middleware adapter, once a provider
+   account is chosen.
 3. **Phase 6:** cloud sync and multi-branch (`sync.manage`); **Phase 7:** AI.
 
 ## Checks before every commit

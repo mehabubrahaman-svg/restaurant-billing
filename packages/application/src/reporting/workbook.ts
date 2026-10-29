@@ -1,11 +1,12 @@
-import { hundredths, toCsv } from './csv';
+import { hundredths, thousandths, toCsv } from './csv';
 
 /**
  * A report as sheets of typed columns: the one shape every export is made
- * from (XLSX by the infrastructure writer, CSV here). Money is integer paise
- * and rates are basis points; the writers turn them into rupees and percent.
+ * from (XLSX by the infrastructure writer, CSV here). Money is integer paise,
+ * rates are basis points and quantities thousandths (of a kg, litre or piece);
+ * the writers turn them into rupees, percent and decimals.
  */
-export type ColumnKind = 'text' | 'int' | 'money' | 'percent' | 'date';
+export type ColumnKind = 'text' | 'int' | 'money' | 'percent' | 'qty' | 'date';
 
 export interface Column {
   readonly header: string;
@@ -35,6 +36,7 @@ export interface Workbook {
 export function cellText(value: CellValue, kind: ColumnKind): string | number | null {
   if (value === null || typeof value === 'string') return value;
   if (kind === 'money' || kind === 'percent') return hundredths(value);
+  if (kind === 'qty') return thousandths(value);
   return value;
 }
 

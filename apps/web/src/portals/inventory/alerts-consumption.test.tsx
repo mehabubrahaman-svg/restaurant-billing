@@ -178,7 +178,7 @@ describe('Consumption report', () => {
       within(screen.getByRole('navigation', { name: 'Report sections' }))
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Dashboard', 'Day-end', 'Sales', 'Consumption']);
+    ).toEqual(['Dashboard', 'Day-end', 'Sales', 'Consumption', 'Stock value']);
     // Today comes from the dashboard; the store room's own lists are not asked for.
     expect(consumptionQueries(fetchMock)).toEqual(['?from=2026-10-28&to=2026-10-28']);
     const asked = fetchMock.mock.calls.map(([u]) => new URL(String(u), 'http://hub.test').pathname);

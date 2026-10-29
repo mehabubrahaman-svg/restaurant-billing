@@ -3,6 +3,7 @@ import {
   Badge,
   BellRing,
   ChartColumn,
+  Coins,
   ListChecks,
   Package,
   Spinner,
@@ -21,7 +22,7 @@ export const ADJUST_PERMISSION = 'inventory.adjust';
 export const MANAGE_PERMISSION = 'inventory.manage_items';
 export const CONSUMPTION_PERMISSION = 'reports.inventory';
 
-/** /inventory/*: items and levels, stock in and out, counts, alerts and consumption. */
+/** /inventory/*: items and levels, stock in and out, counts, alerts, consumption and stock value. */
 export function InventoryLayout() {
   const { t } = useTranslation();
   const format = useFormat();
@@ -56,6 +57,7 @@ export function InventoryLayout() {
             label: t('inventory.tabs.consumption'),
             icon: ChartColumn,
           },
+          { to: '/inventory/valuation', label: t('inventory.tabs.valuation'), icon: Coins },
         ]
       : []),
   ];

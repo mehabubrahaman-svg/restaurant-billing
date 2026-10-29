@@ -1,13 +1,14 @@
 import type {
   ConsumptionReport,
   InventoryItem,
+  InventoryValuation,
   Recipe,
   StockAlerts,
   StockCount,
   StockMovement,
   Unit,
 } from '@restroos/contracts';
-import { stockLevel, stockValue } from '@restroos/domain';
+import { shareBp, stockLevel, stockValue } from '@restroos/domain';
 import { ITEM_BIRYANI, VARIANT_FULL } from './catalog-fixtures';
 
 export const KG = 1_000_000;
@@ -355,6 +356,110 @@ export function makeConsumption(overrides: Partial<ConsumptionReport> = {}): Con
       closingValue: 322_276,
       varianceBp: 1_945,
     },
+    ...overrides,
+  };
+}
+
+type ValuationRow = InventoryValuation['rows'][number];
+const valued = (item: InventoryItem, figures: Partial<ValuationRow>): ValuationRow => {
+  const r: ValuationRow = {
+    inventoryItemId: item.id,
+    sku: item.sku,
+    name: item.name,
+    category: item.category,
+    baseUnit: item.baseUnit,
+    openingMilli: 0,
+    openingCostPerBase: 0,
+    openingValue: 0,
+    receivedMilli: 0,
+    receivedValue: 0,
+    soldMilli: 0,
+    soldValue: 0,
+    wastageMilli: 0,
+    wastageValue: 0,
+    adjustedMilli: 0,
+    adjustedValue: 0,
+    closingMilli: 0,
+    closingCostPerBase: 0,
+    closingValue: 0,
+    differenceValue: 0,
+    ...figures,
+  };
+  return {
+    ...r,
+    openingValue: r.openingMilli > 0 ? stockValue(r.openingMilli, r.openingCostPerBase) : 0,
+    closingValue: r.closingMilli > 0 ? stockValue(r.closingMilli, r.closingCostPerBase) : 0,
+  };
+};
+
+/**
+ * October to the 28th: butter found but not used, curd 50 g below zero,
+ * flour and chicken used from opening stock, rice bought and used.
+ */
+export function makeValuation(overrides: Partial<InventoryValuation> = {}): InventoryValuation {
+  const rows = [
+    valued(butter, {
+      openingMilli: KG,
+      openingCostPerBase: 50_000,
+      adjustedMilli: 200 * G,
+      adjustedValue: 10_000,
+      closingMilli: 1_200 * G,
+      closingCostPerBase: 50_000,
+    }),
+    valued(curd, { soldMilli: 50 * G, closingMilli: -50 * G }),
+    valued(flour, {
+      openingMilli: 10 * KG,
+      openingCostPerBase: 4_000,
+      soldMilli: 5 * KG,
+      soldValue: 20_000,
+      adjustedMilli: -100 * G,
+      adjustedValue: -400,
+      closingMilli: 4_900 * G,
+      closingCostPerBase: 4_000,
+    }),
+    valued(rice, {
+      receivedMilli: 30 * KG,
+      receivedValue: 260_000,
+      soldMilli: 500 * G,
+      soldValue: 4_334,
+      wastageMilli: KG,
+      wastageValue: 8_667,
+      closingMilli: 28_500 * G,
+      closingCostPerBase: 8_667,
+      differenceValue: 11,
+    }),
+    valued(chicken, {
+      openingMilli: 10 * KG,
+      openingCostPerBase: 24_000,
+      soldMilli: 220 * G,
+      soldValue: 5_280,
+      closingMilli: 9_780 * G,
+      closingCostPerBase: 24_000,
+    }),
+  ];
+  const sum = (key: keyof InventoryValuation['totals']) => rows.reduce((s, r) => s + r[key], 0);
+  const totals = {
+    openingValue: sum('openingValue'),
+    receivedValue: sum('receivedValue'),
+    soldValue: sum('soldValue'),
+    wastageValue: sum('wastageValue'),
+    adjustedValue: sum('adjustedValue'),
+    closingValue: sum('closingValue'),
+    differenceValue: sum('differenceValue'),
+  };
+  const category = (name: string, items: number) => {
+    const value = rows.filter((r) => r.category === name).reduce((s, r) => s + r.closingValue, 0);
+    return { category: name, items, value, shareBp: shareBp(value, totals.closingValue) };
+  };
+  return {
+    from: '2026-10-01',
+    to: '2026-10-28',
+    branchName: 'Park Street',
+    generatedAt: '2026-10-28T12:00:00.000Z',
+    rows,
+    categories: [category('Grains', 2), category('Meat', 1), category('Dairy', 1)],
+    totals,
+    books: { inventoryAccount: totals.closingValue + 11, difference: -11 },
     ...overrides,
   };
 }

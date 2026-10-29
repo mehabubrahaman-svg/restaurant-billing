@@ -355,6 +355,10 @@ export class InventoryService {
     return this.d.queries.consumption(branchId, from, to);
   }
 
+  valuation(branchId: string, from: string, to: string) {
+    return this.d.queries.valuation(branchId, from, to, this.d.clock.now());
+  }
+
   // ---- stock counts -----------------------------------------------------------------
   counts(branchId: string) {
     return this.d.queries.counts(branchId);

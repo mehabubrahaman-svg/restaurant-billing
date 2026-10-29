@@ -160,7 +160,16 @@ describe('Scheduled reports', () => {
     renderApp('/reports/scheduled');
     const report = await screen.findByLabelText('Report');
     expect(within(report).queryByRole('option', { name: 'GSTR-1' })).toBeNull();
+    expect(within(report).queryByRole('option', { name: 'Stock value' })).toBeNull();
     expect(within(report).getByRole('option', { name: 'Sales register' })).toBeInTheDocument();
+  });
+
+  it('offers the stock value with reports.inventory', async () => {
+    hub({}, ['reports.sales', 'reports.export', 'reports.inventory']);
+    renderApp('/reports/scheduled');
+    const report = await screen.findByLabelText('Report');
+    expect(within(report).getByRole('option', { name: 'Stock value' })).toBeInTheDocument();
+    expect(within(report).queryByRole('option', { name: 'GSTR-1' })).toBeNull();
   });
 
   it('is not a tab without reports.export', async () => {

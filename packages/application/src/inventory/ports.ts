@@ -348,6 +348,61 @@ export interface ConsumptionReportView {
   };
 }
 
+/**
+ * One item's stock value over a period. Opening and closing are at the
+ * weighted average cost of that day; what moved is at the cost it was posted
+ * at, as the books have it. Out of stock (or below zero) is valued at nil.
+ */
+export interface InventoryValuationRowView {
+  inventoryItemId: string;
+  sku: string;
+  name: string;
+  category: string | null;
+  baseUnit: BaseUnit;
+  openingMilli: number;
+  openingCostPerBase: number;
+  openingValue: number;
+  /** Purchases, opening stock entered in the period, transfers in. */
+  receivedMilli: number;
+  receivedValue: number;
+  /** By recipe from KOTs, net of reversals. */
+  soldMilli: number;
+  soldValue: number;
+  wastageMilli: number;
+  wastageValue: number;
+  /** Counts, adjustments, returns and transfers out (signed). */
+  adjustedMilli: number;
+  adjustedValue: number;
+  closingMilli: number;
+  closingCostPerBase: number;
+  closingValue: number;
+  /** Closing less what opening and the movements add up to: stock sold before it was received, and rounding. */
+  differenceValue: number;
+}
+
+export interface InventoryValuationTotals {
+  openingValue: number;
+  receivedValue: number;
+  soldValue: number;
+  wastageValue: number;
+  adjustedValue: number;
+  closingValue: number;
+  differenceValue: number;
+}
+
+export interface InventoryValuationView {
+  from: string;
+  to: string;
+  branchName: string;
+  generatedAt: string;
+  rows: InventoryValuationRowView[];
+  /** By closing value, largest first; `items` counts those with stock. */
+  categories: { category: string | null; items: number; value: number; shareBp: number | null }[];
+  totals: InventoryValuationTotals;
+  /** The Inventory account on `to`, and the closing value less it. */
+  books: { inventoryAccount: number; difference: number };
+}
+
 export interface InventoryQueries {
   items(branchId: string, includeRetired: boolean): InventoryItemView[];
   item(branchId: string, id: string): InventoryItemView | undefined;
@@ -375,4 +430,5 @@ export interface InventoryQueries {
   count(branchId: string, id: string): StockCountView | undefined;
   alerts(branchId: string, businessDate: string, expiringBy: string): StockAlertsView;
   consumption(branchId: string, from: string, to: string): ConsumptionReportView;
+  valuation(branchId: string, from: string, to: string, now: Date): InventoryValuationView;
 }

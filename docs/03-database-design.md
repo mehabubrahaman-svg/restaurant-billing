@@ -24,6 +24,8 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0017_qr_ordering` | `qr_requests`: a guest's QR order (its items as JSON, with the names they saw), or a call for a server or the bill. It waits as `PENDING` until a captain accepts it (`order_id`), declines it (`reject_reason`) or marks it done. `client_key` is unique per table, so a resend isn't a second order. Refuses a physical DELETE |
 | `0018_relay` | `relay_links`: one per branch. Holds the relay address, hub id and key (a secret never returned by the API), and the "Online orders" user that relay orders are entered as. `relay_messages`: every message both ways. `IN` uses the relay's id, so a redelivery is handled once. `OUT` waits as `PENDING` until the relay has stored it; an older menu push still waiting becomes `SKIPPED`. Refuses a physical DELETE |
 
+| `0019_stock_value_schedule` | `report_schedules` and `report_files` rebuilt so a schedule can make the stock value (`INVENTORY_VALUATION`). The files move onto the new schedules table before the old one is dropped, so no foreign key ever points at a missing table. The no-delete triggers are made again |
+
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 
 ## 1. Engine configuration

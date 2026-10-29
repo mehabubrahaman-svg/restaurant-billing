@@ -1,5 +1,10 @@
 import type { InventoryItem, StockAlerts, StockCount } from '@restroos/contracts';
-import { useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { api, type StockMovementsFilter } from '../../api/endpoints';
 import { usePermission } from '../auth/permissions';
 import { REPORT_KEYS } from '../reports/report-queries';
@@ -16,6 +21,7 @@ export const INVENTORY_KEYS = {
   recipes: (menuItemId: string) => ['inventory', 'recipes', menuItemId] as const,
   addonIngredients: (addonId: string) => ['inventory', 'addon-ingredients', addonId] as const,
   consumption: (from: string, to: string) => ['inventory', 'consumption', from, to] as const,
+  valuation: (from: string, to: string) => ['inventory', 'valuation', from, to] as const,
 } as const;
 
 /** Movements per page of an item's history. */
@@ -113,6 +119,15 @@ export const useConsumption = (from: string, to: string, enabled: boolean) =>
     queryKey: INVENTORY_KEYS.consumption(from, to),
     queryFn: () => api.reports.consumption(from, to),
     enabled,
+  });
+
+/** The stock value over a range; `enabled: false` while the range is not valid. */
+export const useInventoryValuation = (from: string, to: string, enabled: boolean) =>
+  useQuery({
+    queryKey: INVENTORY_KEYS.valuation(from, to),
+    queryFn: () => api.reports.inventoryValuation(from, to),
+    enabled,
+    placeholderData: keepPreviousData,
   });
 
 /** After any stock change: balances, alerts, counts and reports are refetched. */

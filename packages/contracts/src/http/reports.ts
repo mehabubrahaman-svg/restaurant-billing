@@ -197,6 +197,7 @@ export const ScheduledReportSchema = z.enum([
   'GSTR1',
   'GSTR3B',
   'VAT_REGISTER',
+  'INVENTORY_VALUATION',
 ]);
 export type ScheduledReport = z.infer<typeof ScheduledReportSchema>;
 export const ScheduleFrequencySchema = z.enum(['DAILY', 'WEEKLY', 'MONTHLY']);

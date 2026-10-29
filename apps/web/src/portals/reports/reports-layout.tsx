@@ -2,6 +2,7 @@ import {
   CalendarDays,
   ChartColumn,
   Clock,
+  Coins,
   Landmark,
   LayoutDashboard,
   ReceiptText,
@@ -14,7 +15,7 @@ import { TabLinks, type TabLink } from '../../components/tab-links';
 import { usePermission } from '../../features/auth/permissions';
 import { CONSUMPTION_PERMISSION } from '../inventory/inventory-layout';
 
-/** /reports/*: the dashboard, day-end, sales, GST returns, scheduled reports and consumption. */
+/** /reports/*: the dashboard, day-end, sales, GST returns, scheduled reports, consumption and stock value. */
 export function ReportsLayout() {
   const { t } = useTranslation();
   // The accountant reads consumption here: the store room itself needs inventory.view.
@@ -30,7 +31,10 @@ export function ReportsLayout() {
       ? [{ to: '/reports/scheduled', label: t('reports.tabs.scheduled'), icon: Clock }]
       : []),
     ...(canConsumption
-      ? [{ to: '/reports/consumption', label: t('inventory.tabs.consumption'), icon: ChartColumn }]
+      ? [
+          { to: '/reports/consumption', label: t('inventory.tabs.consumption'), icon: ChartColumn },
+          { to: '/reports/valuation', label: t('inventory.tabs.valuation'), icon: Coins },
+        ]
       : []),
   ];
   return (

@@ -43,8 +43,11 @@ const REPORTS: readonly ScheduledReport[] = [
   'GSTR1',
   'GSTR3B',
   'VAT_REGISTER',
+  'INVENTORY_VALUATION',
 ];
 const FINANCIAL = new Set<ScheduledReport>(['GSTR1', 'GSTR3B', 'VAT_REGISTER']);
+/** The stock value is read with reports.inventory. */
+const INVENTORY = new Set<ScheduledReport>(['INVENTORY_VALUATION']);
 const FREQUENCIES: readonly Frequency[] = ['DAILY', 'WEEKLY', 'MONTHLY'];
 const FORMATS: readonly Format[] = ['XLSX', 'CSV'];
 
@@ -111,7 +114,10 @@ function AddSchedule() {
   const queryClient = useQueryClient();
   const errorMessage = useErrorMessage();
   const canFinancial = usePermission('reports.financial');
-  const reports = REPORTS.filter((r) => canFinancial || !FINANCIAL.has(r));
+  const canInventory = usePermission('reports.inventory');
+  const reports = REPORTS.filter(
+    (r) => (canFinancial || !FINANCIAL.has(r)) && (canInventory || !INVENTORY.has(r)),
+  );
   const [report, setReport] = useState<ScheduledReport>('SALES');
   const [frequency, setFrequency] = useState<Frequency>('DAILY');
   const [format, setFormat] = useState<Format>('XLSX');

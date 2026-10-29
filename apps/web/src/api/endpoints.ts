@@ -135,6 +135,7 @@ import {
   UsersResponseSchema,
   AddonIngredientsSchema,
   ConsumptionReportSchema,
+  InventoryValuationSchema,
   InventoryItemSchema,
   InventoryItemsResponseSchema,
   RecipeSchema,
@@ -974,6 +975,11 @@ export const api = {
     /** Recipe (theoretical) against counted consumption per item, for 1 to 366 days. */
     consumption: (from: string, to: string) =>
       c.json('/reports/consumption', ConsumptionReportSchema, { query: { from, to } }),
+    /** The stock value at weighted average cost over 1 to 366 days, against the books. */
+    inventoryValuation: (from: string, to: string) =>
+      c.json('/reports/inventory-valuation', InventoryValuationSchema, { query: { from, to } }),
+    inventoryValuationFile: (from: string, to: string, format: 'xlsx' | 'csv') =>
+      c.blob(`/reports/inventory-valuation.${format}`, { query: { from, to } }),
   },
   inventory: {
     units: () => c.json('/units', UnitsResponseSchema),

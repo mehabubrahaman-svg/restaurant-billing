@@ -1,4 +1,10 @@
-import { hundredths, type Column, type CellValue, type Workbook } from '@restroos/application';
+import {
+  hundredths,
+  thousandths,
+  type Column,
+  type CellValue,
+  type Workbook,
+} from '@restroos/application';
 import { deflateRawSync } from 'node:zlib';
 
 /**
@@ -49,22 +55,24 @@ function xml(body: string): string {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n${body}`;
 }
 
-// ---- styles: 0 text, 1 bold text, 2 money, 3 bold money, 4 integer, 5 bold integer, 6 percent, 7 bold percent
+// ---- styles: 0 text, 1 bold text, 2 money, 3 bold money, 4 integer, 5 bold integer, 6 percent, 7 bold percent,
+// 8 quantity, 9 bold quantity
 const STYLE = {
   text: [0, 1],
   date: [0, 1],
   money: [2, 3],
   int: [4, 5],
   percent: [6, 7],
+  qty: [8, 9],
 } as const;
 
 const STYLES = xml(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0.00"/><numFmt numFmtId="165" formatCode="0.00&quot;%&quot;"/></numFmts>
+<numFmts count="3"><numFmt numFmtId="164" formatCode="#,##0.00"/><numFmt numFmtId="165" formatCode="0.00&quot;%&quot;"/><numFmt numFmtId="166" formatCode="#,##0.000"/></numFmts>
 <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
 <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
 <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="8">
+<cellXfs count="10">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
 <xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
@@ -73,6 +81,8 @@ const STYLES = xml(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreads
 <xf numFmtId="3" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>
 <xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
 <xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>
+<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="166" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`);
@@ -124,7 +134,12 @@ function rowXml(
       const style = STYLE[kind][bold ? 1 : 0];
       const s = style === 0 ? '' : ` s="${style}"`;
       if (typeof value === 'number') {
-        const v = kind === 'money' || kind === 'percent' ? hundredths(value) : String(value);
+        const v =
+          kind === 'money' || kind === 'percent'
+            ? hundredths(value)
+            : kind === 'qty'
+              ? thousandths(value)
+              : String(value);
         return `<c r="${ref}"${s}><v>${v}</v></c>`;
       }
       return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${escape(value)}</t></is></c>`;
@@ -135,7 +150,7 @@ function rowXml(
 
 function widthOf(c: Column): number {
   if (c.width !== undefined) return c.width;
-  const byKind = { text: 24, date: 12, money: 14, int: 10, percent: 9 }[c.kind];
+  const byKind = { text: 24, date: 12, money: 14, int: 10, percent: 9, qty: 12 }[c.kind];
   return Math.max(byKind, Math.min(40, c.header.length + 2));
 }
 

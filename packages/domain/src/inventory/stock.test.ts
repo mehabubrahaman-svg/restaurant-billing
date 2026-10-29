@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   allocateFefo,
+  averageCostAfter,
   consumptionFor,
   costPerBase,
   portionCost,
@@ -25,6 +26,26 @@ describe('stock arithmetic', () => {
     expect(weightedAverageCost(10_000_000, 8_000, 10_000_000, 10_000)).toBe(9_000);
     // Sold 2 kg before any was received: the new receipt sets the cost.
     expect(weightedAverageCost(-2_000_000, 8_000, 5_000_000, 10_000)).toBe(10_000);
+  });
+
+  it('works out the average cost again from what came in, as the ledger did', () => {
+    expect(averageCostAfter([])).toBe(0);
+    const inflows = [
+      // 20 kg opening at ₹80, then 10 kg at ₹100: ₹86.67
+      { qtyMilli: 20_000_000, balanceAfterMilli: 20_000_000, unitCostPerBase: 8_000 },
+      { qtyMilli: 10_000_000, balanceAfterMilli: 30_000_000, unitCostPerBase: 10_000 },
+      // 500 g put back from a cancelled dish at the cost it went out at
+      { qtyMilli: 500_000, balanceAfterMilli: 25_500_000, unitCostPerBase: 8_667 },
+    ];
+    expect(averageCostAfter(inflows.slice(0, 2))).toBe(8_667);
+    expect(averageCostAfter(inflows)).toBe(8_667);
+    // Sold to 2 kg below zero, then 5 kg at ₹120: the receipt sets the cost.
+    expect(
+      averageCostAfter([
+        ...inflows,
+        { qtyMilli: 5_000_000, balanceAfterMilli: 3_000_000, unitCostPerBase: 12_000 },
+      ]),
+    ).toBe(12_000);
   });
 
   it('scales a recipe to portions sold, with trim loss and add-ons', () => {

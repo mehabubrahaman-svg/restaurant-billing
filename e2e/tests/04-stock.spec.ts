@@ -7,7 +7,7 @@ interface MenuItem {
   variants: { id: string; name: string }[];
 }
 
-test('stock: receive, a recipe, a KOT takes stock, alerts, a count and the consumption report', async ({
+test('stock: receive, a recipe, a KOT takes stock, alerts, a count, consumption and stock value', async ({
   page,
   browser,
   request,
@@ -146,4 +146,16 @@ test('stock: receive, a recipe, a KOT takes stock, alerts, a count and the consu
   await expect(riceLine).toContainText('1.4 kg');
   await expect(riceLine).toContainText('+6.67%');
   await expect(page.getByText(/more than 5% off the recipes/)).toBeVisible();
+
+  // Stock value: the 1.4 kg of rice left at ₹80 a kg is ₹112; the count put chicken back to nothing.
+  await page.getByRole('link', { name: 'Stock value' }).click();
+  const value = page.getByRole('table', { name: 'Stock value' });
+  const riceValue = value.getByRole('row').filter({ hasText: 'Basmati rice' });
+  await expect(riceValue).toContainText('1.4 kg');
+  await expect(riceValue).toContainText('₹80.00/kg');
+  await expect(riceValue).toContainText('₹112.00');
+  await expect(value.getByRole('row').filter({ hasText: 'Chicken' })).not.toContainText(
+    'Below zero',
+  );
+  await expect(page.getByRole('table', { name: 'How the value moved' })).toContainText('₹112.00');
 });

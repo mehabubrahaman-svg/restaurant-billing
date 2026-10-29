@@ -24,6 +24,12 @@ export function hundredths(n: number): string {
   return `${n < 0 ? '-' : ''}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, '0')}`;
 }
 
+/** An integer in thousandths as a decimal string (a quantity in kg to the gram). */
+export function thousandths(n: number): string {
+  const abs = Math.abs(n);
+  return `${n < 0 ? '-' : ''}${Math.trunc(abs / 1000)}.${String(abs % 1000).padStart(3, '0')}`;
+}
+
 /** The day-end report as one sheet of labelled sections. */
 export function dayEndCsv(r: DayEndReportView): string {
   const rows: Cell[][] = [];

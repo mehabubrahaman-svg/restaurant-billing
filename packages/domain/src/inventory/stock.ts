@@ -58,6 +58,33 @@ export function weightedAverageCost(
   );
 }
 
+/** Stock coming in, as the ledger posted it: a receipt, a put-back or a find. */
+export interface StockInflow {
+  readonly qtyMilli: number;
+  /** The balance after it, so what was on hand before is this less `qtyMilli`. */
+  readonly balanceAfterMilli: number;
+  readonly unitCostPerBase: number;
+}
+
+/**
+ * The weighted average cost after `inflows`, in the order they were posted,
+ * worked out as the stock ledger did. Stock going out leaves the average
+ * as it is, so only what came in is needed: the cost on any past day is
+ * this over that day's inflows.
+ */
+export function averageCostAfter(inflows: Iterable<StockInflow>): number {
+  let cost = 0;
+  for (const m of inflows) {
+    cost = weightedAverageCost(
+      m.balanceAfterMilli - m.qtyMilli,
+      cost,
+      m.qtyMilli,
+      m.unitCostPerBase,
+    );
+  }
+  return cost;
+}
+
 export interface RecipeLine {
   readonly inventoryItemId: string;
   /** Per `yieldPortions` portions. */

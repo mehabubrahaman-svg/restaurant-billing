@@ -89,7 +89,12 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 >   - **QR self-ordering** (migration 0017): the guest's menu at `/qr/<token>` (order, call a server, ask for the bill, live status). Captains accept the order onto the table and send it to the kitchen, or decline it.
 >   - **Online orders** (Admin → Online orders; `apps/relay`; migration 0018): a cloud relay the Hub connects out to. Platform orders arrive through it, are entered as aggregator orders and go to the kitchen. The menu, availability and order status go back.
 > - **Tests at the end of Phase 5:** web 380, server 145, domain 151, contracts 148, infrastructure 32, UI 32, application 8, relay 2, desktop 10, spike 55. End-to-end: the same 8 golden paths.
-> - **Still to do:** the inventory valuation report (docs/05, Phases 5–6 outline). Phase 5's open items are in `docs/HANDOFF.md`.
+> - **Stock value** (inventory valuation; Stock → Stock value, and Reports → Stock value; migration 0019), delivered 2026-10-28:
+>   - Opening and closing stock at each day's weighted average cost. That cost is worked out again from the ledger's receipts, so a past day reads the same later.
+>   - What was received, sold, wasted and adjusted, in value. By category, and against the books' Inventory account.
+>   - XLSX, CSV and print. It can be scheduled, so the month-end closing stock arrives as a file.
+> - **Tests with the stock value:** web 385, server 146, domain 152, contracts 148, infrastructure 32, UI 32, application 8, relay 2, desktop 10, spike 55. End-to-end: the same 8 golden paths; the stock one now ends on the stock value.
+> - Phase 5 is complete. Its open items are in `docs/HANDOFF.md`.
 
 ## Definition of Done (every WP)
 
