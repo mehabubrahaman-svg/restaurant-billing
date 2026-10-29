@@ -949,3 +949,174 @@ All on a real Hub: the built server and web app with a fresh database, set up an
 **Wastage · Hindi · 768 px**
 
 ![Wastage · Hindi · 768 px](phase-2/wastage-hi-IN-768.png)
+## Phase 3 — purchase
+
+Real-Hub shots, taken after the end-to-end golden paths on a Hub given more vendors, orders, bills and payments through the API: the vendors with what is owed, adding one (its GSTIN says how the GST will be claimed), a vendor's unpaid bills, statement and payments, purchase orders in every state, a new order with live totals, an order part received, cancelling an order with a reason, receiving goods against an order, posting a GRN after a confirmation, an inter-state bill with IGST paid by cheque, the payments, and the dues aged into not yet due, 1–30, 31–60, 61–90 and over 90 days. The vendors, an order and the dues are also shown in Hindi at tablet width and Bengali at desktop width. Long pages are taken whole. These images are full colour, not reduced to 256 colours: no quantizer was available in node_modules.
+
+**Real Hub · Vendors · English · 1366 px**
+
+![Real Hub · Vendors · English · 1366 px](phase-3/real-hub-vendors.png)
+
+**Real Hub · Vendor dialog · English · 1366 px**
+
+![Real Hub · Vendor dialog · English · 1366 px](phase-3/real-hub-vendor-dialog.png)
+
+**Real Hub · Vendor page · English · 1366 px**
+
+![Real Hub · Vendor page · English · 1366 px](phase-3/real-hub-vendor-page.png)
+
+**Real Hub · Orders · English · 1366 px**
+
+![Real Hub · Orders · English · 1366 px](phase-3/real-hub-orders.png)
+
+**Real Hub · Order editor · English · 1366 px**
+
+![Real Hub · Order editor · English · 1366 px](phase-3/real-hub-order-editor.png)
+
+**Real Hub · Order part received · English · 1366 px**
+
+![Real Hub · Order part received · English · 1366 px](phase-3/real-hub-order-part-received.png)
+
+**Real Hub · Order cancel dialog · English · 1366 px**
+
+![Real Hub · Order cancel dialog · English · 1366 px](phase-3/real-hub-order-cancel-dialog.png)
+
+**Real Hub · Goods received · English · 1366 px**
+
+![Real Hub · Goods received · English · 1366 px](phase-3/real-hub-grns.png)
+
+**Real Hub · Receive goods · English · 1366 px**
+
+![Real Hub · Receive goods · English · 1366 px](phase-3/real-hub-grn-receive.png)
+
+**Real Hub · GRN post dialog · English · 1366 px**
+
+![Real Hub · GRN post dialog · English · 1366 px](phase-3/real-hub-grn-post-dialog.png)
+
+**Real Hub · GRN posted · English · 1366 px**
+
+![Real Hub · GRN posted · English · 1366 px](phase-3/real-hub-grn-posted.png)
+
+**Real Hub · Payment dialog · English · 1366 px**
+
+![Real Hub · Payment dialog · English · 1366 px](phase-3/real-hub-payment-dialog.png)
+
+**Real Hub · Payments · English · 1366 px**
+
+![Real Hub · Payments · English · 1366 px](phase-3/real-hub-payments.png)
+
+**Real Hub · Dues · English · 1366 px**
+
+![Real Hub · Dues · English · 1366 px](phase-3/real-hub-dues.png)
+
+**Real Hub · Vendors · Hindi · 768 px**
+
+![Real Hub · Vendors · Hindi · 768 px](phase-3/real-hub-vendors-hi-IN-768.png)
+
+**Real Hub · Order · Hindi · 768 px**
+
+![Real Hub · Order · Hindi · 768 px](phase-3/real-hub-order-hi-IN-768.png)
+
+**Real Hub · Dues · Hindi · 768 px**
+
+![Real Hub · Dues · Hindi · 768 px](phase-3/real-hub-dues-hi-IN-768.png)
+
+**Real Hub · Vendors · Bengali · 1366 px**
+
+![Real Hub · Vendors · Bengali · 1366 px](phase-3/real-hub-vendors-bn-IN-1366.png)
+
+**Real Hub · Order · Bengali · 1366 px**
+
+![Real Hub · Order · Bengali · 1366 px](phase-3/real-hub-order-bn-IN-1366.png)
+
+**Real Hub · Dues · Bengali · 1366 px**
+
+![Real Hub · Dues · Bengali · 1366 px](phase-3/real-hub-dues-bn-IN-1366.png)
+
+## Phase 4 — accounts
+
+Real-Hub shots on the same Hub, whose bills, payments, goods received, expenses and stock posted their own journals, with opening balances, a few manual entries and some spoiled fish written off added through the API: the chart of accounts by type with balances, adding an account under another, the day book with the wastage entry the system posted opened, a manual journal that does not balance yet, the manual entries with a reversed pair, reversing an entry with a reason, the bank's ledger and a vendor's ledger, the expenses (one cancelled) and recording one with its GST split, and the statements: a balanced trial balance, profit and loss with the gross margin, a balanced balance sheet, cash flow and the GST summary. The chart, the day book and the profit and loss are also shown in Hindi at tablet width and Bengali at desktop width; account names are data, not interface text (the starting chart is in English), so they are not translated. Long pages are taken whole. Full colour, as in Phase 3.
+
+**Real Hub · Chart of accounts · English · 1366 px**
+
+![Real Hub · Chart of accounts · English · 1366 px](phase-4/real-hub-chart.png)
+
+**Real Hub · Account dialog · English · 1366 px**
+
+![Real Hub · Account dialog · English · 1366 px](phase-4/real-hub-account-dialog.png)
+
+**Real Hub · Day book · English · 1366 px**
+
+![Real Hub · Day book · English · 1366 px](phase-4/real-hub-journal.png)
+
+**Real Hub · Manual journal · English · 1366 px**
+
+![Real Hub · Manual journal · English · 1366 px](phase-4/real-hub-manual-journal.png)
+
+**Real Hub · Manual entries · English · 1366 px**
+
+![Real Hub · Manual entries · English · 1366 px](phase-4/real-hub-journal-manual.png)
+
+**Real Hub · Reverse dialog · English · 1366 px**
+
+![Real Hub · Reverse dialog · English · 1366 px](phase-4/real-hub-journal-reverse-dialog.png)
+
+**Real Hub · Bank ledger · English · 1366 px**
+
+![Real Hub · Bank ledger · English · 1366 px](phase-4/real-hub-ledger-bank.png)
+
+**Real Hub · Vendor ledger · English · 1366 px**
+
+![Real Hub · Vendor ledger · English · 1366 px](phase-4/real-hub-ledger-vendor.png)
+
+**Real Hub · Expenses · English · 1366 px**
+
+![Real Hub · Expenses · English · 1366 px](phase-4/real-hub-expenses.png)
+
+**Real Hub · Expense dialog · English · 1366 px**
+
+![Real Hub · Expense dialog · English · 1366 px](phase-4/real-hub-expense-dialog.png)
+
+**Real Hub · Trial balance · English · 1366 px**
+
+![Real Hub · Trial balance · English · 1366 px](phase-4/real-hub-trial-balance.png)
+
+**Real Hub · Profit and loss · English · 1366 px**
+
+![Real Hub · Profit and loss · English · 1366 px](phase-4/real-hub-profit-and-loss.png)
+
+**Real Hub · Balance sheet · English · 1366 px**
+
+![Real Hub · Balance sheet · English · 1366 px](phase-4/real-hub-balance-sheet.png)
+
+**Real Hub · Cash flow · English · 1366 px**
+
+![Real Hub · Cash flow · English · 1366 px](phase-4/real-hub-cash-flow.png)
+
+**Real Hub · GST summary · English · 1366 px**
+
+![Real Hub · GST summary · English · 1366 px](phase-4/real-hub-gst-summary.png)
+
+**Real Hub · Chart of accounts · Hindi · 768 px**
+
+![Real Hub · Chart of accounts · Hindi · 768 px](phase-4/real-hub-chart-hi-IN-768.png)
+
+**Real Hub · Day book · Hindi · 768 px**
+
+![Real Hub · Day book · Hindi · 768 px](phase-4/real-hub-journal-hi-IN-768.png)
+
+**Real Hub · Profit and loss · Hindi · 768 px**
+
+![Real Hub · Profit and loss · Hindi · 768 px](phase-4/real-hub-profit-and-loss-hi-IN-768.png)
+
+**Real Hub · Chart of accounts · Bengali · 1366 px**
+
+![Real Hub · Chart of accounts · Bengali · 1366 px](phase-4/real-hub-chart-bn-IN-1366.png)
+
+**Real Hub · Day book · Bengali · 1366 px**
+
+![Real Hub · Day book · Bengali · 1366 px](phase-4/real-hub-journal-bn-IN-1366.png)
+
+**Real Hub · Profit and loss · Bengali · 1366 px**
+
+![Real Hub · Profit and loss · Bengali · 1366 px](phase-4/real-hub-profit-and-loss-bn-IN-1366.png)

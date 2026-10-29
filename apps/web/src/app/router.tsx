@@ -16,6 +16,7 @@ import {
   KitchenHome,
   KitchenLayout,
 } from '../portals/kitchen/kitchen-layout';
+import { BOOKS_PERMISSIONS, TRIAL_BALANCE_PERMISSIONS } from '../portals/accounts/accounts-ui';
 import { PortalPlaceholder } from '../portals/portal-placeholder';
 import { BillsPage } from '../portals/pos/bills-page';
 import { CounterPage } from '../portals/pos/counter-page';
@@ -147,6 +148,78 @@ const PairPage = lazy(() =>
 const SetupWizard = lazy(() =>
   import('../features/setup/setup-wizard').then((m) => ({ default: m.SetupWizard })),
 );
+// Purchase (Phase 3) and Accounts (Phase 4): back-office screens, loaded on demand.
+const PurchaseLayout = lazy(() =>
+  import('../portals/purchase/purchase-layout').then((m) => ({ default: m.PurchaseLayout })),
+);
+const VendorsPage = lazy(() =>
+  import('../portals/purchase/vendors-page').then((m) => ({ default: m.VendorsPage })),
+);
+const VendorPage = lazy(() =>
+  import('../portals/purchase/vendor-page').then((m) => ({ default: m.VendorPage })),
+);
+const OrdersPage = lazy(() =>
+  import('../portals/purchase/orders-page').then((m) => ({ default: m.OrdersPage })),
+);
+const OrderPage = lazy(() =>
+  import('../portals/purchase/order-page').then((m) => ({ default: m.OrderPage })),
+);
+const OrderEditorPage = lazy(() =>
+  import('../portals/purchase/order-editor-page').then((m) => ({ default: m.OrderEditorPage })),
+);
+const GrnsPage = lazy(() =>
+  import('../portals/purchase/grns-page').then((m) => ({ default: m.GrnsPage })),
+);
+const GrnPage = lazy(() =>
+  import('../portals/purchase/grn-page').then((m) => ({ default: m.GrnPage })),
+);
+const GrnEditorPage = lazy(() =>
+  import('../portals/purchase/grn-editor-page').then((m) => ({ default: m.GrnEditorPage })),
+);
+const PaymentsPage = lazy(() =>
+  import('../portals/purchase/payments-page').then((m) => ({ default: m.PaymentsPage })),
+);
+const DuesPage = lazy(() =>
+  import('../portals/purchase/dues-page').then((m) => ({ default: m.DuesPage })),
+);
+const AccountsLayout = lazy(() =>
+  import('../portals/accounts/accounts-layout').then((m) => ({ default: m.AccountsLayout })),
+);
+const ChartPage = lazy(() =>
+  import('../portals/accounts/chart-page').then((m) => ({ default: m.ChartPage })),
+);
+const JournalPage = lazy(() =>
+  import('../portals/accounts/journal-page').then((m) => ({ default: m.JournalPage })),
+);
+const ManualJournalPage = lazy(() =>
+  import('../portals/accounts/manual-journal-page').then((m) => ({
+    default: m.ManualJournalPage,
+  })),
+);
+const LedgersPage = lazy(() =>
+  import('../portals/accounts/ledgers-page').then((m) => ({ default: m.LedgersPage })),
+);
+const ExpensesPage = lazy(() =>
+  import('../portals/accounts/expenses-page').then((m) => ({ default: m.ExpensesPage })),
+);
+const StatementsLayout = lazy(() =>
+  import('../portals/accounts/statements-layout').then((m) => ({ default: m.StatementsLayout })),
+);
+const TrialBalancePage = lazy(() =>
+  import('../portals/accounts/statements-pages').then((m) => ({ default: m.TrialBalancePage })),
+);
+const ProfitLossPage = lazy(() =>
+  import('../portals/accounts/statements-pages').then((m) => ({ default: m.ProfitLossPage })),
+);
+const BalanceSheetPage = lazy(() =>
+  import('../portals/accounts/statements-pages').then((m) => ({ default: m.BalanceSheetPage })),
+);
+const CashFlowPage = lazy(() =>
+  import('../portals/accounts/statements-pages').then((m) => ({ default: m.CashFlowPage })),
+);
+const GstSummaryPage = lazy(() =>
+  import('../portals/accounts/statements-pages').then((m) => ({ default: m.GstSummaryPage })),
+);
 
 function HomeRedirect() {
   return <Navigate to={useHomePath()} replace />;
@@ -210,6 +283,8 @@ const OWN_ROUTES: ReadonlySet<Portal['id']> = new Set([
   'pos',
   'reports',
   'inventory',
+  'purchase',
+  'accounts',
 ]);
 
 function adminRoutes(): RouteObject {
@@ -485,6 +560,132 @@ function inventoryRoutes(): RouteObject {
   };
 }
 
+/** Guard for one purchase or accounts screen that needs more than the portal's permission. */
+function BackOfficeGuard({
+  permission,
+  labelKey,
+  children,
+}: {
+  permission: PermissionRequirement;
+  labelKey:
+    | 'purchase.orders.new'
+    | 'purchase.grns.receive'
+    | 'accounts.tabs.journal'
+    | 'accounts.tabs.ledgers'
+    | 'accounts.tabs.statements'
+    | 'accounts.journal.manual'
+    | 'accounts.statements.financial';
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <RequirePermission permission={permission} name={t(labelKey)}>
+      {children}
+    </RequirePermission>
+  );
+}
+
+function purchaseRoutes(): RouteObject {
+  const purchase = portal('purchase');
+  const orders = (page: ReactNode) => (
+    <BackOfficeGuard permission="po.create" labelKey="purchase.orders.new">
+      {page}
+    </BackOfficeGuard>
+  );
+  const receiving = (page: ReactNode) => (
+    <BackOfficeGuard permission="grn.post" labelKey="purchase.grns.receive">
+      {page}
+    </BackOfficeGuard>
+  );
+  return {
+    path: 'purchase',
+    element: (
+      <PortalGuard portal={purchase}>
+        <PurchaseLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/purchase/vendors" replace /> },
+      { path: 'vendors', element: <VendorsPage /> },
+      { path: 'vendors/:vendorId', element: <VendorPage /> },
+      { path: 'orders', element: <OrdersPage /> },
+      { path: 'orders/new', element: orders(<OrderEditorPage />) },
+      { path: 'orders/:poId', element: <OrderPage /> },
+      { path: 'orders/:poId/edit', element: orders(<OrderEditorPage />) },
+      { path: 'grns', element: <GrnsPage /> },
+      { path: 'grns/new', element: receiving(<GrnEditorPage />) },
+      { path: 'grns/:grnId', element: <GrnPage /> },
+      { path: 'grns/:grnId/edit', element: receiving(<GrnEditorPage />) },
+      { path: 'payments', element: <PaymentsPage /> },
+      { path: 'dues', element: <DuesPage /> },
+    ],
+  };
+}
+
+function accountsRoutes(): RouteObject {
+  const accounts = portal('accounts');
+  const financial = (page: ReactNode) => (
+    <BackOfficeGuard permission="reports.financial" labelKey="accounts.statements.financial">
+      {page}
+    </BackOfficeGuard>
+  );
+  return {
+    path: 'accounts',
+    element: (
+      <PortalGuard portal={accounts}>
+        <AccountsLayout />
+      </PortalGuard>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/accounts/chart" replace /> },
+      { path: 'chart', element: <ChartPage /> },
+      {
+        path: 'journal',
+        element: (
+          <BackOfficeGuard permission={BOOKS_PERMISSIONS} labelKey="accounts.tabs.journal">
+            <JournalPage />
+          </BackOfficeGuard>
+        ),
+      },
+      {
+        path: 'journal/new',
+        element: (
+          <BackOfficeGuard permission="accounts.journal" labelKey="accounts.journal.manual">
+            <ManualJournalPage />
+          </BackOfficeGuard>
+        ),
+      },
+      {
+        path: 'ledgers',
+        element: (
+          <BackOfficeGuard permission={BOOKS_PERMISSIONS} labelKey="accounts.tabs.ledgers">
+            <LedgersPage />
+          </BackOfficeGuard>
+        ),
+      },
+      { path: 'expenses', element: <ExpensesPage /> },
+      {
+        path: 'statements',
+        element: (
+          <BackOfficeGuard
+            permission={TRIAL_BALANCE_PERMISSIONS}
+            labelKey="accounts.tabs.statements"
+          >
+            <StatementsLayout />
+          </BackOfficeGuard>
+        ),
+        children: [
+          { index: true, element: <TrialBalancePage /> },
+          { path: 'profit-and-loss', element: financial(<ProfitLossPage />) },
+          { path: 'balance-sheet', element: financial(<BalanceSheetPage />) },
+          { path: 'cash-flow', element: financial(<CashFlowPage />) },
+          { path: 'gst', element: financial(<GstSummaryPage />) },
+        ],
+      },
+    ],
+  };
+}
+
 function ShiftGuard({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   return (
@@ -549,6 +750,8 @@ export const routes: RouteObject[] = [
           posRoutes(),
           reportsRoutes(),
           inventoryRoutes(),
+          purchaseRoutes(),
+          accountsRoutes(),
           ...PORTALS.filter((p) => !OWN_ROUTES.has(p.id)).map((p) => ({
             path: p.path,
             element: (

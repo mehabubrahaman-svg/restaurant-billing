@@ -5,6 +5,11 @@ import { useFormat } from '../i18n/use-format';
 import { ApprovalCancelledError } from '../features/approval/with-approval';
 
 const CODE_KEYS = {
+  VENDOR_CODE_TAKEN: 'purchase.errors.vendorCodeTaken',
+  ACCOUNT_CODE_TAKEN: 'accounts.errors.accountCodeTaken',
+  SYSTEM_ACCOUNT: 'accounts.errors.systemAccount',
+  JOURNAL_UNBALANCED: 'accounts.errors.journalUnbalanced',
+  ALREADY_REVERSED: 'accounts.errors.alreadyReversed',
   INVALID_CREDENTIALS: 'errors.invalidCredentials',
   ACCOUNT_DISABLED: 'errors.accountDisabled',
   RATE_LIMITED: 'errors.rateLimited',
