@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothSocket
+import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -212,7 +213,7 @@ class BluetoothPrinters(private val context: Context) {
       for (i in 0 until 50) {
         started =
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(c, piece, type) == BluetoothGatt.GATT_SUCCESS
+            gatt.writeCharacteristic(c, piece, type) == BluetoothStatusCodes.SUCCESS
           } else {
             c.writeType = type
             c.value = piece
