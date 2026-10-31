@@ -195,6 +195,24 @@ the Hub's address and opens full screen. CSV exports go to the share sheet.
    Safari, not the app.
 5. Shake the device to connect to another Hub.
 
+### Android tablets and phones: the RestroOS app
+
+Chrome works as above. The RestroOS app also remembers the Hub, keeps the
+screen on, can pin itself as a kiosk, and prints to Bluetooth printers
+paired with the tablet.
+
+1. Get the app from GitHub: **Actions** → **Android app** → **Run
+   workflow**, or push a tag such as `android-v0.3.0`. Download the
+   **restroos-android** artifact (about 20 minutes).
+2. Install `RestroOS.apk` (signed with your key, see
+   [`apps/android/README.md`](../apps/android/README.md)) or
+   `RestroOS-debug.apk` on the tablet.
+3. Open **RestroOS**, enter the Hub's address, e.g. `192.168.1.20`, and
+   pair it from the sign-in screen.
+4. For a Bluetooth printer, pair it in Android's Bluetooth settings, then
+   add it in **Admin → Printers** on that tablet with **Choose a printer
+   paired with this tablet**.
+
 ## Online orders: the cloud relay
 
 Swiggy, Zomato and other platforms reach the Hub through an aggregator

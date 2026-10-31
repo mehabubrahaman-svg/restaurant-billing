@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="connect_title">আপনার RestroOS হাবে যুক্ত হন</string>
+  <string name="connect_body">হাব পিসিতে দেখানো ঠিকানা লিখুন (সেটিংস → ডিভাইস), যেমন 192.168.1.20।</string>
+  <string name="connect_address">হাবের ঠিকানা</string>
+  <string name="connect_button">যুক্ত হন</string>
+  <string name="connect_checking">দেখা হচ্ছে…</string>
+  <string name="connect_invalid">এটি ঠিকানা নয়। 192.168.1.20-এর মতো কিছু লিখুন।</string>
+  <string name="connect_unreachable">%1$s-এ কোনো হাব পাওয়া যায়নি। দেখুন হাব পিসি চালু আছে এবং এই ট্যাবলেট একই ওয়াই-ফাইতে আছে।</string>
+  <string name="connect_not_hub">%1$s-এ কিছু সাড়া দিয়েছে, কিন্তু সেটি RestroOS হাব নয়।</string>
+  <string name="connect_kiosk">এই ট্যাবলেটে অ্যাপ পিন করুন (কিয়স্ক)</string>
+  <string name="hub_unreachable_title">হাবে পৌঁছানো যাচ্ছে না</string>
+  <string name="hub_unreachable_body">%1$s-এ হাব সাড়া দিচ্ছে না। ওয়াই-ফাই দেখুন এবং হাব পিসি চালু আছে কিনা দেখুন।</string>
+  <string name="hub_retry">আবার চেষ্টা করুন</string>
+  <string name="hub_change">অন্য হাব ব্যবহার করুন</string>
+  <string name="bt_permission">ব্লুটুথ প্রিন্টারে প্রিন্ট করতে \"কাছাকাছি ডিভাইস\" অনুমতি দিন, তারপর আবার চেষ্টা করুন।</string>
+  <string name="bt_off">ব্লুটুথ বন্ধ। প্রিন্ট করতে এটি চালু করুন।</string>
+  <string name="bt_none">এই ট্যাবলেটে ব্লুটুথ নেই।</string>
+  <string name="file_saved">%1$s ডাউনলোডে সেভ হয়েছে।</string>
+  <string name="file_failed">%1$s সেভ করা যায়নি।</string>
+</resources>

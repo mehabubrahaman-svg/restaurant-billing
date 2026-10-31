@@ -25,6 +25,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0018_relay` | `relay_links`: one per branch. Holds the relay address, hub id and key (a secret never returned by the API), and the "Online orders" user that relay orders are entered as. `relay_messages`: every message both ways. `IN` uses the relay's id, so a redelivery is handled once. `OUT` waits as `PENDING` until the relay has stored it; an older menu push still waiting becomes `SKIPPED`. Refuses a physical DELETE |
 
 | `0019_stock_value_schedule` | `report_schedules` and `report_files` rebuilt so a schedule can make the stock value (`INVENTORY_VALUATION`). The files move onto the new schedules table before the old one is dropped, so no foreign key ever points at a missing table. The no-delete triggers are made again |
+| `0020_device_print_jobs` | `device_print_jobs`: ESC/POS bytes waiting for the tablet whose Bluetooth printer they are for (ADR 0012). `QUEUED` until the tablet reports `PRINTED` or `FAILED`; a job older than 10 minutes, or whose printer moved or was turned off, becomes `EXPIRED`. Refuses a physical DELETE |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

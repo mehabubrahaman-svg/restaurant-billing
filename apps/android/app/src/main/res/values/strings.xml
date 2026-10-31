@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">RestroOS</string>
+  <string name="connect_title">Connect to your RestroOS Hub</string>
+  <string name="connect_body">Enter the address shown on the Hub PC (Settings → Devices), for example 192.168.1.20.</string>
+  <string name="connect_address">Hub address</string>
+  <string name="connect_button">Connect</string>
+  <string name="connect_checking">Checking…</string>
+  <string name="connect_invalid">That isn\'t an address. Try something like 192.168.1.20.</string>
+  <string name="connect_unreachable">No Hub answered at %1$s. Check that the Hub PC is on and this tablet is on the same Wi-Fi.</string>
+  <string name="connect_not_hub">Something answered at %1$s, but it isn\'t a RestroOS Hub.</string>
+  <string name="connect_kiosk">Pin the app on this tablet (kiosk)</string>
+  <string name="hub_unreachable_title">Can\'t reach the Hub</string>
+  <string name="hub_unreachable_body">The Hub at %1$s isn\'t answering. Check the Wi-Fi and that the Hub PC is on.</string>
+  <string name="hub_retry">Try again</string>
+  <string name="hub_change">Use another Hub</string>
+  <string name="bt_permission">Allow \"Nearby devices\" so RestroOS can print to Bluetooth printers, then try again.</string>
+  <string name="bt_off">Bluetooth is off. Turn it on to print.</string>
+  <string name="bt_none">This tablet has no Bluetooth.</string>
+  <string name="file_saved">Saved %1$s to Downloads.</string>
+  <string name="file_failed">Couldn\'t save %1$s.</string>
+</resources>

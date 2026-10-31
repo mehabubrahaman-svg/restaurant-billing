@@ -74,6 +74,11 @@ nothing shows it.
   Deploying it is in docs/12 ("Online orders").
 - **iOS app:** `apps/ios` (SwiftUI WKWebView shell, ADR 0011),
   `.github/workflows/ios.yml`; see `apps/ios/README.md`.
+- **Android app:** `apps/android` (Kotlin WebView shell with Bluetooth
+  printing, ADR 0012), `.github/workflows/android.yml`; see
+  `apps/android/README.md`. Hub side: `device_print_jobs` (migration 0020),
+  `PrintService.deviceJobs`/`finishDeviceJob`, routes `/devices/me/print-jobs`.
+  Web side: `lib/android-bridge.ts`, `features/devices/device-print-agent.ts`.
 - **Windows/Linux Hub:** `apps/desktop`, `.github/workflows/desktop.yml`.
 
 ## Releases
@@ -85,6 +90,11 @@ nothing shows it.
 - **iOS:** every push that changes `apps/ios` builds it; tag `ios-v<version>`
   for a release. The artifact `restroos-ios` holds the unsigned `.ipa` (to
   sideload) and, once the signing secrets are set, a signed one.
+
+- **Android:** every push that changes `apps/android` builds it; tag
+  `android-v<version>` for a release. The artifact `restroos-android` holds
+  `RestroOS-debug.apk` and the release APK (signed once the keystore secrets
+  are set).
 
 ## Known gaps (not fixed)
 
@@ -164,7 +174,14 @@ nothing shows it.
 **Apps**
 - The iOS app is unsigned until an Apple Developer account's secrets are added.
 - Scanning a pairing QR with the iPad camera pairs Safari, not the app; type
-  the code instead.
+  the code instead. The same holds for the Android app.
+- The Android app is signed with a throwaway debug key until the keystore
+  secrets are added, so updates need an uninstall (which unpairs).
+- Bluetooth printing from Android is tested with unit tests and an emulator
+  smoke test only. The emulator has no Bluetooth, so try a real printer
+  before rollout.
+- A tablet prints its queued tickets only while the app is open; they
+  expire after 10 minutes.
 
 ## Waiting on the owner (2026-10-28)
 

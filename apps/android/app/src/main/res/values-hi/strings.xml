@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="connect_title">अपने RestroOS हब से जुड़ें</string>
+  <string name="connect_body">हब पीसी पर दिखाया गया पता डालें (सेटिंग → डिवाइस), जैसे 192.168.1.20।</string>
+  <string name="connect_address">हब का पता</string>
+  <string name="connect_button">जुड़ें</string>
+  <string name="connect_checking">जाँच रहे हैं…</string>
+  <string name="connect_invalid">यह पता नहीं है। 192.168.1.20 जैसा कुछ डालें।</string>
+  <string name="connect_unreachable">%1$s पर कोई हब नहीं मिला। जाँचें कि हब पीसी चालू है और यह टैबलेट उसी वाई-फ़ाई पर है।</string>
+  <string name="connect_not_hub">%1$s पर कुछ मिला, पर वह RestroOS हब नहीं है।</string>
+  <string name="connect_kiosk">इस टैबलेट पर ऐप पिन करें (कियोस्क)</string>
+  <string name="hub_unreachable_title">हब से संपर्क नहीं हो रहा</string>
+  <string name="hub_unreachable_body">%1$s पर हब जवाब नहीं दे रहा। वाई-फ़ाई जाँचें और देखें कि हब पीसी चालू है।</string>
+  <string name="hub_retry">फिर कोशिश करें</string>
+  <string name="hub_change">दूसरा हब चुनें</string>
+  <string name="bt_permission">ब्लूटूथ प्रिंटर पर प्रिंट करने के लिए \"आस-पास के डिवाइस\" की अनुमति दें, फिर दोबारा कोशिश करें।</string>
+  <string name="bt_off">ब्लूटूथ बंद है। प्रिंट करने के लिए इसे चालू करें।</string>
+  <string name="bt_none">इस टैबलेट में ब्लूटूथ नहीं है।</string>
+  <string name="file_saved">%1$s डाउनलोड में सेव हुई।</string>
+  <string name="file_failed">%1$s सेव नहीं हो सकी।</string>
+</resources>
