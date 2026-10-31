@@ -63,6 +63,10 @@ jobs:
           rm -f "$RUNNER_TEMP/release.jks"
           ls -l "$GITHUB_WORKSPACE/out"
 
+      - name: Show lint findings
+        if: failure()
+        run: cat apps/android/app/build/intermediates/lint_intermediate_text_report/debug/*/lint-results-debug.txt || true
+
       - name: Lint report
         if: failure()
         uses: actions/upload-artifact@v4
