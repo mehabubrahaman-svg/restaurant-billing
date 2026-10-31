@@ -1,5 +1,12 @@
-/** Hands a downloaded file to the browser's "save" (a temporary object URL on a link). */
-export function saveBlob(blob: Blob, fileName: string): void {
+import { saveFileInApp } from './android-bridge';
+
+/**
+ * Hands a downloaded file to the browser's "save" (a temporary object URL on
+ * a link). In the Android app, which can't follow blob: links, the app saves
+ * it to Downloads instead.
+ */
+export async function saveBlob(blob: Blob, fileName: string): Promise<void> {
+  if (await saveFileInApp(blob, fileName)) return;
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

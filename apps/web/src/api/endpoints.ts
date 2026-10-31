@@ -34,6 +34,7 @@ import {
 } from '@restroos/contracts';
 import {
   API_PREFIX,
+  DevicePrintJobsResponseSchema,
   AddonGroupSchema,
   AddonGroupsResponseSchema,
   ApproveResponseSchema,
@@ -268,6 +269,10 @@ export interface SavePrinterBody {
   address?: string | null;
   paperWidthMm?: 58 | 80;
   purpose?: 'BILL' | 'KOT' | 'REPORT' | 'LABEL';
+  /** KOT printers: the station it prints for; null = every station. */
+  stationId?: string | null;
+  /** Bluetooth printers attached to a tablet: the device that prints; null = the Hub. */
+  deviceId?: string | null;
   isActive?: boolean;
   version?: number;
 }
@@ -1149,6 +1154,11 @@ export const api = {
     list: () => c.json('/devices', DevicesResponseSchema),
     update: (id: string, body: UpdateDeviceBody) =>
       c.json(`/devices/${id}`, DeviceSchema, { method: PATCH, body }),
+    /** Tickets queued for the Bluetooth printers attached to this tablet (the device cookie, no session). */
+    printJobs: () =>
+      c.json('/devices/me/print-jobs', DevicePrintJobsResponseSchema, { auth: false }),
+    printResult: (id: string, body: { ok: boolean; error?: string }) =>
+      c.void(`/devices/me/print-jobs/${id}/result`, { method: POST, body, auth: false }),
   },
   peripherals: {
     list: () => c.json('/peripherals', PeripheralsResponseSchema),

@@ -1780,7 +1780,7 @@
       "SYSTEM": "Windows/Linux printer"
     },
     "address": "Address",
-    "addressHint": "IP address and port for network printers (e.g. 192.168.1.50:9100), or the device name.",
+    "addressHint": "IP address and port for network printers (e.g. 192.168.1.50:9100), the Bluetooth address (e.g. 66:22:B3:01:4C:7A), or the device name.",
     "paper": "Paper width",
     "width": "{mm, number} mm",
     "test": "Print test page",
@@ -1791,7 +1791,21 @@
     "modes": {
       "TEXT": "printer font",
       "RASTER": "printed as an image (Hindi/Bengali)"
-    }
+    },
+    "testQueued": "Test page sent to {name}'s tablet.",
+    "testResultQueued": "Test page queued for {name}: {bytes} bytes, {mode}. The tablet it is attached to prints it.",
+    "onDevice": "Printed by {device}",
+    "unknownDevice": "a tablet",
+    "station": "Kitchen station",
+    "stationHint": "Only KOTs for this station print here.",
+    "allStations": "Every station",
+    "printedBy": "Printed by",
+    "printedByHint": "A Bluetooth printer paired with a tablet is printed by that tablet's Android app.",
+    "theHub": "The Hub PC",
+    "pickBonded": "Choose a printer paired with this tablet",
+    "pickFailed": "Couldn't list Bluetooth printers: {reason}",
+    "noneBonded": "No paired printers. Pair the printer in Android's Bluetooth settings first.",
+    "deviceFailed": "{name} didn't print. Check it is on, has paper and is in range."
   },
   "audit": {
     "title": "Audit log",

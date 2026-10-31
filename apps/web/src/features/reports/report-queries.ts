@@ -67,7 +67,7 @@ export function useDownload<A>(
     mutationFn: async (args: A) => {
       const { blob, fileName } = await fetchFile(args);
       const name = fileName ?? fallbackName(args);
-      saveBlob(blob, name);
+      await saveBlob(blob, name);
       return name;
     },
     onSuccess: (name) => toast(t('reports.downloaded', { name })),

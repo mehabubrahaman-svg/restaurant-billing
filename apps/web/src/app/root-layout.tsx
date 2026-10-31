@@ -12,6 +12,7 @@ import { useLiveConnection } from '../features/live/use-live-connection';
 import { startCommandQueue } from '../features/offline/command-queue';
 import { applyTheme, effectiveTheme, useThemeStore } from '../features/theme/theme-store';
 import { Toaster } from '../features/toast/toaster';
+import { useDevicePrintAgent } from '../features/devices/device-print-agent';
 import { DEVICE_ME_KEY, fetchThisDevice } from '../features/devices/this-device';
 import { useDeviceStore } from '../stores/device-store';
 
@@ -53,6 +54,8 @@ function RootGates() {
   const { pathname } = useLocation();
   useConnectionMonitor();
   useLiveConnection();
+  // The Android app prints this tablet's Bluetooth tickets, whatever screen is open.
+  useDevicePrintAgent();
   const queryClient = useQueryClient();
   // Commands queued offline (captain tablets) replay from here, whatever screen is open.
   useEffect(() => startCommandQueue(queryClient), [queryClient]);
