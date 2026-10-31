@@ -1,10 +1,17 @@
-import { PrintRequestSchema, type PrintDocument, type PrintOutcome } from '@restroos/contracts';
+import {
+  DevicePrintResultRequestSchema,
+  PrintRequestSchema,
+  type DevicePrintJobsResponse,
+  type PrintDocument,
+  type PrintOutcome,
+} from '@restroos/contracts';
 import { DomainError } from '@restroos/domain';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { Cradle } from '../../container';
 import { commandContext } from '../context';
 import { mayElevate } from '../elevation';
+import { HttpProblem } from '../problem';
 
 const IdParams = z.object({ id: z.uuid() });
 
@@ -59,6 +66,40 @@ export async function printingRoutes(app: FastifyInstance, { cradle }: { cradle:
       const { id } = IdParams.parse(request.params);
       const { printerId } = PrintRequestSchema.parse(request.body ?? {});
       return printing.printShift(id, { printerId }, commandContext(request));
+    },
+  );
+
+  // ---- Bluetooth printers attached to a tablet (apps/android) --------------------------------
+  // The tablet's app asks with its device token (cookie or X-Device-Token), signed in or not:
+  // a kitchen tablet keeps printing KOTs between cooks' sign-ins.
+  const thisDevice = (request: FastifyRequest) => {
+    if (!request.device) {
+      throw new HttpProblem('DEVICE_NOT_PAIRED', 'pair this device with the Hub to print here');
+    }
+    return request.device;
+  };
+
+  app.get(
+    '/devices/me/print-jobs',
+    { config: { public: true } },
+    async (request): Promise<DevicePrintJobsResponse> => {
+      const device = thisDevice(request);
+      return { data: printing.deviceJobs(device.id, device.branchId) };
+    },
+  );
+
+  app.post(
+    '/devices/me/print-jobs/:id/result',
+    { config: { public: true } },
+    async (request, reply) => {
+      const device = thisDevice(request);
+      const { id } = IdParams.parse(request.params);
+      const result = DevicePrintResultRequestSchema.parse(request.body);
+      printing.finishDeviceJob(device.id, id, {
+        ok: result.ok,
+        ...(result.error !== undefined && { error: result.error }),
+      });
+      return reply.status(204).send();
     },
   );
 }

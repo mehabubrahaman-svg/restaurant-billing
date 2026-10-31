@@ -70,6 +70,7 @@ import {
   writeXlsx,
   FileBackupStore,
   SqliteBackupRepository,
+  SqliteDevicePrintQueue,
   SqliteCouponRepository,
   SqliteCustomerRepository,
   SqliteReservationRepository,
@@ -552,6 +553,8 @@ export function buildContainer(
           timeZone: c.config.timeZone,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
+          deviceQueue: new SqliteDevicePrintQueue(c.db),
+          ids: c.ids,
         }),
     ),
     shiftService: single(

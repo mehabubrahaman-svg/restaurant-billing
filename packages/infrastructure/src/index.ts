@@ -74,6 +74,7 @@ export {
 export { SqliteBackupRepository } from './backup/sqlite-backup-repository';
 export { ascii, escPos, twoColumns, wrap } from './printing/escpos';
 export { hubPrinterTransport } from './printing/transports';
+export { SqliteDevicePrintQueue } from './printing/sqlite-device-print-queue';
 export {
   ChromiumRasterRenderer,
   fontsourceFiles,

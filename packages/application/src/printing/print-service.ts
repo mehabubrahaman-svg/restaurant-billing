@@ -3,11 +3,12 @@ import type { BillingQueries, InvoiceRepository } from '../billing/ports';
 import type { CatalogRepository } from '../catalog/ports';
 import type { KitchenQueries, OrderQueries } from '../ordering/ports';
 import type { Clock } from '../ports/clock';
+import type { IdGenerator } from '../ports/id-generator';
 import type { CommandContext, UnitOfWork } from '../ports/unit-of-work';
 import type { BranchSettingsRecord, PrinterRecord, SettingsRepository } from '../settings/ports';
 import { columnsFor, dotsFor, needsRaster, type PrintDocument } from './document';
 import type { ReceiptLanguage } from './labels';
-import type { EscPosEncoder, PrinterTransport, RasterRenderer } from './ports';
+import type { DevicePrintQueue, EscPosEncoder, PrinterTransport, RasterRenderer } from './ports';
 import type { DayEndReportView } from '../reporting/ports';
 import {
   dayEndSlip,
@@ -33,6 +34,31 @@ export interface PrintServiceDeps {
   readonly timeZone: string;
   readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
+  readonly deviceQueue: DevicePrintQueue;
+  readonly ids: IdGenerator;
+}
+
+/** A tablet that didn't print a job within this long drops it: tickets that late are stale. */
+export const DEVICE_JOB_TTL_MS = 10 * 60_000;
+
+export interface DevicePrintJobView {
+  id: string;
+  printerId: string;
+  printerName: string;
+  connection: 'BLUETOOTH' | 'BLE';
+  address: string;
+  paperWidthMm: 58 | 80;
+  /** The ESC/POS bytes, base64. */
+  data: string;
+  createdAt: string;
+}
+
+/** A Bluetooth printer attached to a tablet: the Hub reaches it through that tablet. */
+export function onDevice(printer: PrinterRecord): printer is PrinterRecord & { deviceId: string } {
+  return (
+    printer.deviceId !== null &&
+    (printer.connection === 'BLUETOOTH' || printer.connection === 'BLE')
+  );
 }
 
 export interface PrintOutcome {
@@ -41,6 +67,8 @@ export interface PrintOutcome {
   /** TEXT: the printer's own font (fast). RASTER: drawn as an image (Hindi, Bengali). */
   mode: 'TEXT' | 'RASTER';
   bytes: number;
+  /** Sent to the tablet the printer is attached to, which prints it over Bluetooth. */
+  queuedOnDevice?: boolean;
 }
 
 /** Thermal printing of bills, KOTs and shift reports (docs/09 WP 5.5, docs/01 §5.8). */
@@ -61,11 +89,11 @@ export class PrintService {
         permission: 'billing.reprint',
       });
     }
-    const printer = this.pick(ctx.branchId, ['BILL'], options.printerId);
+    const printer = this.pick(ctx.branchId, ['BILL'], options.printerId, ctx.deviceId);
     const slip = await this.slipContext(ctx.branchId);
     const names = this.localNames(ctx.branchId, invoice.orderId, slip.languages);
     const doc = invoiceSlip(invoice, slip, { copy, localName: (id) => names.get(id) ?? null });
-    const outcome = await this.send(printer, doc);
+    const outcome = await this.send(printer, doc, ctx.branchId);
     this.d.unitOfWork.run(ctx, (scope) => {
       const aggregate = this.d.invoices.get(ctx.branchId, invoiceId)!;
       aggregate.markPrinted(copy, this.d.clock.now());
@@ -103,7 +131,7 @@ export class PrintService {
     if (!kot) throw new DomainError('NOT_FOUND', 'KOT not found');
     const printers = this.d.settings
       .printers(branchId)
-      .filter((p) => p.isActive && p.purpose === 'KOT' && p.deviceId === null)
+      .filter((p) => p.isActive && p.purpose === 'KOT' && (p.deviceId === null || onDevice(p)))
       .filter((p) => p.stationId === null || p.stationId === kot.kitchenStationId);
     const outcomes: PrintOutcome[] = [];
     for (const printer of printers) {
@@ -113,6 +141,7 @@ export class PrintService {
         await this.send(
           printer,
           kotSlip(kot, slip, { reprint, localName: (id) => names.get(id) ?? null }),
+          branchId,
         ),
       );
     }
@@ -126,8 +155,12 @@ export class PrintService {
   ): Promise<PrintOutcome> {
     const report = this.d.billing.shiftReport(ctx.branchId, shiftId);
     if (!report) throw new DomainError('NOT_FOUND', 'shift not found');
-    const printer = this.pick(ctx.branchId, ['REPORT', 'BILL'], options.printerId);
-    return this.send(printer, shiftSlip(report, await this.slipContext(ctx.branchId)));
+    const printer = this.pick(ctx.branchId, ['REPORT', 'BILL'], options.printerId, ctx.deviceId);
+    return this.send(
+      printer,
+      shiftSlip(report, await this.slipContext(ctx.branchId)),
+      ctx.branchId,
+    );
   }
 
   async printDayEnd(
@@ -135,8 +168,12 @@ export class PrintService {
     options: { printerId?: string | undefined },
     ctx: CommandContext,
   ): Promise<PrintOutcome> {
-    const printer = this.pick(ctx.branchId, ['REPORT', 'BILL'], options.printerId);
-    return this.send(printer, dayEndSlip(report, await this.slipContext(ctx.branchId)));
+    const printer = this.pick(ctx.branchId, ['REPORT', 'BILL'], options.printerId, ctx.deviceId);
+    return this.send(
+      printer,
+      dayEndSlip(report, await this.slipContext(ctx.branchId)),
+      ctx.branchId,
+    );
   }
 
   async testPage(printerId: string, branchId: string): Promise<PrintOutcome> {
@@ -144,11 +181,16 @@ export class PrintService {
     return this.send(
       printer,
       testSlip(printer.name, printer.paperWidthMm, await this.slipContext(branchId)),
+      branchId,
     );
   }
 
   // ---- helpers -------------------------------------------------------------------------------
-  private async send(printer: PrinterRecord, doc: PrintDocument): Promise<PrintOutcome> {
+  private async send(
+    printer: PrinterRecord,
+    doc: PrintDocument,
+    branchId: string,
+  ): Promise<PrintOutcome> {
     const raster = this.d.renderer !== null && needsRaster(doc);
     const bytes = raster
       ? this.d.encoder.raster(
@@ -156,23 +198,94 @@ export class PrintService {
           doc.cut,
         )
       : this.d.encoder.text(doc, columnsFor(printer.paperWidthMm));
-    await this.d.transport.send(printer, bytes);
-    return {
+    const outcome: PrintOutcome = {
       printerId: printer.id,
       printerName: printer.name,
       mode: raster ? 'RASTER' : 'TEXT',
       bytes: bytes.length,
     };
+    if (onDevice(printer)) {
+      if (!printer.address) {
+        throw new DomainError('PRINTER_OFFLINE', `${printer.name} has no Bluetooth address set`);
+      }
+      this.d.deviceQueue.enqueue({
+        id: this.d.ids.next(),
+        branchId,
+        deviceId: printer.deviceId,
+        printerId: printer.id,
+        payload: bytes,
+        createdAt: this.d.clock.now(),
+      });
+      return { ...outcome, queuedOnDevice: true };
+    }
+    await this.d.transport.send(printer, bytes);
+    return outcome;
   }
 
+  /**
+   * What a tablet should print now: its queued jobs, oldest first. Jobs older
+   * than DEVICE_JOB_TTL_MS, or whose printer was moved off this tablet, expire.
+   */
+  deviceJobs(deviceId: string, branchId: string): DevicePrintJobView[] {
+    const now = this.d.clock.now();
+    const printers = new Map(this.d.settings.printers(branchId).map((p) => [p.id, p]));
+    const views: DevicePrintJobView[] = [];
+    for (const job of this.d.deviceQueue.queued(deviceId)) {
+      const printer = printers.get(job.printerId);
+      if (
+        now.getTime() - job.createdAt.getTime() > DEVICE_JOB_TTL_MS ||
+        !printer?.isActive ||
+        !onDevice(printer) ||
+        printer.deviceId !== deviceId ||
+        !printer.address
+      ) {
+        this.d.deviceQueue.finish(job.id, 'EXPIRED', null, now);
+        continue;
+      }
+      views.push({
+        id: job.id,
+        printerId: printer.id,
+        printerName: printer.name,
+        connection: printer.connection as 'BLUETOOTH' | 'BLE',
+        address: printer.address,
+        paperWidthMm: printer.paperWidthMm,
+        data: Buffer.from(job.payload).toString('base64'),
+        createdAt: job.createdAt.toISOString(),
+      });
+    }
+    return views;
+  }
+
+  /** The tablet reports how a job went. Only the tablet the job is for may. */
+  finishDeviceJob(deviceId: string, jobId: string, result: { ok: boolean; error?: string }): void {
+    const job = this.d.deviceQueue.get(jobId);
+    if (!job || job.deviceId !== deviceId) {
+      throw new DomainError('NOT_FOUND', 'print job not found');
+    }
+    this.d.deviceQueue.finish(
+      jobId,
+      result.ok ? 'PRINTED' : 'FAILED',
+      result.ok ? null : (result.error ?? 'failed').slice(0, 200),
+      this.d.clock.now(),
+    );
+  }
+
+  /**
+   * The printer for a job: the one asked for, else the first by purpose. The
+   * requesting tablet's own Bluetooth printer comes first, then the Hub's,
+   * then other tablets' (which print it when it reaches them).
+   */
   private pick(
     branchId: string,
     purposes: readonly PrinterRecord['purpose'][],
     printerId?: string,
+    deviceId?: string | null,
   ): PrinterRecord {
+    const rank = (p: PrinterRecord) => (p.deviceId === null ? 1 : p.deviceId === deviceId ? 0 : 2);
     const printers = this.d.settings
       .printers(branchId)
-      .filter((p) => p.isActive && p.deviceId === null);
+      .filter((p) => p.isActive && (p.deviceId === null || onDevice(p)))
+      .sort((a, b) => rank(a) - rank(b));
     if (printerId) {
       const chosen = printers.find((p) => p.id === printerId);
       if (!chosen) throw new DomainError('NOT_FOUND', 'printer not found');
