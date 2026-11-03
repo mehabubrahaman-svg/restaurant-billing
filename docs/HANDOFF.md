@@ -79,6 +79,13 @@ nothing shows it.
   `apps/android/README.md`. Hub side: `device_print_jobs` (migration 0020),
   `PrintService.deviceJobs`/`finishDeviceJob`, routes `/devices/me/print-jobs`.
   Web side: `lib/android-bridge.ts`, `features/devices/device-print-agent.ts`.
+- **Menu upload with photos:** Admin → Menu → Upload menu (ADR 0013). Hub:
+  `catalog/menu-import.ts` (`MenuImporter.import`), `media/` (MediaService,
+  `inspectImage`), `media_assets` (migration 0021), routes `/menu/import`
+  and `/media/*`. Web: `lib/xlsx.ts` (read/write .xlsx with fflate),
+  `lib/dish-photos.ts` (shrink and re-encode in the browser),
+  `features/menu/menu-workbook.ts`, `import-page.tsx` and `photo-field.tsx`.
+  E2E: `e2e/tests/07-menu-upload.spec.ts`.
 - **Windows/Linux Hub:** `apps/desktop`, `.github/workflows/desktop.yml`.
 
 ## Releases
@@ -170,6 +177,11 @@ nothing shows it.
 - The relay needs a reverse proxy for HTTPS.
 - One relay link per Hub (the first branch with it on).
 - An order the Hub can't enter isn't rejected on the platform: staff key it in or retry it.
+
+**Menu photos**
+- Photos no dish uses any more aren't cleaned up (they stay in the database and backups).
+- iPhone HEIC photos must be converted to JPEG first (Chrome on Windows/Android can't decode them).
+- The aggregator relay's menu push doesn't send photos yet.
 
 **Apps**
 - The iOS app is unsigned until an Apple Developer account's secrets are added.

@@ -28,6 +28,7 @@ import { QueryState } from '../admin/query-state';
 import { toast } from '../toast/toast-store';
 import { CategoryDialog } from './category-dialog';
 import { CategorySwatch } from './category-swatch';
+import { photoUrl } from '../../lib/dish-photos';
 import { FoodTypeMark } from './food-type';
 import { localizedName, translationKey } from './localized-name';
 import { invalidateMenu, useCategories, useMenuItems } from './menu-queries';
@@ -323,6 +324,18 @@ function ItemRow({ item }: { item: MenuItem }) {
         className="flex min-h-touch items-center gap-3 px-3 py-2 hover:bg-muted"
         aria-label={t('menu.item.editNamed', { name: item.name })}
       >
+        {item.imageId === null ? (
+          <span aria-hidden="true" className="size-10 shrink-0 rounded-md bg-muted" />
+        ) : (
+          <img
+            src={photoUrl(item.imageId)}
+            alt=""
+            loading="lazy"
+            width={40}
+            height={40}
+            className="size-10 shrink-0 rounded-md object-cover"
+          />
+        )}
         <FoodTypeMark type={item.foodType} />
         <span className="min-w-0 flex-1">
           <span className={cn('block font-medium break-words', !item.isActive && 'line-through')}>

@@ -1844,7 +1844,7 @@
       "items": "Items",
       "addons": "Add-on groups",
       "stations": "Kitchen stations",
-      "import": "Import CSV"
+      "import": "Upload menu"
     },
     "foodTypes": {
       "VEG": "Veg",
@@ -1920,7 +1920,8 @@
         "price": "Price and tax",
         "kitchen": "Kitchen",
         "variants": "Variants (sizes)",
-        "addons": "Add-on groups"
+        "addons": "Add-on groups",
+        "photo": "Photo"
       },
       "translationsHint": "Shown to staff and guests who use Hindi or Bengali. Leave empty to show the English name.",
       "variantsHint": "Sizes or portions with their own price, e.g. Half and Full. Removing one keeps it in old bills.",
@@ -1946,7 +1947,12 @@
         "sortOrder": "A whole number.",
         "tooManyVariants": "At most 10 variants.",
         "tooManyAddons": "At most 10 add-on groups."
-      }
+      },
+      "photoHint": "A square-ish photo looks best. It is shrunk on this device before upload.",
+      "photoAdd": "Add photo",
+      "photoReplace": "Replace photo",
+      "photoRemove": "Remove photo",
+      "photoUploading": "Uploading photo…"
     },
     "addons": {
       "title": "Add-on groups",
@@ -1983,30 +1989,37 @@
       "saved": "{name} saved."
     },
     "import": {
-      "title": "Import menu from CSV",
-      "description": "Add or update many items at once. Rows are matched by SKU: existing items are updated, new ones are created.",
-      "template": "Download template",
-      "step1": "1. Choose the file",
-      "step2": "2. Check and import",
-      "upload": "Upload CSV file",
+      "title": "Upload menu",
+      "description": "Add or update many dishes at once from an Excel or CSV sheet, with their photos. Rows are matched by SKU: existing dishes are updated, new ones are created. Nothing is saved until you check the sheet and press Import.",
+      "template": "Download template (Excel)",
+      "step1": "1. Choose the spreadsheet",
+      "step2": "3. Check and import",
+      "upload": "Choose Excel or CSV file",
       "fileChosen": "File: {name}",
       "paste": "Or paste the CSV here",
       "pasteHint": "The first row must be the column names. Prices in rupees, e.g. 249.50.",
       "tooBig": "This file is too large (over 2 million characters). Split it into smaller files.",
       "columnsTitle": "Columns",
       "columns": {
-        "sku": "required; the item code that links rows to items",
-        "name": "required; English name",
-        "category": "required; created if it doesn’t exist",
-        "price": "required; in rupees, e.g. 249.50",
-        "food_type": "VEG, NON_VEG, EGG, VEGAN or NA",
-        "tax_group": "must match an existing tax group name exactly, e.g. GST 5%",
+        "sku": "the dish code that links rows to dishes, e.g. BIR-CHK",
+        "name": "English name",
+        "category": "created if it doesn’t exist",
+        "price": "in rupees, e.g. 249.50; the price when there are no sizes",
+        "food_type": "veg, non-veg, egg, vegan or na",
+        "tax_group": "must match an existing tax group name, e.g. GST 5%",
         "kitchen_station": "created if it doesn’t exist",
-        "short_name": "short name for KOT",
+        "short_name": "short name printed on the KOT (24 characters)",
         "name_hi": "name in Hindi",
         "name_bn": "name in Bengali",
-        "hsn_sac": "4 to 8 digits",
-        "description": "English description"
+        "hsn_sac": "4 to 8 digits, e.g. 996331",
+        "description": "English description, for the QR menu",
+        "variants": "sizes and their prices, e.g. Half:220 | Full:320",
+        "addon_groups": "existing add-on group names, separated by |",
+        "image": "photo file name, e.g. biryani.jpg; empty uses a photo named after the SKU",
+        "description_hi": "description in Hindi",
+        "description_bn": "description in Bengali",
+        "prep_time_min": "minutes to prepare, for kitchen delay alerts",
+        "active": "yes or no; no keeps the dish off the menu"
       },
       "check": "Check file",
       "checking": "Checking…",
@@ -2026,7 +2039,68 @@
       "noErrors": "No problems found. You can import now.",
       "import": "{count, plural, one {Import # item} other {Import # items}}",
       "importing": "Importing…",
-      "done": "Menu imported"
+      "done": "Menu imported",
+      "templateCsv": "Download CSV template",
+      "export": "Export current menu",
+      "photosStep": "2. Add dish photos (optional)",
+      "dropSheet": "Drop an Excel (.xlsx) or CSV file here, or choose one. Start from the template or from an export of the current menu.",
+      "csvRows": "{count, plural, one {# row} other {# rows}}",
+      "sheetUsed": "sheet “{sheet}”, {count, plural, one {# row} other {# rows}}",
+      "sheetErrors": {
+        "notWorkbook": "This isn’t an Excel workbook. Save it as Excel (.xlsx) or as CSV UTF-8 and try again.",
+        "noSkuColumn": "No sheet in this workbook has a “sku” column. Start from the template.",
+        "unreadable": "This file can’t be read."
+      },
+      "pasteTitle": "Or paste CSV text",
+      "photosHint": "Name each photo after the dish’s SKU (for example BIR-CHK.jpg), or write its file name in the image column. JPEG, PNG or WebP photos, or a .zip of them. Photos are shrunk on this device before upload, and their location data is removed.",
+      "addPhotos": "Add photos or a .zip",
+      "clearPhotos": "Remove all photos",
+      "photoCount": "{count, plural, one {# photo added} other {# photos added}}",
+      "photoList": "Added photos",
+      "photosSkipped": "Some files were left out",
+      "skipped": {
+        "notPhoto": "{name}: not a JPEG, PNG or WebP photo",
+        "duplicate": "{name}: a photo with this name is already added",
+        "tooLarge": "{name}: larger than 25 MB",
+        "badZip": "{name}: this .zip can’t be opened"
+      },
+      "photoProblems": {
+        "unsupported": "{name}: this kind of photo can’t be read here. iPhone photos (HEIC): share them as JPEG.",
+        "unreadable": "{name}: this photo can’t be read",
+        "tooLarge": "{name}: still too large after shrinking",
+        "upload": "{name}: upload failed ({reason})"
+      },
+      "preparing": "Preparing and uploading photos: {done} of {total}…",
+      "preparingLabel": "Photo upload progress",
+      "retireMissing": "Take dishes that aren’t in this sheet off the menu",
+      "retireMissingHint": "For a full menu sync. They are retired, not deleted: old bills keep them, and you can bring them back from the menu.",
+      "unchanged": "No change",
+      "photosSet": "Photos added or replaced",
+      "willRetire": "Taken off the menu",
+      "retiredNames": "{count, plural, one {Taken off the menu: {names}} other {Taken off the menu ({count}): {names}}}",
+      "warningsTitle": "Worth a look",
+      "previewTable": "What the import will do",
+      "previewShown": "Showing the first {shown} of {total} rows.",
+      "photo": "Photo",
+      "sku": "SKU",
+      "name": "Name",
+      "change": "Change",
+      "photoOf": "Photo of {name}",
+      "actions": {
+        "create": "New",
+        "update": "Updated",
+        "unchanged": "No change"
+      },
+      "images": {
+        "set": "New photo",
+        "keep": "Keeps its photo",
+        "remove": "Photo removed",
+        "none": "—"
+      },
+      "instructionsSheet": "Instructions",
+      "required": "required",
+      "optional": "optional",
+      "columnsNote": "Column names can be in any order and any case. In an optional column, an empty cell keeps what the dish already has, and a single - clears it."
     }
   },
   "availability": {

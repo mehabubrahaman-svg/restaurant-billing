@@ -5,6 +5,7 @@ import { memo, useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CategorySwatch } from '../../../features/menu/category-swatch';
 import { FoodTypeMark } from '../../../features/menu/food-type';
+import { photoUrl } from '../../../lib/dish-photos';
 import { localizedName } from '../../../features/menu/localized-name';
 import { byOrder } from '../../../features/menu/sort';
 import { fromPrice, hasOptions } from '../../../features/orders/item-options';
@@ -167,9 +168,23 @@ const ItemTile = memo(function ItemTile({
     >
       <span className="flex items-start gap-2">
         <FoodTypeMark type={item.foodType} className="mt-1" />
-        <span className={cn('font-semibold break-words', out && 'line-through')} lang={lang}>
+        <span
+          className={cn('min-w-0 flex-1 font-semibold break-words', out && 'line-through')}
+          lang={lang}
+        >
           {name}
         </span>
+        {item.imageId !== null && (
+          <img
+            src={photoUrl(item.imageId)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            width={44}
+            height={44}
+            className="size-11 shrink-0 rounded-lg object-cover"
+          />
+        )}
       </span>
       <span className="flex flex-wrap items-center justify-between gap-1">
         <span className="font-semibold tabular-nums">

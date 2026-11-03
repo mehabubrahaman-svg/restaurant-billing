@@ -60,6 +60,8 @@ export interface MenuItemRecord {
   hsnSacCode: string | null;
   kitchenStationId: string | null;
   prepTimeSec: number | null;
+  /** The dish photo (a media asset id), or null. */
+  imageId: string | null;
   sortOrder: number;
   variants: VariantRecord[];
   addonGroupIds: string[];

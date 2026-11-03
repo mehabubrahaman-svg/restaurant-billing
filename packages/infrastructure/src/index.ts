@@ -42,6 +42,7 @@ export {
   SqliteReferenceData,
 } from './setup/sqlite-installation-repository';
 export { SqliteCatalogRepository } from './catalog/sqlite-catalog-repository';
+export { SqliteMediaRepository } from './media/sqlite-media-repository';
 export { SqliteDeviceRepository } from './devices/sqlite-device-repository';
 export { SqliteFloorRepository } from './floor/sqlite-floor-repository';
 export { SqliteReservationRepository } from './floor/sqlite-reservation-repository';

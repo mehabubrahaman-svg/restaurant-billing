@@ -16,6 +16,8 @@ import {
   type MenuItemsResponse,
   type MenuSnapshot,
 } from '@restroos/contracts';
+import { parseCsv } from '@restroos/application';
+import { DomainError } from '@restroos/domain';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Cradle } from '../../container';
@@ -136,10 +138,25 @@ export async function catalogRoutes(app: FastifyInstance, { cradle }: { cradle: 
   // ---- CSV import ---------------------------------------------------------------------
   app.post(
     '/menu/import',
-    { config: MANAGE, bodyLimit: 4 * 1024 * 1024 },
+    { config: MANAGE, bodyLimit: 8 * 1024 * 1024 },
     async (request): Promise<MenuImportResponse> => {
-      const { csv, dryRun } = MenuImportRequestSchema.parse(request.body);
-      return menuImporter.run(csv, dryRun, commandContext(request));
+      const body = MenuImportRequestSchema.parse(request.body);
+      const ctx = commandContext(request);
+      if (body.csv !== undefined && Object.keys(body.images).length === 0 && !body.retireMissing)
+        return menuImporter.run(body.csv, body.dryRun, ctx);
+      const table = body.rows ?? parseCsvOrThrow(body.csv!);
+      return menuImporter.import(
+        { table, dryRun: body.dryRun, images: body.images, retireMissing: body.retireMissing },
+        ctx,
+      );
     },
   );
+}
+
+function parseCsvOrThrow(csv: string): string[][] {
+  try {
+    return parseCsv(csv);
+  } catch (error) {
+    throw new DomainError('CSV_INVALID', (error as Error).message);
+  }
 }

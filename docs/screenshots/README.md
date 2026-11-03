@@ -1120,3 +1120,23 @@ Real-Hub shots on the same Hub, whose bills, payments, goods received, expenses 
 **Real Hub · Profit and loss · Bengali · 1366 px**
 
 ![Real Hub · Profit and loss · Bengali · 1366 px](phase-4/real-hub-profit-and-loss-bn-IN-1366.png)
+
+## Menu upload with dish photos
+
+A real Hub and Chromium (e2e/tests/07-menu-upload.spec.ts): the Excel template downloaded from the app, uploaded again with two photos, checked and imported.
+
+**Real Hub · Upload menu: the sheet and the photos · 1366 px**
+
+![Real Hub · Upload menu: the sheet and the photos · 1366 px](menu-upload/real-hub-menu-upload-choose.png)
+
+**Real Hub · Upload menu: what the import will do**
+
+![Real Hub · Upload menu: what the import will do](menu-upload/real-hub-menu-upload-preview.png)
+
+**Real Hub · The menu with photos · 1366 px**
+
+![Real Hub · The menu with photos · 1366 px](menu-upload/real-hub-menu-with-photos.png)
+
+**Real Hub · A dish's photo on its own page · 1366 px**
+
+![Real Hub · A dish's photo on its own page · 1366 px](menu-upload/real-hub-item-photo.png)

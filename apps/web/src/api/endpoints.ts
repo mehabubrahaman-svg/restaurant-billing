@@ -112,6 +112,7 @@ import {
   ChargeRuleSchema,
   ChargeRulesResponseSchema,
   MenuImportResponseSchema,
+  UploadedImageSchema,
   MenuItemSchema,
   MenuItemsResponseSchema,
   MenuSnapshotSchema,
@@ -321,6 +322,7 @@ export interface SaveMenuItemBody {
   hsnSacCode?: string | null;
   kitchenStationId?: string | null;
   prepTimeSec?: number | null;
+  imageId?: string | null;
   sortOrder?: number;
   /** The full list: variants left out are retired. */
   variants?: { id?: string; name: string; nameTranslations: TranslationsBody; price: number }[];
@@ -789,6 +791,18 @@ export const api = {
     snapshot: (etag: string | null) => c.cached('/menu', MenuSnapshotSchema, etag),
     import: (csv: string, dryRun: boolean) =>
       c.json('/menu/import', MenuImportResponseSchema, { method: POST, body: { csv, dryRun } }),
+    /** A sheet read from Excel or CSV, with the photos already uploaded (file name → id). */
+    importRows: (body: {
+      rows: string[][];
+      images: Record<string, string>;
+      retireMissing: boolean;
+      dryRun: boolean;
+    }) => c.json('/menu/import', MenuImportResponseSchema, { method: POST, body }),
+  },
+  media: {
+    /** A prepared dish photo and its thumbnail, base64 (lib/dish-photos.ts). */
+    uploadImage: (body: { image: string; thumbnail: string }) =>
+      c.json('/media/images', UploadedImageSchema, { method: POST, body }),
   },
   floor: {
     get: () => c.json('/floor', FloorResponseSchema),

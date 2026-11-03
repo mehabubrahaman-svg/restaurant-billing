@@ -41,6 +41,7 @@ const item = (
   variants: [],
   addonGroupIds: [],
   isAvailable: true,
+  imageId: null,
   ...more,
 });
 const MENU: QrMenu = {

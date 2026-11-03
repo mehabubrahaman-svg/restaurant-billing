@@ -18,6 +18,8 @@ export interface CatalogServiceDeps {
   readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
   readonly ids: IdGenerator;
+  /** Checks a dish photo exists before an item points at it. */
+  readonly media: { exists(id: string): boolean };
 }
 
 export interface ItemInput {
@@ -34,6 +36,8 @@ export interface ItemInput {
   hsnSacCode: string | null;
   kitchenStationId: string | null;
   prepTimeSec: number | null;
+  /** The dish photo; omitted keeps the current one, null removes it. */
+  imageId?: string | null | undefined;
   sortOrder: number;
   variants: {
     id?: string | undefined;
@@ -309,6 +313,9 @@ export class CatalogService {
     ) {
       throw new DomainError('STATION_NOT_FOUND', 'kitchen station not found');
     }
+    if (input.imageId && !this.d.media.exists(input.imageId)) {
+      throw new DomainError('IMAGE_NOT_FOUND', 'upload the photo before using it');
+    }
     for (const groupId of input.addonGroupIds) {
       if (!this.d.catalog.addonGroup(groupId)?.isActive) {
         throw new DomainError('ADDON_GROUP_NOT_FOUND', `add-on group ${groupId} not found`);
@@ -334,6 +341,7 @@ export class CatalogService {
       hsnSacCode: input.hsnSacCode,
       kitchenStationId: input.kitchenStationId,
       prepTimeSec: input.prepTimeSec,
+      imageId: input.imageId ?? null,
       sortOrder: input.sortOrder,
       addonGroupIds: [...new Set(input.addonGroupIds)],
       variants: input.variants.map((v, i) => {

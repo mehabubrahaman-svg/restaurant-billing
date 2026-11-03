@@ -23,6 +23,7 @@ import { useParams } from 'react-router';
 import { newIdempotencyKey } from '../../api/client';
 import { api } from '../../api/endpoints';
 import { FoodTypeMark } from '../../features/menu/food-type';
+import { photoUrl } from '../../lib/dish-photos';
 import { localizedName } from '../../features/menu/localized-name';
 import { LanguageSwitcher } from '../../i18n/language-switcher';
 import { useFormat } from '../../i18n/use-format';
@@ -202,6 +203,17 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
                     key={item.id}
                     className={cn('flex items-start gap-3 p-3', !item.isAvailable && 'opacity-60')}
                   >
+                    {item.imageId !== null && (
+                      <img
+                        src={photoUrl(item.imageId)}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        width={72}
+                        height={72}
+                        className="size-18 shrink-0 rounded-lg object-cover"
+                      />
+                    )}
                     <FoodTypeMark type={item.foodType} size="sm" className="mt-1 shrink-0" />
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="font-medium break-words">{name}</span>

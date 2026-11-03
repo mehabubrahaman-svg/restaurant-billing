@@ -28,6 +28,12 @@ export const QrMenuSchema = z.object({
       price: PaiseSchema,
       /** The price includes tax; otherwise tax is added on the bill. */
       taxIncluded: z.boolean(),
+      /** The dish photo: GET /media/{imageId}/thumb. */
+      imageId: z
+        .string()
+        .regex(/^[0-9a-f]{64}$/)
+        .nullable()
+        .default(null),
       variants: z.array(
         z.object({
           id: IdSchema,

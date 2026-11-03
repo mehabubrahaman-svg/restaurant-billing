@@ -22,6 +22,7 @@ const biryani: MenuItem = {
   hsnSacCode: '996331',
   kitchenStationId: null,
   prepTimeSec: 900,
+  imageId: null,
   sortOrder: 1,
   variants: [
     { id: V_HALF, name: 'Half', nameTranslations: {}, price: 19000, sortOrder: 2 },

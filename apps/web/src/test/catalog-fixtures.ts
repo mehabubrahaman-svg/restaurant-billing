@@ -86,6 +86,7 @@ export function makeItem(overrides: Partial<MenuItem> = {}): MenuItem {
     hsnSacCode: null,
     kitchenStationId: STATION_MAIN,
     prepTimeSec: null,
+    imageId: null,
     sortOrder: 0,
     variants: [
       { id: VARIANT_FULL, name: 'Full', nameTranslations: {}, price: 32000, sortOrder: 1 },

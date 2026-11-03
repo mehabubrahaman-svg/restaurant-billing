@@ -1,6 +1,16 @@
 import { z } from 'zod';
 import { IdSchema, PaiseSchema, patchSchema } from './common';
 
+/** A photo on the Hub: the SHA-256 of its bytes, in hex. */
+export const MediaIdSchema = z.string().regex(/^[0-9a-f]{64}$/);
+/** POST /media/images → 201. */
+export const UploadedImageSchema = z.object({
+  id: MediaIdSchema,
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+});
+export type UploadedImage = z.infer<typeof UploadedImageSchema>;
+
 /** Customer-facing names in other languages: { hi: "…", bn: "…" }. English is the main `name`. */
 export const TranslationsSchema = z
   .object({ hi: z.string().trim().max(200).optional(), bn: z.string().trim().max(200).optional() })
@@ -121,6 +131,8 @@ export const MenuItemSchema = z.object({
   hsnSacCode: z.string().nullable(),
   kitchenStationId: IdSchema.nullable(),
   prepTimeSec: z.number().int().positive().nullable(),
+  /** The dish photo: GET /media/{imageId} (and /media/{imageId}/thumb). Null = none. */
+  imageId: MediaIdSchema.nullable().default(null),
   sortOrder: z.number().int(),
   variants: z.array(VariantSchema),
   addonGroupIds: z.array(IdSchema),
@@ -165,6 +177,8 @@ export const SaveMenuItemRequestSchema = z.object({
     .max(4 * 3600)
     .nullable()
     .default(null),
+  /** Upload the photo first (POST /media/images); null removes it. */
+  imageId: MediaIdSchema.nullable().default(null),
   sortOrder: z.number().int().default(0),
   /** The full list: variants not listed are retired. Keep `id` to update one. */
   variants: z
@@ -206,20 +220,56 @@ export type MenuSnapshot = z.infer<typeof MenuSnapshotSchema>;
  * new ones created. Unknown categories and kitchen stations are created;
  * tax groups must already exist (by name). Price in rupees, e.g. 249.50.
  */
-export const MenuImportRequestSchema = z.object({
-  csv: z.string().min(1).max(2_000_000),
-  dryRun: z.boolean().default(true),
+export const MenuImportRequestSchema = z
+  .object({
+    /** The sheet as CSV text… */
+    csv: z.string().min(1).max(2_000_000).optional(),
+    /** …or as rows of cells, header first (the web app reads Excel workbooks into this). */
+    rows: z
+      .array(z.array(z.string().max(2_000)).max(40))
+      .max(5_001)
+      .optional(),
+    dryRun: z.boolean().default(true),
+    /** Uploaded photos (POST /media/images) by their file name, for the `image` column or SKU-named files. */
+    images: z
+      .record(z.string().min(1).max(255), MediaIdSchema)
+      .refine((m) => Object.keys(m).length <= 5_000, 'at most 5000 photos per import')
+      .default({}),
+    /** Take active items that aren't in the sheet off the menu. */
+    retireMissing: z.boolean().default(false),
+  })
+  .refine((b) => (b.csv === undefined) !== (b.rows === undefined), {
+    message: 'send either csv or rows',
+  });
+const ImportIssueSchema = z.object({
+  row: z.number().int(),
+  column: z.string().optional(),
+  message: z.string(),
 });
 export const MenuImportResponseSchema = z.object({
   dryRun: z.boolean(),
   rows: z.number().int(),
   created: z.number().int(),
   updated: z.number().int(),
+  unchanged: z.number().int().default(0),
   createdCategories: z.array(z.string()),
   createdStations: z.array(z.string()),
-  errors: z.array(
-    z.object({ row: z.number().int(), column: z.string().optional(), message: z.string() }),
-  ),
+  retired: z.array(z.object({ sku: z.string(), name: z.string() })).default([]),
+  /** One per sheet row, in order: what the import does with it. */
+  items: z
+    .array(
+      z.object({
+        row: z.number().int(),
+        sku: z.string(),
+        name: z.string(),
+        action: z.enum(['create', 'update', 'unchanged']),
+        image: z.enum(['set', 'keep', 'remove', 'none']),
+        imageFile: z.string().nullable(),
+      }),
+    )
+    .default([]),
+  errors: z.array(ImportIssueSchema),
+  warnings: z.array(ImportIssueSchema).default([]),
 });
 export type MenuImportResponse = z.infer<typeof MenuImportResponseSchema>;
 

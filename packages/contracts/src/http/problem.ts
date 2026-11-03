@@ -73,6 +73,12 @@ export const ERROR_STATUS = {
   BACKUP_UNREADABLE: 422,
   /** Another inventory item (or menu item) already uses this SKU. */
   SKU_TAKEN: 409,
+  /** Not a PNG, JPEG or WebP image, or a damaged one. */
+  IMAGE_INVALID: 422,
+  /** The image is over the size limit (bytes or pixels). */
+  IMAGE_TOO_LARGE: 413,
+  /** The item points at a photo the Hub doesn't have: upload it first. */
+  IMAGE_NOT_FOUND: 422,
   /** The dish (or this size of it) already has a recipe: edit that one. */
   RECIPE_EXISTS: 409,
   /** A recipe or add-on still uses the item: remove it there before retiring the item. */

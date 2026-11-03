@@ -29,6 +29,7 @@ import {
   type KitchenQueries,
   type OrderQueries,
   type PrinterTransport,
+  MediaService,
   MenuImporter,
   QrOrderingService,
   RelayIntegrationService,
@@ -93,6 +94,7 @@ import {
   SqliteOrderQueries,
   SqliteOrderRepository,
   SqliteCatalogRepository,
+  SqliteMediaRepository,
   SqliteDeviceRepository,
   SqliteFloorRepository,
   SqliteIdempotencyStore,
@@ -141,6 +143,7 @@ export interface Cradle {
   settingsService: SettingsService;
   catalogService: CatalogService;
   menuImporter: MenuImporter;
+  mediaService: MediaService;
   floorService: FloorService;
   reservationService: ReservationService;
   loyaltyService: LoyaltyService;
@@ -284,7 +287,11 @@ export function buildContainer(
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
+          media: c.mediaService,
         }),
+    ),
+    mediaService: single(
+      (c) => new MediaService({ media: new SqliteMediaRepository(c.db), clock: c.clock }),
     ),
     menuImporter: single(
       (c) =>
@@ -294,6 +301,7 @@ export function buildContainer(
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
+          media: c.mediaService,
         }),
     ),
     floorService: single(

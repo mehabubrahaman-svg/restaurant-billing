@@ -18,6 +18,7 @@
     "@restroos/domain": "workspace:*",
     "@restroos/ui": "workspace:*",
     "@tanstack/react-query": "5.104.2",
+    "fflate": "0.8.2",
     "i18next": "26.4.5",
     "i18next-icu": "2.5.0",
     "intl-messageformat": "12.1.3",

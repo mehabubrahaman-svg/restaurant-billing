@@ -40,9 +40,12 @@ full service day with zero data loss**.
 
 ## 3. Set up the restaurant (1–2 hours, with the manager)
 
-1. **Menu**: Admin → Menu → Import CSV. Dry-run first, fix row errors,
-   then import. Check every dish's kitchen station and food type mark.
-   Add Hindi/Bengali names where the kitchen wants them.
+1. **Menu**: Admin → Menu → Upload menu. Download the Excel template (or
+   export the menu you have), fill it in, add the dish photos (named after
+   each SKU, or a .zip of them), press **Check file**, fix any rows it
+   flags, then import. Check every dish's kitchen station and food type
+   mark. Add Hindi/Bengali names where the kitchen wants them. See docs/12
+   "Uploading the menu".
 2. **Taxes and charges**: confirm the GST groups the wizard made (5% for
    restaurant service is typical), the liquor VAT group, and the service
    charge rule (optional on the bill).

@@ -36,6 +36,8 @@ export interface ItemForm {
   readonly sortOrder: string;
   readonly variants: readonly VariantRow[];
   readonly addonGroupIds: readonly string[];
+  /** The dish photo's media id, '' = none. */
+  readonly imageId: string;
 }
 
 export type ItemErrorKey =
@@ -108,6 +110,7 @@ export function itemToForm(item: MenuItem | null, categoryId = ''): ItemForm {
       sortOrder: '0',
       variants: [],
       addonGroupIds: [],
+      imageId: '',
     };
   }
   return {
@@ -127,6 +130,7 @@ export function itemToForm(item: MenuItem | null, categoryId = ''): ItemForm {
     kitchenStationId: item.kitchenStationId ?? '',
     // Shown in whole minutes; an odd number of seconds from an import rounds up.
     prepMinutes: item.prepTimeSec === null ? '' : String(Math.ceil(item.prepTimeSec / 60)),
+    imageId: item.imageId ?? '',
     sortOrder: String(item.sortOrder),
     variants: [...item.variants]
       .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -220,6 +224,7 @@ export function formToBody(
     sortOrder: Number(sortText),
     variants,
     addonGroupIds: [...form.addonGroupIds],
+    imageId: form.imageId === '' ? null : form.imageId,
   };
   // The contract is the source of truth: anything it rejects that the checks
   // above missed still stops here instead of becoming a 422.

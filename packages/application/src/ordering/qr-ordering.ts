@@ -71,6 +71,8 @@ export interface QrMenuView {
     price: number;
     /** The price already includes tax; otherwise tax is added on the bill. */
     taxIncluded: boolean;
+    /** The dish photo (GET /media/{id}/thumb), or null. */
+    imageId: string | null;
     variants: { id: string; name: string; nameTranslations: Translations; price: number }[];
     addonGroupIds: string[];
     isAvailable: boolean;
@@ -160,6 +162,7 @@ export class QrOrderingService {
           })),
         addonGroupIds: i.addonGroupIds,
         isAvailable: i.isAvailable,
+        imageId: i.imageId,
       }));
     const used = new Set(items.flatMap((i) => i.addonGroupIds));
     const addonGroups = this.d.catalog

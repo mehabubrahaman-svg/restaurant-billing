@@ -23,6 +23,7 @@ import { authRoutes } from './routes/auth';
 import { backupRoutes } from './routes/backups';
 import { billingRoutes } from './routes/billing';
 import { catalogRoutes } from './routes/catalog';
+import { mediaRoutes } from './routes/media';
 import { customerRoutes } from './routes/customers';
 import { deviceRoutes } from './routes/devices';
 import { floorRoutes } from './routes/floor';
@@ -120,6 +121,7 @@ export async function buildApp(
       await api.register(settingsRoutes, { cradle });
       await api.register(auditRoutes, { cradle });
       await api.register(catalogRoutes, { cradle });
+      await api.register(mediaRoutes, { cradle });
       await api.register(floorRoutes, { cradle });
       await api.register(reservationRoutes, { cradle });
       await api.register(deviceRoutes, { cradle });

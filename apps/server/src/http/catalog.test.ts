@@ -248,7 +248,8 @@ describe('menu CSV import', () => {
     );
     expect(again).toMatchObject({
       created: 0,
-      updated: 2,
+      updated: 1,
+      unchanged: 1,
       createdCategories: [],
       createdStations: [],
     });

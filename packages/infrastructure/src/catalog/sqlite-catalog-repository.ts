@@ -30,6 +30,7 @@ interface ItemRow {
   hsn_sac_code: string | null;
   kitchen_station_id: string | null;
   prep_time_sec: number | null;
+  image_id: string | null;
   sort_order: number;
   deleted_at: string | null;
   version: number;
@@ -333,13 +334,21 @@ export class SqliteCatalogRepository implements CatalogRepository {
       .prepare(
         `INSERT INTO menu_items (id, organization_id, category_id, sku, name, short_name, name_translations, description,
                                  description_translations, food_type, base_price, tax_group_id, hsn_sac_code,
-                                 kitchen_station_id, prep_time_sec, sort_order, created_at, created_by, updated_at,
-                                 updated_by, version)
+                                 kitchen_station_id, prep_time_sec, image_id, sort_order, created_at, created_by,
+                                 updated_at, updated_by, deleted_at, deleted_by, version)
          VALUES (@id, @org, @categoryId, @sku, @name, @shortName, @nameTr, @description, @descriptionTr, @foodType,
-                 @basePrice, @taxGroupId, @hsnSacCode, @kitchenStationId, @prepTimeSec, @sortOrder, @at, @actor, @at,
-                 @actor, @version)`,
+                 @basePrice, @taxGroupId, @hsnSacCode, @kitchenStationId, @prepTimeSec, @imageId, @sortOrder, @at,
+                 @actor, @at, @actor, @deletedAt, @deletedBy, @version)`,
       )
-      .run({ ...this.itemParams(r), org: this.organizationId(), actor: actorId, at: iso(at) });
+      .run({
+        ...this.itemParams(r),
+        org: this.organizationId(),
+        actor: actorId,
+        at: iso(at),
+        // An item can be entered retired (an import with active = no).
+        deletedAt: r.isActive ? null : iso(at),
+        deletedBy: r.isActive ? null : actorId,
+      });
     this.writeChildren(r, at);
   }
 
@@ -349,7 +358,8 @@ export class SqliteCatalogRepository implements CatalogRepository {
         `UPDATE menu_items SET category_id = @categoryId, sku = @sku, name = @name, short_name = @shortName,
                 name_translations = @nameTr, description = @description, description_translations = @descriptionTr,
                 food_type = @foodType, base_price = @basePrice, tax_group_id = @taxGroupId, hsn_sac_code = @hsnSacCode,
-                kitchen_station_id = @kitchenStationId, prep_time_sec = @prepTimeSec, sort_order = @sortOrder,
+                kitchen_station_id = @kitchenStationId, prep_time_sec = @prepTimeSec, image_id = @imageId,
+                sort_order = @sortOrder,
                 deleted_at = @deletedAt, deleted_by = @deletedBy, updated_at = @at, updated_by = @actor,
                 version = @version
           WHERE id = @id AND version = @expected`,
@@ -428,6 +438,7 @@ export class SqliteCatalogRepository implements CatalogRepository {
       hsnSacCode: r.hsnSacCode,
       kitchenStationId: r.kitchenStationId,
       prepTimeSec: r.prepTimeSec,
+      imageId: r.imageId,
       sortOrder: r.sortOrder,
       version: r.version,
     };
@@ -530,6 +541,7 @@ function toItem(r: ItemRow, variants: VariantRecord[], addonGroupIds: string[]):
     hsnSacCode: r.hsn_sac_code,
     kitchenStationId: r.kitchen_station_id,
     prepTimeSec: r.prep_time_sec,
+    imageId: r.image_id,
     sortOrder: r.sort_order,
     variants,
     addonGroupIds,

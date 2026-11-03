@@ -213,6 +213,41 @@ paired with the tablet.
    add it in **Admin → Printers** on that tablet with **Choose a printer
    paired with this tablet**.
 
+## Uploading the menu (Excel or CSV, with photos)
+
+Admin → Menu → **Upload menu** adds or updates many dishes at once.
+
+1. **Get a sheet.** Press **Download template (Excel)**. The template has
+   example dishes, an **Instructions** sheet explaining every column, and a
+   **Lists** sheet with this Hub's categories, kitchen stations, tax groups
+   and add-on groups. To change the menu you already have, press **Export
+   current menu**, edit it, and upload it again.
+2. **Fill it in**, in Excel, Google Sheets (File → Download → .xlsx) or
+   LibreOffice. Only `sku`, `name`, `category` and `price` are required.
+   - Sizes go in `variants`, e.g. `Half:220 | Full:320`.
+   - Add-ons go in `addon_groups`, using names of groups that already exist.
+   - New categories and kitchen stations are created for you. Tax groups
+     must already exist.
+   - An empty cell leaves that detail of the dish as it is, and `-` clears
+     it.
+3. **Add photos (optional).** Name each photo after the dish's SKU (e.g.
+   `BIR-CHK.jpg`), or put its file name in the `image` column. Add the
+   photos one by one or as a `.zip`, using JPEG, PNG or WebP. Photos are
+   shrunk on your device before upload (to about 150 KB) and their location
+   data is removed. iPhone photos in HEIC format must be shared as JPEG
+   first.
+4. **Check file.** The Hub checks every row and shows what will happen to
+   each dish (New, Updated, No change) with its photo. A problem points at
+   the row and column. Nothing is saved yet. Tick **Take dishes that
+   aren't in this sheet off the menu** only for a full menu sync: those
+   dishes are retired, not deleted.
+5. **Import.** It's all or nothing: if any row is wrong, nothing changes.
+
+Photos appear in the admin menu, on the order pad (captain and POS) and on
+the QR menu. A single dish's photo can be added, replaced or removed on its
+own page (Admin → Menu → the dish → **Photo**). Photos are stored in the
+Hub's database, so every backup includes them.
+
 ## Online orders: the cloud relay
 
 Swiggy, Zomato and other platforms reach the Hub through an aggregator

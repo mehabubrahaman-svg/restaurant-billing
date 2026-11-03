@@ -26,6 +26,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 
 | `0019_stock_value_schedule` | `report_schedules` and `report_files` rebuilt so a schedule can make the stock value (`INVENTORY_VALUATION`). The files move onto the new schedules table before the old one is dropped, so no foreign key ever points at a missing table. The no-delete triggers are made again |
 | `0020_device_print_jobs` | `device_print_jobs`: ESC/POS bytes waiting for the tablet whose Bluetooth printer they are for (ADR 0012). `QUEUED` until the tablet reports `PRINTED` or `FAILED`; a job older than 10 minutes, or whose printer moved or was turned off, becomes `EXPIRED`. Refuses a physical DELETE |
+| `0021_menu_images` | `media_assets`: dish photos, keyed by the SHA-256 of the full image (stored once however often it is uploaded). Holds the full image (long side ≤ 1280 px as sent by the web app, at most 4096) and a square thumbnail, both PNG, JPEG or WebP. `menu_items.image_id` points at one (ADR 0013); the old unused `image_path` stays |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 

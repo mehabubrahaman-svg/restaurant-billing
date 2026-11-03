@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
+import { photoUrl } from '../../lib/dish-photos';
 import { isApiError } from '../../api/client';
 import { api, type FoodType } from '../../api/endpoints';
 import { ConfirmDialog } from '../../components/confirm-dialog';
@@ -44,6 +45,7 @@ import {
   type ItemFormErrors,
   type VariantRow,
 } from './item-form';
+import { PhotoField } from './photo-field';
 import { localizedName } from './localized-name';
 import {
   invalidateMenu,
@@ -313,6 +315,13 @@ function ItemEditor({
             </Field>
           </Section>
 
+          <Section title={t('menu.item.sections.photo')}>
+            <PhotoField
+              imageId={form.imageId}
+              name={form.name}
+              onChange={(id) => set('imageId', id)}
+            />
+          </Section>
           <Section
             title={t('menu.item.sections.translations')}
             description={t('menu.item.translationsHint')}
@@ -732,6 +741,13 @@ function ItemPreview({ form }: { form: ItemForm }) {
         className="flex flex-col gap-1 rounded-xl border-2 bg-background p-3"
         aria-label={t('menu.item.previewTile')}
       >
+        {form.imageId !== '' && (
+          <img
+            src={photoUrl(form.imageId)}
+            alt=""
+            className="mb-1 aspect-square w-24 rounded-lg object-cover"
+          />
+        )}
         <div className="flex items-start gap-2">
           {form.foodType !== 'NA' && (
             <FoodMark
