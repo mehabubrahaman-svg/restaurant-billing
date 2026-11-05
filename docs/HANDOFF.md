@@ -203,9 +203,7 @@ nothing shows it.
 
 ## Waiting on the owner (2026-10-28)
 
-- **A release.** Nothing has been released since 0.2.0: Phase 5 is on the branch only. If the owner asks, do the 0.3.0 release:
-  - bump `apps/desktop/package.json` and the version in docs/12;
-  - push the tags `hub-v0.3.0` and `ios-v0.3.0` (see Releases above).
+- **Released 3.0.0** (2026-11-05, tag `hub-v3.0.0`): the owner asked for the next Windows installer to be "version 3.0", so the Hub went from 0.2.0 to 3.0.0. It carries Phase 5, the QR guest menu, guest ratings and the menu-upload fix. The iOS and Android apps keep their own versions (0.2.0); tag them only when the owner asks.
 - **Online orders going live.** This needs an aggregator middleware account (UrbanPiper, for example) and a small cloud server for the relay. Then write an adapter from that provider's webhook and API format to `packages/contracts/src/relay.ts`.
 - **GSTR-1.** Check the workbook's column headings against the current GST offline tool before the first filing.
 - **Hub on an Android tablet.** The owner asked; the answer was not today, since the Hub is Node with a native SQLite library, and Android stops background apps. The options given:
