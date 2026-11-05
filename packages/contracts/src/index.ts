@@ -16,6 +16,7 @@ export * from './http/printing';
 export * from './http/reports';
 export * from './http/ordering';
 export * from './http/qr';
+export * from './http/ratings';
 export * from './http/integrations';
 export * from './http/problem';
 export * from './http/purchasing';

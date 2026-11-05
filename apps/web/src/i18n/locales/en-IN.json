@@ -1206,6 +1206,7 @@
     "printerUnsupported": "This printer can’t print this.",
     "duplicateExternalOrder": "This aggregator order number was already entered.",
     "qrHandled": "Someone already answered this request.",
+    "alreadyRated": "This order is already rated. Thank you!",
     "qrTooMany": "Your earlier requests are still waiting. A server will be with you shortly.",
     "liquorNotForDelivery": "Liquor can't be sold through a delivery app. Remove it from this order.",
     "backupUnavailable": "This backup file was removed or is missing on the Hub.",
@@ -1443,6 +1444,7 @@
       "channels": "Sales channels",
       "customers": "Customers",
       "membership": "Membership",
+      "ratings": "Ratings",
       "onlineOrders": "Online orders"
     }
   },
@@ -1591,6 +1593,9 @@
     },
     "loyalty": {
       "adjust": "Adjust loyalty points"
+    },
+    "feedback": {
+      "manage": "Read guest ratings and publish bestsellers"
     },
     "inventory": {
       "view": "View stock",
@@ -2449,6 +2454,18 @@
     "off": "Sound off"
   },
   "order": {
+    "guest": {
+      "title": "Guest’s phone",
+      "description": "With the guest’s phone on the order, the bill is theirs and they can rate their meal on the table’s QR code today.",
+      "add": "Add guest’s phone",
+      "shown": "Guest ••{last4}",
+      "current": "On the order now: ••{last4}. Enter a number to change it.",
+      "phone": "Mobile number",
+      "phoneHint": "10 digits, e.g. 98765 43210",
+      "phoneError": "Enter a 10-digit Indian mobile number.",
+      "name": "Guest’s name (optional)",
+      "remove": "Take it off"
+    },
     "number": "Order #{orderNo}",
     "token": "Token {token, number}",
     "titleTable": "{label} · Order #{orderNo}",
@@ -3106,7 +3123,90 @@
     "saved": "Saved {name}.",
     "actions": "Actions"
   },
+  "ratings": {
+    "title": "Guest ratings",
+    "description": "What guests said about their captain and the dishes. Count the dish ratings that should show on the menu, and choose the bestsellers.",
+    "views": "Ratings view",
+    "view": {
+      "reviews": "Ratings",
+      "summary": "Captains and dishes",
+      "bestsellers": "Bestsellers"
+    },
+    "from": "From",
+    "to": "To",
+    "show": "Show",
+    "filter": {
+      "PENDING": "To decide",
+      "COUNTED": "Counted",
+      "EXCLUDED": "Left out",
+      "ALL": "All ratings"
+    },
+    "empty": "No ratings for these days.",
+    "countAll": "Count all",
+    "captain": "Captain {name}",
+    "dish": "Dish",
+    "starsHeading": "Stars",
+    "state": "On the menu",
+    "status": {
+      "PENDING": "To decide",
+      "COUNTED": "Counted",
+      "EXCLUDED": "Left out"
+    },
+    "count": "Count",
+    "countNamed": "Count the rating of {name}",
+    "exclude": "Leave out",
+    "excludeNamed": "Leave out the rating of {name}",
+    "captains": "Captains",
+    "captainHeading": "Captain",
+    "ratingsHeading": "Ratings",
+    "averageHeading": "Average",
+    "dishes": "Dishes",
+    "countedHeading": "Counted",
+    "pendingHeading": "To decide",
+    "excludedHeading": "Left out",
+    "stars": "{count, plural, one {# star} other {# stars}}",
+    "score": "Rated {average} out of 5 by {count, plural, one {# guest} other {# guests}}",
+    "bestsellers": {
+      "title": "Bestseller list",
+      "description": "Guests see the dishes shown to them at the top of the QR menu, in this order. Up to {max}.",
+      "empty": "No bestsellers yet. Add some from the suggestions.",
+      "published": "Shown to guests",
+      "up": "Move {name} up",
+      "down": "Move {name} down",
+      "remove": "Remove {name}",
+      "suggestions": "Ordered most",
+      "suggestionsHint": "The dishes ordered most in the last 30 days, with their counted stars.",
+      "noSuggestions": "Nothing ordered in the last 30 days that isn’t on the list.",
+      "add": "Add",
+      "addNamed": "Add {name} to the bestsellers",
+      "noStars": "No stars yet",
+      "offMenu": "Off the menu"
+    }
+  },
   "qr": {
+    "rate": {
+      "open": "Rate your meal",
+      "title": "Rate your meal",
+      "phoneDescription": "Enter the mobile number you gave your server today.",
+      "phone": "Your mobile number",
+      "find": "Find my order",
+      "finding": "Finding…",
+      "notFound": "We couldn’t find an order for this number today. Ask your server to add your number to the order.",
+      "allRated": "You’ve already rated today’s order. Thank you!",
+      "choose": "Which order would you like to rate?",
+      "orderAtTable": "Order #{orderNo} · Table {table}",
+      "rated": "Already rated",
+      "dishCount": "{count, plural, one {# dish to rate} other {# dishes to rate}}",
+      "captain": "How was {name}’s service?",
+      "dishes": "How were the dishes?",
+      "dishNote": "A note about {name}",
+      "dishNoteHint": "Tell us more (optional)",
+      "comment": "Anything else to tell us? (optional)",
+      "send": "Send ratings",
+      "thanks": "Thank you!",
+      "thanksNote": "Your ratings help us get better.",
+      "backToMenu": "Back to the menu"
+    },
     "bestseller": "Bestseller",
     "customisable": "Customisable",
     "seeDish": "See {name}",

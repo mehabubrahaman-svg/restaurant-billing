@@ -56,6 +56,16 @@ import {
   ReservationSchema,
   SalesReportSchema,
   QrMenuSchema,
+  BestsellersResponseSchema,
+  OrderRatingsResponseSchema,
+  RatingLookupResponseSchema,
+  RatingSummarySchema,
+  ReviewDishRatingsResponseSchema,
+  SubmitRatingResponseSchema,
+  type DishRatingStatus,
+  type SetBestsellersRequest,
+  type SetOrderGuestRequest,
+  type SubmitRatingRequest,
   RelayOverviewSchema,
   RelayRetryResponseSchema,
   type SaveRelayLinkRequest,
@@ -870,6 +880,9 @@ export const api = {
       c.json(`/orders/${id}/kots`, FireKotsResponseSchema, { method: POST, ...extras(o) }),
     cancel: (id: string, body: CancelOrderBody, o?: CommandOptions) =>
       c.json(`/orders/${id}/cancel`, OrderSchema, { method: POST, body, ...extras(o) }),
+    /** The guest's phone on the order (null takes it off); they can then rate it that day. */
+    setGuest: (id: string, body: SetOrderGuestRequest, o?: CommandOptions) =>
+      c.json(`/orders/${id}/guest`, OrderSchema, { method: POST, body, ...extras(o) }),
     /** A delivery order with its items, fired to the kitchen at once. */
     aggregator: (body: AggregatorOrderBody, o?: CommandOptions) =>
       c.json('/orders/aggregator', FireKotsResponseSchema, { method: POST, body, ...extras(o) }),
@@ -912,6 +925,34 @@ export const api = {
         QrRequestStatusResponseSchema,
         { auth: false },
       ),
+    /** Today's orders with this phone, to rate. */
+    findOrders: (token: string, phone: string) =>
+      c.json(`/public/qr/${encodeURIComponent(token)}/ratings/lookup`, RatingLookupResponseSchema, {
+        method: POST,
+        body: { phone },
+        auth: false,
+      }),
+    rate: (token: string, body: SubmitRatingRequest) =>
+      c.json(`/public/qr/${encodeURIComponent(token)}/ratings`, SubmitRatingResponseSchema, {
+        method: POST,
+        body,
+        auth: false,
+      }),
+  },
+  /** Admin → Ratings: guests' ratings, and the bestseller list. */
+  ratings: {
+    list: (query: { from: string; to: string; status: DishRatingStatus | 'ALL' }) =>
+      c.json('/ratings', OrderRatingsResponseSchema, { query }),
+    review: (ids: string[], status: DishRatingStatus) =>
+      c.json('/ratings/dishes/review', ReviewDishRatingsResponseSchema, {
+        method: POST,
+        body: { ids, status },
+      }),
+    summary: (query: { from: string; to: string }) =>
+      c.json('/ratings/summary', RatingSummarySchema, { query }),
+    bestsellers: () => c.json('/bestsellers', BestsellersResponseSchema),
+    setBestsellers: (body: SetBestsellersRequest) =>
+      c.json('/bestsellers', BestsellersResponseSchema, { method: PUT, body }),
   },
   /** Guests' QR orders and calls, waiting for a captain. */
   /** Admin → Online orders: the link to the cloud relay. */

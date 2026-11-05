@@ -27,6 +27,7 @@ The migrations are validated in CI (`pnpm db:validate`): 78 tables, all FKs reso
 | `0019_stock_value_schedule` | `report_schedules` and `report_files` rebuilt so a schedule can make the stock value (`INVENTORY_VALUATION`). The files move onto the new schedules table before the old one is dropped, so no foreign key ever points at a missing table. The no-delete triggers are made again |
 | `0020_device_print_jobs` | `device_print_jobs`: ESC/POS bytes waiting for the tablet whose Bluetooth printer they are for (ADR 0012). `QUEUED` until the tablet reports `PRINTED` or `FAILED`; a job older than 10 minutes, or whose printer moved or was turned off, becomes `EXPIRED`. Refuses a physical DELETE |
 | `0021_menu_images` | `media_assets`: dish photos, keyed by the SHA-256 of the full image (stored once however often it is uploaded). Holds the full image (long side ≤ 1280 px as sent by the web app, at most 4096) and a square thumbnail, both PNG, JPEG or WebP. `menu_items.image_id` points at one (ADR 0013); the old unused `image_path` stays |
+| `0022_guest_ratings` | The `feedback.manage` permission, given to existing Admin and Manager roles. `order_ratings`: one guest's rating of one order (unique `order_id`): the captain's stars, a comment, the business day. `dish_ratings`: the stars and comment for each dish of it, `PENDING` until an admin makes it `COUNTED` (it counts toward the dish's stars on the guest menu) or `EXCLUDED`. Both refuse a physical DELETE. `bestsellers`: the branch's list in order, each `published` or not; a configuration list that is replaced whole. The guest is found through `orders.customer_id` (since 0001, now set when the captain or the bill gives a phone) |
 
 Released migrations are immutable: the migrator stores a SHA-256 of each file and refuses to start if one changes. Fixes are new migrations.
 
@@ -71,7 +72,7 @@ Writes always use `BEGIN IMMEDIATE`, so the write lock is taken up front and dea
 | Floor | `floor_areas`, `dining_tables`, `reservations` |
 | Catalog | `kitchen_stations`, `categories`, `menu_items`, `branch_menu_items`, `menu_item_variants`, `addon_groups`, `addons`, `menu_item_addon_groups` |
 | Inventory | `units`, `inventory_items`, `inventory_stock`, `stock_batches`, `recipes`, `recipe_ingredients`, `addon_ingredients`, `stock_movements`, `stock_counts`, `stock_count_lines` |
-| CRM | `customers`, `loyalty_transactions` |
+| CRM | `customers`, `loyalty_transactions`, `membership_tiers`, `order_ratings`, `dish_ratings`, `bestsellers` |
 | Ordering & Kitchen | `sales_channels`, `orders`, `order_items`, `order_item_addons`, `kots`, `kot_status_events` |
 | Billing | `document_sequences`, `coupons`, `invoices`, `invoice_lines`, `invoice_taxes`, `invoice_discounts`, `invoice_charges`, `payments`, `cash_shifts`, `shift_tender_counts` |
 | Purchasing | `vendors`, `purchase_orders`, `purchase_order_lines`, `grns`, `grn_lines`, `vendor_payments` |

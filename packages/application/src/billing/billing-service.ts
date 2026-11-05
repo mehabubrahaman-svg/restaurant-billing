@@ -105,17 +105,16 @@ export class BillingService {
       const computed = computeBill(input);
       const businessDate = this.d.calendar.businessDate(ctx.branchId, now);
       const fiscalYear = BusinessDate.parse(businessDate).fiscalYear();
-      const guest = options.customer?.phone
+      const phone = this.guestPhoneOf(order, options);
+      const guest = phone
         ? this.d.customerService.findOrCreateIn(
             scope,
-            {
-              phone: options.customer.phone,
-              name: options.customer.name,
-              taxId: options.customer.taxId,
-            },
+            { phone, name: options.customer?.name, taxId: options.customer?.taxId },
             ctx,
           )
         : null;
+      // A phone given only at the bill puts the guest on the order too, so they can rate it.
+      if (guest) order.setGuest(guest.id, now);
       const taxId = options.customer?.taxId ?? guest?.taxId ?? null;
       const invoices = computed.map((bill) => {
         const { series, lines, ...rest } = bill;
@@ -556,8 +555,15 @@ export class BillingService {
    * needed. Not on a complimentary bill, nor on an aggregator's order (its
    * prices are the channel's).
    */
+  /** The guest's phone for the bill: the one given now, else the one the captain put on the order. */
+  private guestPhoneOf(order: Order, options: BillOptions): string | null {
+    if (options.customer?.phone) return options.customer.phone;
+    const id = order.state.customerId;
+    return id ? (this.d.customers.get(id)?.phone ?? null) : null;
+  }
+
   private memberDiscount(order: Order, options: BillOptions): DiscountInput | null {
-    const phone = options.customer?.phone;
+    const phone = this.guestPhoneOf(order, options);
     if (!phone || options.complimentary) return null;
     const channel = order.state.salesChannelId
       ? this.d.channels.get(order.state.salesChannelId)

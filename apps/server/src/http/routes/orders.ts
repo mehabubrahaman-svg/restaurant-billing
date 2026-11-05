@@ -1,4 +1,5 @@
 import {
+  SetOrderGuestRequestSchema,
   AddOrderItemsRequestSchema,
   AggregatorOrderRequestSchema,
   SaveSalesChannelRequestSchema,
@@ -108,6 +109,17 @@ export async function orderRoutes(app: FastifyInstance, { cradle }: { cradle: Cr
     async (request): Promise<Order> => {
       const { id } = IdParams.parse(request.params);
       orders.update(id, UpdateOrderRequestSchema.parse(request.body), commandContext(request));
+      return view(request, id);
+    },
+  );
+
+  // The guest's phone, from the captain: they can rate the order on the table's QR page that day.
+  app.post(
+    '/orders/:id/guest',
+    { config: { permission: 'orders.update' } },
+    async (request): Promise<Order> => {
+      const { id } = IdParams.parse(request.params);
+      orders.setGuest(id, SetOrderGuestRequestSchema.parse(request.body), commandContext(request));
       return view(request, id);
     },
   );

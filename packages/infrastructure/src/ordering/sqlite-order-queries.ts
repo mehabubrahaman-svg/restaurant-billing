@@ -119,7 +119,17 @@ export class SqliteOrderQueries implements OrderQueries {
           WHERE k.order_id = ? ORDER BY k.kot_no`,
       )
       .all(id);
-    return { ...summary, items, kots };
+    const guest = this.db
+      .prepare<[string], { name: string | null; phone: string }>(
+        `SELECT c.name, c.phone FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.id = ?`,
+      )
+      .get(id);
+    return {
+      ...summary,
+      items,
+      kots,
+      guest: guest ? { name: guest.name, phoneLast4: guest.phone.slice(-4) } : null,
+    };
   }
 
   openOrdersByTable(branchId: string): Map<string, TableOrderView> {

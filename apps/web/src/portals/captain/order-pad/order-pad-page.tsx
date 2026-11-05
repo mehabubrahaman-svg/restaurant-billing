@@ -1,5 +1,15 @@
 import type { MenuItem, Order } from '@restroos/contracts';
-import { Alert, ArrowLeft, ArrowRightLeft, Ban, Button, Merge, Spinner, Users } from '@restroos/ui';
+import {
+  Alert,
+  ArrowLeft,
+  ArrowRightLeft,
+  Ban,
+  Button,
+  Merge,
+  Phone,
+  Spinner,
+  Users,
+} from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +24,7 @@ import { localizedName } from '../../../features/menu/localized-name';
 import { useMenuSnapshot } from '../../../features/menu/menu-queries';
 import { useCommandQueue } from '../../../features/offline/command-queue';
 import { useElapsed } from '../../../features/orders/elapsed';
+import { GuestPhoneDialog } from '../../../features/orders/guest-phone-dialog';
 import { hasOptions } from '../../../features/orders/item-options';
 import { ORDER_KEYS, setOrder, useOrder } from '../../../features/orders/order-queries';
 import { addDraft, flushPad, usePadStore } from '../../../features/orders/pad-store';
@@ -154,7 +165,9 @@ function PadHeader({ order, editable }: { order: Order; editable: boolean }) {
   const now = useNow(30_000);
   const elapsed = useElapsed();
   const canTransfer = usePermission('orders.transfer_table');
-  const [dialog, setDialog] = useState<'covers' | 'move' | 'merge' | 'cancel' | null>(null);
+  const [dialog, setDialog] = useState<'covers' | 'guest' | 'move' | 'merge' | 'cancel' | null>(
+    null,
+  );
   const [covers, setCovers] = useState(order.covers ?? 1);
   const floor = useFloor();
   const tables = (floor.data?.areas ?? []).flatMap((a) => a.tables);
@@ -200,6 +213,14 @@ function PadHeader({ order, editable }: { order: Order; editable: boolean }) {
               : t('order.covers.count', { covers: order.covers })}
           </Button>
         )}
+        {(editable || order.guest !== null) && (
+          <Button variant="outline" disabled={!editable} onClick={() => setDialog('guest')}>
+            <Phone aria-hidden="true" />
+            {order.guest === null
+              ? t('order.guest.add')
+              : t('order.guest.shown', { last4: order.guest.phoneLast4 })}
+          </Button>
+        )}
         {editable && canTransfer && table !== null && (
           <>
             <Button variant="outline" onClick={() => setDialog('move')}>
@@ -233,6 +254,7 @@ function PadHeader({ order, editable }: { order: Order; editable: boolean }) {
           formatNumber={format.number}
         />
       )}
+      {dialog === 'guest' && <GuestPhoneDialog order={order} onClose={() => setDialog(null)} />}
       {(dialog === 'move' || dialog === 'merge') &&
         table !== null &&
         (floor.isPending ? (

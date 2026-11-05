@@ -1,6 +1,7 @@
 /**
  * Every permission the system knows, mirroring the seed in
- * database/migrations/0002_seed_reference_data.sql (a test keeps them in sync).
+ * database/migrations/0002_seed_reference_data.sql and later migrations
+ * (0022: feedback.manage). A test keeps them in sync.
  */
 export const PERMISSIONS = [
   'dashboard.view',
@@ -37,6 +38,7 @@ export const PERMISSIONS = [
   'customers.view',
   'customers.manage',
   'loyalty.adjust',
+  'feedback.manage',
   'inventory.view',
   'inventory.manage_items',
   'inventory.adjust',

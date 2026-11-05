@@ -1,5 +1,6 @@
 import { DomainError, Kot, Order, type NewOrderLine, type OrderLine } from '@restroos/domain';
 import type { CatalogRepository, MenuItemRecord } from '../catalog/ports';
+import type { CustomerService } from '../crm/customers';
 import type { FloorRepository, TableRecord } from '../floor/ports';
 import type { SettingsRepository } from '../settings/ports';
 import type { Clock } from '../ports/clock';
@@ -17,6 +18,8 @@ export interface OrderServiceDeps {
   readonly channels: SalesChannelRepository;
   readonly taxGroups: Pick<SettingsRepository, 'taxGroup'>;
   readonly calendar: BusinessCalendar;
+  /** The guest's phone on an order finds or adds them as a customer. */
+  readonly customers: Pick<CustomerService, 'findOrCreateIn'>;
   readonly unitOfWork: UnitOfWork;
   readonly clock: Clock;
   readonly ids: IdGenerator;
@@ -126,6 +129,39 @@ export class OrderService {
         order,
         { covers: order.state.covers, notes: order.state.notes },
         before,
+      );
+      return order;
+    });
+  }
+
+  /**
+   * The guest's phone on the order, from the captain (null takes it off): the
+   * guest is found by phone or added, and can rate the order that day. The
+   * bill picks the guest up too.
+   */
+  setGuest(
+    id: string,
+    input: { version: number; phone: string | null; name?: string | undefined },
+    ctx: CommandContext,
+  ): Order {
+    return this.d.unitOfWork.run(ctx, (scope) => {
+      const order = this.load(ctx.branchId, id);
+      if (order.version !== input.version) throw conflict();
+      const before = order.state.customerId;
+      const guest =
+        input.phone === null
+          ? null
+          : this.d.customers.findOrCreateIn(scope, { phone: input.phone, name: input.name }, ctx);
+      order.setGuest(guest?.id ?? null, this.d.clock.now());
+      this.d.orders.save(order);
+      // The phone stays out of the audit trail: it is on the customer record.
+      this.finish(
+        scope,
+        [order],
+        'order.guest.set',
+        order,
+        { customerId: guest?.id ?? null },
+        { customerId: before },
       );
       return order;
     });

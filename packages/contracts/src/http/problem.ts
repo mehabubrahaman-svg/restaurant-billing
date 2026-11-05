@@ -63,6 +63,8 @@ export const ERROR_STATUS = {
   QR_TOO_MANY_REQUESTS: 429,
   /** Another captain already accepted or declined this QR request. */
   QR_REQUEST_HANDLED: 409,
+  /** The guest already rated this order. */
+  ALREADY_RATED: 409,
   /** That aggregator order id was already entered. */
   DUPLICATE_EXTERNAL_ORDER: 409,
   /** Liquor can't be sold through Swiggy/Zomato: VAT liquor isn't an aggregator supply. */

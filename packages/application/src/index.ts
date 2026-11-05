@@ -48,6 +48,7 @@ export * from './integrations/relay';
 export * from './crm/customers';
 export * from './crm/loyalty';
 export * from './crm/membership';
+export * from './crm/ratings';
 export type * from './reporting/ports';
 export * from './reporting/csv';
 export * from './reporting/periods';

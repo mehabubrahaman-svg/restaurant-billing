@@ -28,7 +28,7 @@ describe('migrate', () => {
     expect(migrate(db, { migrationsDir: migrations })).toHaveLength(count);
     expect(migrate(db, { migrationsDir: migrations })).toEqual([]);
     expect(db.prepare('SELECT count(*) FROM schema_migrations').pluck().get()).toBe(count);
-    expect(db.prepare('SELECT count(*) FROM permissions').pluck().get()).toBe(52);
+    expect(db.prepare('SELECT count(*) FROM permissions').pluck().get()).toBe(53);
   });
 
   it('does not back up a brand-new database', () => {

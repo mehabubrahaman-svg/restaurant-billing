@@ -35,6 +35,10 @@ review by native speakers at the pilot; note anything that reads oddly.
    need a reason and a manager PIN; the kitchen gets a cancellation slip.
 6. **Move / merge**: from the table's menu, move the order to another table
    or merge two tables' orders.
+7. **Guest's phone**: if the guest gives you their mobile number, tap
+   **Add guest's phone** on the order. The bill is then theirs (visits,
+   points and their member discount), and they can rate their meal on the
+   table's QR code today. The order shows only the last four digits.
 
 Practice: open T1 for 2, add 2 × Chicken Biryani (Full) with raita and 4
 naan, note "less spicy", send; then add a lassi and send again.
@@ -50,8 +54,12 @@ English, Hindi or Bengali. No app and no sign-in.
 - **Veg / Egg / Non-veg / Vegan** chips narrow the menu. **Sort** puts it
   by price. The section chips follow the page as it scrolls, and the
   **Menu** button lists every section to jump to.
-- **Popular here** shows the dishes ordered most in the last 30 days, and
-  each has a **Bestseller** tag.
+- **Popular here** shows the bestsellers your admin published, and each has
+  a **Bestseller** tag. A dish's stars show once an admin has counted its
+  guests' ratings.
+- **Rate your meal**: the guest types the mobile number they gave you and
+  rates you and each dish (1 to 5 stars, with a note if they like), once per
+  order, that day. If their number isn't found, add it to the order.
 - Tapping a dish opens it in full: a large photo, its pieces, calories,
   allergens and spice level, its sizes and add-ons, and a note.
 - The order stays on the phone if the guest reloads the page or looks at
@@ -120,6 +128,12 @@ bill / record payment · Esc close.
   modes against the terminals' settlements, cancellations and voids, and
   each cashier's variance. Print it and download the CSV.
 - **86 a dish**: Kitchen availability, so captains can't order it.
+- **Guest ratings** (Admin → Ratings): read every rating. For each dish
+  rating, **Count** it (it adds to the dish's stars on the QR menu) or
+  **Leave out** (a complaint for the kitchen, not for the menu). **Captains
+  and dishes** shows each captain's and dish's average for any days.
+  **Bestsellers**: add dishes from the most ordered of the last 30 days,
+  put them in order, and switch on **Shown to guests**.
 - Watch the **dashboard** for late KOTs and open tables.
 
 ---

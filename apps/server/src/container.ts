@@ -32,6 +32,7 @@ import {
   MediaService,
   MenuImporter,
   QrOrderingService,
+  GuestRatingService,
   RelayIntegrationService,
   ReportScheduleService,
   RoleAdminService,
@@ -64,6 +65,7 @@ import {
   SqliteReportQueries,
   SqliteGstQueries,
   SqlitePopularDishes,
+  SqliteRatingRepository,
   SqliteQrRequestRepository,
   SqliteRelayRepository,
   FileReportStore,
@@ -156,6 +158,7 @@ export interface Cradle {
   kitchenQueries: KitchenQueries;
   orderService: OrderService;
   qrOrderingService: QrOrderingService;
+  guestRatingService: GuestRatingService;
   relayIntegrationService: RelayIntegrationService;
   relayClient: RelayClient;
   kitchenService: KitchenService;
@@ -351,6 +354,7 @@ export function buildContainer(
           channels: new SqliteSalesChannelRepository(c.db),
           taxGroups: new SqliteSettingsRepository(c.db),
           calendar: c.calendar,
+          customers: c.customerService,
           unitOfWork: c.unitOfWork,
           clock: c.clock,
           ids: c.ids,
@@ -364,6 +368,19 @@ export function buildContainer(
           catalog: new SqliteCatalogRepository(c.db),
           settings: new SqliteSettingsRepository(c.db),
           orders: c.orderService,
+          ratings: new SqliteRatingRepository(c.db),
+          unitOfWork: c.unitOfWork,
+          clock: c.clock,
+          ids: c.ids,
+        }),
+    ),
+    guestRatingService: single(
+      (c) =>
+        new GuestRatingService({
+          ratings: new SqliteRatingRepository(c.db),
+          floor: new SqliteFloorRepository(c.db),
+          catalog: new SqliteCatalogRepository(c.db),
+          calendar: c.calendar,
           popular: new SqlitePopularDishes(c.db),
           unitOfWork: c.unitOfWork,
           clock: c.clock,

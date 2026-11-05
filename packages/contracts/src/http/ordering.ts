@@ -122,6 +122,11 @@ export type OrderSummary = z.infer<typeof OrderSummarySchema>;
 export const OrderSchema = OrderSummarySchema.extend({
   items: z.array(OrderItemSchema),
   kots: z.array(KotSummarySchema),
+  /**
+   * The guest whose phone the captain (or the bill) put on the order: their
+   * name and the last four digits only, as every screen with the order shows it.
+   */
+  guest: z.object({ name: z.string().nullable(), phoneLast4: z.string() }).nullable().default(null),
 });
 export type Order = z.infer<typeof OrderSchema>;
 export const OrdersResponseSchema = z.object({ data: z.array(OrderSummarySchema) });

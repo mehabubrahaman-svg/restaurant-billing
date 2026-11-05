@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { newIdempotencyKey } from '../../api/client';
 import { FoodTypeMark } from '../../features/menu/food-type';
 import { localizedName } from '../../features/menu/localized-name';
+import { StarScore } from '../../features/ratings/stars';
 import { photoUrl } from '../../lib/dish-photos';
 import { groupsOf, MAX_QUANTITY, type CartLine } from './cart';
-import { useMoney, type Item } from './menu-parts';
+import { useMoney, type Item, type Score } from './menu-parts';
 import { splitDescription } from './menu-search';
 
 /**
@@ -18,12 +19,14 @@ export function DishSheet({
   item,
   menu,
   popular,
+  score,
   onAdd,
   onClose,
 }: {
   item: Item;
   menu: QrMenu;
   popular: boolean;
+  score?: Score | undefined;
   onAdd: (line: CartLine) => void;
   onClose: () => void;
 }) {
@@ -97,8 +100,9 @@ export function DishSheet({
               </Badge>
             )}
           </div>
-          <p className="text-lg font-semibold tabular-nums">
-            {money(variant?.price ?? item.price)}
+          <p className="flex flex-wrap items-center gap-x-3 text-lg font-semibold tabular-nums">
+            <span>{money(variant?.price ?? item.price)}</span>
+            {score && <StarScore average={score.average} count={score.count} />}
           </p>
           {lead && <p className="break-words text-muted-foreground">{lead}</p>}
           {facts.length > 0 && (

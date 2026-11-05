@@ -20,7 +20,7 @@ Full OpenAPI 3.1 will be **generated from Zod contracts** (`packages/contracts`)
 | Transport | The same JSON contracts travel over HTTPS/WSS (normal) or the BLE fallback channel (§4). Idempotency keys make retries across transports safe |
 
 ### Standard error codes
-`UNAUTHENTICATED` 401 · `FORBIDDEN` 403 (includes `requiredPermission`) · `NOT_FOUND` 404 · `VERSION_CONFLICT` 409 · `INVALID_STATE_TRANSITION` 409 · `INSUFFICIENT_STOCK` 409 (only when `settings.inventory.block_on_negative`) · `APPROVAL_REQUIRED` 403 · `VALIDATION_FAILED` 422 · `RATE_LIMITED` 429.
+`UNAUTHENTICATED` 401 · `FORBIDDEN` 403 (includes `requiredPermission`) · `NOT_FOUND` 404 · `VERSION_CONFLICT` 409 · `INVALID_STATE_TRANSITION` 409 · `INSUFFICIENT_STOCK` 409 (only when `settings.inventory.block_on_negative`) · `APPROVAL_REQUIRED` 403 · `VALIDATION_FAILED` 422 · `RATE_LIMITED` 429 · `ALREADY_RATED` 409 (a guest rating an order twice).
 
 ## 2. Endpoints (Phase 1)
 
@@ -120,6 +120,7 @@ Implemented in Sprint 4; aggregator entry in Sprint 5. Contracts: `packages/cont
 | GET | `/orders?status=OPEN` | `tables.view`, `billing.create` or `kds.view` | Summaries: subtotal, item / pending / ready counts, table, captain |
 | GET | `/orders/{id}` | same | Order + items (name, price and tax group frozen at order time) + KOT summaries |
 | PATCH | `/orders/{id}` | `orders.update` | `{version, covers?, notes?}` |
+| POST | `/orders/{id}/guest` | `orders.update` | `{version, phone: IndianMobile \| null, name?}`: the guest on the order, found by phone or added as a customer; `null` takes them off. Open or billed orders only. The order then shows `guest: {name, phoneLast4}` (never the whole number). The bill uses this guest when it is given no phone, and a phone given only at the bill puts the guest on the order. The audit row holds the customer id, not the phone |
 | POST | `/orders/{id}/items` | `orders.create` | `{items:[{menuItemId, variantId?, quantity, addons:[{addonId, quantity}], specialNote?, course?}]}`. Items are PENDING until fired. A size is required when the item has variants; add-ons must belong to the item's groups and respect min/max; 86'd or retired items → `409 ITEM_UNAVAILABLE` |
 | PATCH | `/orders/{id}/items/{itemId}` | `orders.update` | `{version, quantity?, specialNote?, course?}`, only while PENDING (`409 ITEM_ALREADY_SENT`) |
 | POST | `/orders/{id}/kots` | `orders.fire_kot` | Fires every PENDING item, one KOT per kitchen station (`409 NOTHING_TO_FIRE`). Target time = fired + the slowest item's prep time (15 min default). Send an `Idempotency-Key` |
@@ -219,15 +220,28 @@ Implemented in Phase 5. Contracts: `packages/contracts/src/http/qr.ts`. A table 
 
 | Method | Path | Perm | Notes |
 |---|---|---|---|
-| GET | `/public/qr/{token}/menu` | none (60 a minute per address) | The branch and table, active categories, items (price, whether tax is included, sizes, add-on groups, available or not) and add-on groups. No SKUs, stations or costs. `popularItemIds`: the dishes on this menu ordered at least 3 times in the last 30 days at the branch (cancelled and complimentary lines left out), at most 8, most ordered first; the guest menu marks them as bestsellers. `404` for a code not in use |
+| GET | `/public/qr/{token}/menu` | none (60 a minute per address) | The branch and table, active categories, items (price, whether tax is included, sizes, add-on groups, available or not) and add-on groups. No SKUs, stations or costs. `popularItemIds`: the bestsellers an admin published (Admin → Ratings), in their order, that are on this menu; the guest menu marks them. `ratings`: `[{menuItemId, average, count}]` from the dish ratings an admin counted (average to one decimal). `404` for a code not in use |
 | POST | `/public/qr/{token}/requests` | none | `{kind: ORDER|WAITER|BILL, items?, covers?, guestName?, note?, clientKey?}` → `201`, `PENDING`. Each item is `{menuItemId, variantId?, quantity 1–20, addons, note?}`, up to 30. Items are checked against the menu, so an unavailable dish gives `409 ITEM_UNAVAILABLE`. The same `clientKey` returns the first request, so a retry is not a second order. A table with 5 requests waiting gets `429 QR_TOO_MANY_REQUESTS` |
 | GET | `/public/qr/{token}/requests/{id}` | none | The guest's view: status (`PENDING`, `ACCEPTED`, `REJECTED` with the reason, `DONE`) and the items |
+| POST | `/public/qr/{token}/ratings/lookup` | none (10 per 10 minutes per address) | `{phone}` (an Indian mobile) → `{orders}`: the branch's orders of today's business day that carry this guest (not cancelled), newest first, each with `orderNo`, `tableLabel`, `openedAt`, the captain's first name, its dishes (each once, not cancelled lines; name, translations, photo) and `rated`. The phone goes in the body, not the URL, so it isn't logged |
+| POST | `/public/qr/{token}/ratings` | none (20 per 10 minutes per address) | `{orderId, phone, captainStars?: 1–5, comment?, dishes: [{menuItemId, stars 1–5, comment?}]}`, at least one rating → `201 {id}`. The order must be today's and carry the phone (`404` otherwise); dishes must be on it (`422`); once per order (`409 ALREADY_RATED`) |
 | GET | `/qr-requests` | `orders.create`, `orders.update` or `tables.view` | Waiting requests, oldest first, with the table's label |
 | POST | `/qr-requests/{id}/accept` `{fire = true}` | `orders.create` or `orders.update` | Puts the items onto the table's open order, or a new dine-in order with source `QR` and the guest's covers. Sends them to the kitchen unless `fire: false`. Prices come from the menu now. Returns `{order, kots}` like `POST /orders/aggregator`. Answered already: `409 QR_REQUEST_HANDLED` |
 | POST | `/qr-requests/{id}/reject` `{reason}` | same | Declines an order; the guest sees the reason |
 | POST | `/qr-requests/{id}/done` | same | Answers a call for a server or the bill |
 
 Every change sends `floor.qr_requests.changed` to the `floor` topic. Captains see waiting requests at the top of their floor.
+
+### Guest ratings and bestsellers
+Contracts: `packages/contracts/src/http/ratings.ts`. The guest's side is in the table above; the captain's is `POST /orders/{id}/guest`. Admin → Ratings needs `feedback.manage` (Admin and Manager have it).
+
+| Method | Path | Perm | Notes |
+|---|---|---|---|
+| GET | `/ratings?from=&to=&status=` | `feedback.manage` | Ratings made on those business days, newest first (at most 500): the order, table, guest name and last four phone digits, captain and stars, comment, and each dish's stars, comment and status. `status` (`PENDING`, `COUNTED`, `EXCLUDED`, default `ALL`) keeps ratings with a dish in that state |
+| POST | `/ratings/dishes/review` | `feedback.manage` | `{ids (1–200), status}` → `{updated}`. `COUNTED` makes the rating part of the dish's stars on the guest menu; `EXCLUDED` keeps it out; `PENDING` puts it back to decide. Each change is audited |
+| GET | `/ratings/summary?from=&to=` | `feedback.manage` | Per captain: ratings and average stars. Per dish: counted (with their average), waiting and left-out ratings |
+| GET | `/bestsellers` | `feedback.manage` | `items`: the list in order, each `published` or not, with its counted stars. `suggestions`: dishes on the menu ordered most in the last 30 days that aren't on the list, with `rank` |
+| PUT | `/bestsellers` | `feedback.manage` | `{items: [{menuItemId, published}]}`, at most 12, each dish once: replaces the list (audited). The published ones are the guest menu's `popularItemIds` |
 
 ### Online orders (cloud relay, Phase 5)
 Contracts: `packages/contracts/src/http/integrations.ts` (the Hub's API) and `packages/contracts/src/relay.ts` (the relay protocol). The relay is `apps/relay`; ADR 0007 has the design.

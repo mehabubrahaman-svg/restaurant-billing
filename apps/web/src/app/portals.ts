@@ -67,6 +67,7 @@ export const ADMIN_PERMISSIONS = [
   'backup.manage',
   'customers.view',
   'customers.manage',
+  'feedback.manage',
 ] as const;
 
 /** Order here is nav order. */

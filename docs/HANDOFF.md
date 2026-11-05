@@ -67,7 +67,10 @@ nothing shows it.
   The accept step is `OrderService.addGuestOrder`. Routes are in `qr.ts`: public `/public/qr/...`, staff `/qr-requests`. Web: `apps/web/src/portals/qr-menu/`, and `features/orders/qr-requests-panel.tsx` on the captain floor.
   - The guest menu (`qr-menu-page.tsx`) is built from `menu-parts.tsx` (dish card, section chips and list, bestseller strip), `dish-sheet.tsx` and `cart.ts` (the order, kept in sessionStorage as ids, priced again from the menu on load).
   - Search is `menu-search.ts`: folded text, a sound key for romanised Indian spellings, and a bounded edit distance, weighted name > translations > sizes > section > description.
-  - Bestsellers come from `SqlitePopularDishes` (order lines of the last 30 days).
+  - Bestsellers are the admin's published list; `SqlitePopularDishes` (order lines of the last 30 days) only suggests dishes for it.
+- **Guest ratings and bestsellers** (migration 0022): `packages/application/src/crm/ratings.ts` (`GuestRatingService`), `packages/infrastructure/src/crm/sqlite-rating-repository.ts`, routes `ratings.ts`.
+  - The guest on an order is `orders.customer_id`: `OrderService.setGuest` (route `POST /orders/{id}/guest`), and `BillingService` uses it when the bill is given no phone (`guestPhoneOf`).
+  - Web: `features/orders/guest-phone-dialog.tsx` on the captain pad, `portals/qr-menu/rate-dialog.tsx`, `features/ratings/stars.tsx`, and Admin → Ratings in `features/admin/ratings/`.
 - **Online orders:**
   - the relay: `apps/relay`;
   - the protocol: `packages/contracts/src/relay.ts`;
@@ -218,7 +221,8 @@ nothing shows it.
 - **Locale files:** add keys as text, never by a `JSON.parse`/`JSON.stringify` round trip. The round trip moves integer-like keys, such as the state codes ("19"), to the front of their object. Check for duplicate keys afterwards.
 - **Flaky tests:** under full-suite load, a few tests can time out: on the web, device pairing and the recipe section; on the server, the backup import (scrypt) and the first dish-photo test in `menu-images.test.ts` (it decodes a 1280 px PNG). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
 - **Relay tests:** both the relay's own tests and the Hub's `relay.test.ts` run a real relay and WebSocket on 127.0.0.1, on a random port.
-- **Migrations:** 0014 to 0019 were added in Phase 5. Every new business table has a no-delete trigger, as in 0004.
+- **Migrations:** 0014 to 0019 were added in Phase 5, 0020 to 0022 after it. Every new business table has a no-delete trigger, as in 0004 (`bestsellers` is a configuration list, replaced whole, like `role_permissions`).
+- **A new permission** needs a migration that inserts it and grants it to the existing roles that should have it (0022 does this for `feedback.manage`), the code in `packages/domain/src/identity/permissions.ts`, its name under `permissionNames` in each locale, and, for an Admin page, `ADMIN_PERMISSIONS` in `apps/web/src/app/portals.ts`.
 - **Rebuilding a table that others point at** (to change a CHECK): rebuild the child tables too, with their new copies pointing at the new parent, and drop the old children before the old parent. 0019 does this for `report_schedules` and `report_files`. Dropping a parent while children still point at it fails at commit, even with `defer_foreign_keys`, because SQLite counts those references when the old parent's rows go and doesn't recount them after the rename.
 
 ## Next (docs/08-roadmap.md)

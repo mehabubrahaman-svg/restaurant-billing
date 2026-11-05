@@ -68,6 +68,8 @@ export interface OrderState {
   externalOrderId: string | null;
   externalOtp: string | null;
   captainId: string | null;
+  /** The guest, when the captain or the bill gave their phone (customers.id). */
+  customerId: string | null;
   covers: number | null;
   status: OrderStatus;
   notes: string | null;
@@ -115,7 +117,13 @@ export class Order extends AggregateRoot {
     id: string,
     input: Omit<
       OrderState,
-      'status' | 'closedAt' | 'cancelReason' | 'cancelledBy' | 'mergedIntoOrderId' | 'lines'
+      | 'status'
+      | 'closedAt'
+      | 'cancelReason'
+      | 'cancelledBy'
+      | 'mergedIntoOrderId'
+      | 'lines'
+      | 'customerId'
     >,
   ): Order {
     if (input.orderType === 'DINE_IN' && !input.tableId) {
@@ -128,6 +136,7 @@ export class Order extends AggregateRoot {
       cancelReason: null,
       cancelledBy: null,
       mergedIntoOrderId: null,
+      customerId: null,
       lines: [],
     });
     order.raise(
@@ -189,6 +198,18 @@ export class Order extends AggregateRoot {
     if (patch.covers !== undefined) this.s.covers = patch.covers;
     if (patch.notes !== undefined) this.s.notes = patch.notes;
     this.raise('OrderUpdated', { covers: this.s.covers, notes: this.s.notes }, at);
+  }
+
+  /**
+   * Whose order it is (null takes the guest off): from the captain while the
+   * table eats, or from the bill. Not once it is paid or cancelled.
+   */
+  setGuest(customerId: string | null, at: Date): void {
+    if (this.s.status !== 'OPEN' && this.s.status !== 'BILLED')
+      throw new DomainError('ORDER_NOT_OPEN', 'this order is closed');
+    if (this.s.customerId === customerId) return;
+    this.s.customerId = customerId;
+    this.raise('OrderGuestChanged', { hasGuest: customerId !== null }, at);
   }
 
   addLines(lines: readonly NewOrderLine[], at: Date): void {

@@ -63,6 +63,7 @@ const MENU: QrMenu = {
   items: [paneer, biryani, butterChicken, naan, lassi],
   addonGroups: [],
   popularItemIds: [],
+  ratings: [],
 };
 const names = (q: string) => searchMenu(MENU.items, MENU, q).map((i) => i.name);
 

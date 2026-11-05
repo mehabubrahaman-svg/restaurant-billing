@@ -14,6 +14,7 @@ import {
   Search,
   Select,
   ShoppingBag,
+  Star,
   Stepper,
   X,
 } from '@restroos/ui';
@@ -46,6 +47,7 @@ import {
   type CartLine,
 } from './cart';
 import { DishSheet } from './dish-sheet';
+import { RateDialog } from './rate-dialog';
 import {
   CategoryBar,
   CategorySheet,
@@ -171,6 +173,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
   const [opened, setOpened] = useState<Item | null>(null);
   const [browsing, setBrowsing] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [rating, setRating] = useState(false);
   const [sent, setSent] = useState<QrRequestStatusResponse[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const sticky = useRef<HTMLDivElement>(null);
@@ -193,6 +196,10 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
     [categories, lang],
   );
   const popular = useMemo(() => new Set(menu.popularItemIds), [menu]);
+  const scores = useMemo(
+    () => new Map(menu.ratings.map(({ menuItemId, ...score }) => [menuItemId, score])),
+    [menu],
+  );
   const kindsOnMenu = FOOD_FILTERS.filter((k) => menu.items.some((i) => i.foodType === k));
   const shown = useMemo(
     () =>
@@ -293,6 +300,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
       item={item}
       query={search}
       popular={popular.has(item.id)}
+      score={scores.get(item.id)}
       quantity={inOrder.get(item.id) ?? 0}
       categoryName={categoryName}
       onOpen={() => setOpened(item)}
@@ -322,6 +330,10 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
         >
           <ReceiptText aria-hidden="true" />
           {t('qr.askBill')}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setRating(true)}>
+          <Star aria-hidden="true" />
+          {t('qr.rate.open')}
         </Button>
       </div>
       {call.isError && (
@@ -505,6 +517,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
           item={opened}
           menu={menu}
           popular={popular.has(opened.id)}
+          score={scores.get(opened.id)}
           onClose={() => setOpened(null)}
           onAdd={(line) => {
             setCart((c) => addLine(c, line));
@@ -512,6 +525,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
           }}
         />
       )}
+      {rating && <RateDialog token={token} onClose={() => setRating(false)} />}
       {reviewing && (
         <CartDialog
           token={token}

@@ -15,6 +15,7 @@ import {
   Settings,
   Ticket,
   ShieldCheck,
+  Star,
   Users,
   UtensilsCrossed,
   LayoutGrid,
@@ -46,6 +47,7 @@ export interface AdminSection {
     | 'admin.tabs.channels'
     | 'admin.tabs.customers'
     | 'admin.tabs.membership'
+    | 'admin.tabs.ratings'
     | 'admin.tabs.onlineOrders';
   readonly permission: PermissionRequirement;
 }
@@ -67,6 +69,12 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     icon: Contact,
     labelKey: 'admin.tabs.customers',
     permission: CUSTOMER_PERMISSIONS,
+  },
+  {
+    path: 'ratings',
+    icon: Star,
+    labelKey: 'admin.tabs.ratings',
+    permission: 'feedback.manage',
   },
   {
     path: 'membership',

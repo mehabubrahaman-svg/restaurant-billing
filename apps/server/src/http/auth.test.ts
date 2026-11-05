@@ -21,7 +21,8 @@ describe('password login', () => {
     expect(body.branch).toMatchObject({ code: 'KOL1', stateCode: '19' });
     expect(body.roles).toEqual(['ADMIN']);
     expect(body.permissions).toContain('users.manage');
-    expect(body.permissions).toHaveLength(52);
+    expect(body.permissions).toContain('feedback.manage');
+    expect(body.permissions).toHaveLength(53);
     const cookie = res.cookies.find((c) => c.name === 'restro_rt')!;
     expect(cookie).toMatchObject({ httpOnly: true, sameSite: 'Strict', path: '/api/v1/auth' });
   });

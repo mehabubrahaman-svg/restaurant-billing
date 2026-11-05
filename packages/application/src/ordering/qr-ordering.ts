@@ -1,5 +1,6 @@
 import { DomainError, type Kot, type Order } from '@restroos/domain';
 import type { CatalogRepository, FoodType, Translations } from '../catalog/ports';
+import type { DishScore, RatingRepository } from '../crm/ratings';
 import type { FloorRepository } from '../floor/ports';
 import type { Clock } from '../ports/clock';
 import type { IdGenerator } from '../ports/id-generator';
@@ -85,8 +86,10 @@ export interface QrMenuView {
     maxSelect: number;
     addons: { id: string; name: string; nameTranslations: Translations; price: number }[];
   }[];
-  /** Ordered most over the last 30 days, most first. */
+  /** The bestsellers an admin published, in their order (Admin → Ratings). */
   popularItemIds: string[];
+  /** Stars from the guest ratings an admin counted, for dishes on this menu. */
+  ratings: DishScore[];
 }
 
 /** What a branch's guests order most: menu item ids by quantity, most first. */
@@ -94,9 +97,6 @@ export interface PopularDishes {
   /** Lines ordered since `since` (ISO), not cancelled or complimentary, at least `minQuantity` in all. */
   top(branchId: string, since: string, limit: number, minQuantity: number): string[];
 }
-
-/** Bestsellers: the last 30 days, up to 8 dishes, each ordered at least 3 times. */
-export const POPULAR = { days: 30, limit: 8, minQuantity: 3 } as const;
 
 export interface QrRequestInput {
   kind: QrRequestKind;
@@ -130,7 +130,7 @@ export class QrOrderingService {
       catalog: CatalogRepository;
       settings: SettingsRepository;
       orders: OrderService;
-      popular: PopularDishes;
+      ratings: Pick<RatingRepository, 'bestsellers' | 'dishScores'>;
       unitOfWork: UnitOfWork;
       clock: Clock;
       ids: IdGenerator;
@@ -193,12 +193,14 @@ export class QrOrderingService {
           price: a.price,
         })),
       }));
-    const since = new Date(this.d.clock.now().getTime() - POPULAR.days * 86_400_000).toISOString();
     const onMenu = new Set(items.map((i) => i.id));
-    const popularItemIds = this.d.popular
-      .top(table.branchId, since, POPULAR.limit + items.length, POPULAR.minQuantity)
-      .filter((id) => onMenu.has(id))
-      .slice(0, POPULAR.limit);
+    const popularItemIds = this.d.ratings
+      .bestsellers(table.branchId)
+      .filter((e) => e.published && onMenu.has(e.menuItemId))
+      .map((e) => e.menuItemId);
+    const ratings = this.d.ratings
+      .dishScores(table.branchId)
+      .filter((s) => onMenu.has(s.menuItemId));
     return {
       branchName: this.d.settings.branch(table.branchId)?.name ?? '',
       tableLabel: table.label,
@@ -206,6 +208,7 @@ export class QrOrderingService {
       items,
       addonGroups,
       popularItemIds,
+      ratings,
     };
   }
 

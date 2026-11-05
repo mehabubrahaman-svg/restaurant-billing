@@ -23,6 +23,7 @@ interface OrderRow {
   external_order_id: string | null;
   external_otp: string | null;
   captain_id: string | null;
+  customer_id: string | null;
   covers: number | null;
   status: OrderState['status'];
   notes: string | null;
@@ -98,6 +99,7 @@ export class SqliteOrderRepository implements OrderRepository {
       externalOrderId: row.external_order_id,
       externalOtp: row.external_otp,
       captainId: row.captain_id,
+      customerId: row.customer_id,
       covers: row.covers,
       status: row.status,
       notes: row.notes,
@@ -186,12 +188,14 @@ export class SqliteOrderRepository implements OrderRepository {
     const now = this.now().toISOString();
     const result = this.db
       .prepare(
-        `UPDATE orders SET dining_table_id = ?, covers = ?, status = ?, notes = ?, subtotal = ?, closed_at = ?,
-                cancel_reason = ?, cancelled_by = ?, merged_into_order_id = ?, updated_at = ?, version = ?
+        `UPDATE orders SET dining_table_id = ?, customer_id = ?, covers = ?, status = ?, notes = ?, subtotal = ?,
+                closed_at = ?, cancel_reason = ?, cancelled_by = ?, merged_into_order_id = ?, updated_at = ?,
+                version = ?
           WHERE id = ? AND version = ?`,
       )
       .run(
         s.tableId,
+        s.customerId,
         s.covers,
         s.status,
         s.notes,

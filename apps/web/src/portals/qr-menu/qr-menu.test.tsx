@@ -79,6 +79,7 @@ const MENU: QrMenu = {
     },
   ],
   popularItemIds: [],
+  ratings: [],
 };
 const sentOrder = (status: QrRequestStatusResponse['status']): QrRequestStatusResponse => ({
   id: REQUEST,
@@ -301,6 +302,73 @@ describe('QR menu (the guest’s phone)', () => {
     );
     renderApp(`/qr/${TOKEN}`);
     expect(await screen.findByText('3 items · ₹180.00')).toBeInTheDocument();
+  });
+
+  it('lets the guest find today’s order by phone and rate the captain and the dishes', async () => {
+    const ORDER = '0c800000-0000-4000-8000-000000000001';
+    const sent: unknown[] = [];
+    const found = {
+      orders: [
+        {
+          id: ORDER,
+          orderNo: '142',
+          tableLabel: 'T1',
+          openedAt: '2026-10-28T12:00:00.000Z',
+          captainName: 'Rahul',
+          rated: false,
+          dishes: [
+            { menuItemId: NAAN, name: 'Butter Naan', nameTranslations: none, imageId: null },
+            { menuItemId: BIRYANI, name: 'Chicken Biryani', nameTranslations: none, imageId: null },
+          ],
+        },
+      ],
+    };
+    mockHub({
+      ...BASE_ROUTES,
+      [`GET /public/qr/${TOKEN}/menu`]: () =>
+        json({ ...MENU, ratings: [{ menuItemId: NAAN, average: 4.5, count: 12 }] }),
+      [`POST /public/qr/${TOKEN}/ratings/lookup`]: ({ body }) =>
+        json((body as { phone: string }).phone === '+919876543210' ? found : { orders: [] }),
+      [`POST /public/qr/${TOKEN}/ratings`]: ({ body }) => {
+        sent.push(body);
+        return json({ id: '0c900000-0000-4000-8000-000000000001' }, 201);
+      },
+    });
+    renderApp(`/qr/${TOKEN}`);
+    // The stars an admin counted show on the dish.
+    expect(
+      await screen.findByRole('img', { name: 'Rated 4.5 out of 5 by 12 guests' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rate your meal' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Rate your meal' });
+    const phone = within(dialog).getByLabelText(/^Your mobile number/);
+    fireEvent.change(phone, { target: { value: '9123456789' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Find my order' }));
+    expect(await within(dialog).findByText(/couldn’t find an order/)).toBeInTheDocument();
+
+    fireEvent.change(phone, { target: { value: '98765 43210' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Find my order' }));
+    const captain = await within(dialog).findByRole('group', { name: 'How was Rahul’s service?' });
+    expect(within(dialog).getByRole('button', { name: 'Send ratings' })).toBeDisabled();
+    fireEvent.click(within(captain).getByRole('radio', { name: '5 stars' }));
+    const naan = within(dialog).getByRole('group', { name: 'Butter Naan' });
+    fireEvent.click(within(naan).getByRole('radio', { name: '4 stars' }));
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'A note about Butter Naan' }), {
+      target: { value: 'Soft and hot' },
+    });
+    await expectNoAxeViolations();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send ratings' }));
+    expect(await within(dialog).findByText('Thank you!')).toBeInTheDocument();
+    // The biryani wasn't rated, so it isn't sent.
+    expect(sent).toEqual([
+      {
+        orderId: ORDER,
+        phone: '+919876543210',
+        captainStars: 5,
+        dishes: [{ menuItemId: NAAN, stars: 4, comment: 'Soft and hot' }],
+      },
+    ]);
   });
 
   it('says so when the code is not in use', async () => {

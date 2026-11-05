@@ -98,6 +98,8 @@ export interface KotSummaryView {
 export interface OrderView extends OrderSummaryView {
   items: OrderItemView[];
   kots: KotSummaryView[];
+  /** The guest on the order: their name and the last four digits of their phone. */
+  guest: { name: string | null; phoneLast4: string } | null;
 }
 
 export interface TableOrderView {

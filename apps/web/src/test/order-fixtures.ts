@@ -102,13 +102,14 @@ export function makeOrder(overrides: Partial<Order> = {}): Order {
     externalOrderId: null,
     version: 1,
     kots: [],
+    guest: null,
     ...overrides,
     items,
   };
 }
 
 export function summaryOf(order: Order): OrderSummary {
-  const { items: _items, kots: _kots, ...summary } = order;
+  const { items: _items, kots: _kots, guest: _guest, ...summary } = order;
   return summary;
 }
 

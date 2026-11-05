@@ -117,6 +117,9 @@ const OnlineOrdersPage = lazy(() =>
     default: m.OnlineOrdersPage,
   })),
 );
+const RatingsPage = lazy(() =>
+  import('../features/admin/ratings/ratings-page').then((m) => ({ default: m.RatingsPage })),
+);
 const MembershipPage = lazy(() =>
   import('../features/admin/membership/membership-page').then((m) => ({
     default: m.MembershipPage,
@@ -284,6 +287,7 @@ function AdminGuard({
     | 'admin.tabs.channels'
     | 'admin.tabs.customers'
     | 'admin.tabs.membership'
+    | 'admin.tabs.ratings'
     | 'admin.tabs.onlineOrders';
   children: ReactNode;
 }) {
@@ -426,6 +430,14 @@ function adminRoutes(): RouteObject {
         element: (
           <AdminGuard permission={CUSTOMER_PERMISSIONS} labelKey="admin.tabs.customers">
             <CustomerDetailPage />
+          </AdminGuard>
+        ),
+      },
+      {
+        path: 'ratings',
+        element: (
+          <AdminGuard permission="feedback.manage" labelKey="admin.tabs.ratings">
+            <RatingsPage />
           </AdminGuard>
         ),
       },

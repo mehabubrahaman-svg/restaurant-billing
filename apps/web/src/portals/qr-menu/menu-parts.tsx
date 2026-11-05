@@ -5,12 +5,15 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FoodTypeMark } from '../../features/menu/food-type';
 import { localizedName } from '../../features/menu/localized-name';
+import { StarScore } from '../../features/ratings/stars';
 import { useFormat } from '../../i18n/use-format';
 import { photoUrl } from '../../lib/dish-photos';
 import { matchRanges, splitDescription } from './menu-search';
 
 export type Item = QrMenu['items'][number];
 export type Category = QrMenu['categories'][number];
+/** A dish's counted stars. */
+export type Score = Omit<QrMenu['ratings'][number], 'menuItemId'>;
 
 /** The dish's lowest price: its smallest size when it has sizes. */
 export const fromPrice = (item: Item) =>
@@ -50,6 +53,7 @@ export function DishCard({
   item,
   query,
   popular,
+  score,
   quantity,
   categoryName,
   onOpen,
@@ -59,6 +63,7 @@ export function DishCard({
   item: Item;
   query: string;
   popular: boolean;
+  score?: Score | undefined;
   /** How many of it are in the order already. */
   quantity: number;
   /** Shown in search results, where dishes from every section mix. */
@@ -126,8 +131,11 @@ export function DishCard({
             <Highlight text={name} query={query} />
           </button>
         </h3>
-        <p className="font-medium tabular-nums">
-          {item.variants.length > 0 ? t('qr.from', { price: money(price) }) : money(price)}
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium tabular-nums">
+          <span>
+            {item.variants.length > 0 ? t('qr.from', { price: money(price) }) : money(price)}
+          </span>
+          {score && <StarScore average={score.average} count={score.count} />}
         </p>
         {description && (
           <p className="line-clamp-2 text-sm break-words text-muted-foreground">{description}</p>

@@ -33,6 +33,7 @@ import { kitchenRoutes } from './routes/kitchen';
 import { orderRoutes } from './routes/orders';
 import { integrationRoutes } from './routes/integrations';
 import { qrRoutes } from './routes/qr';
+import { ratingRoutes } from './routes/ratings';
 import { printingRoutes } from './routes/printing';
 import { purchasingRoutes } from './routes/purchasing';
 import { reportRoutes } from './routes/reports';
@@ -127,6 +128,7 @@ export async function buildApp(
       await api.register(deviceRoutes, { cradle });
       await api.register(orderRoutes, { cradle });
       await api.register(qrRoutes, { cradle });
+      await api.register(ratingRoutes, { cradle });
       await api.register(integrationRoutes, { cradle });
       await api.register(kitchenRoutes, { cradle });
       await api.register(billingRoutes, { cradle });

@@ -94,6 +94,7 @@ export {
 export { SqliteCustomerRepository } from './crm/sqlite-customer-repository';
 export { SqliteLoyaltyRepository } from './crm/sqlite-loyalty-repository';
 export { SqliteMembershipTierRepository } from './crm/sqlite-membership-tier-repository';
+export { SqliteRatingRepository } from './crm/sqlite-rating-repository';
 export {
   SqliteInventoryRepository,
   SqliteMenuLookup,

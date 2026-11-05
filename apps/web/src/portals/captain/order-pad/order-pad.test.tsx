@@ -300,6 +300,53 @@ describe('Order pad', () => {
     );
   });
 
+  it('puts the guest’s phone on the order, so they can rate it', async () => {
+    const fetchMock = hub({
+      [`POST /orders/${ORDER_ID}/guest`]: ({ body }) => {
+        const { phone, name } = body as { phone: string | null; name?: string };
+        order = makeOrder({
+          version: 2,
+          guest: phone === null ? null : { name: name ?? null, phoneLast4: phone.slice(-4) },
+        });
+        return json(order);
+      },
+    });
+    renderApp(`/captain/orders/${ORDER_ID}`);
+    fireEvent.click(await screen.findByRole('button', { name: 'Add guest’s phone' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Guest’s phone' });
+    fireEvent.change(within(dialog).getByLabelText(/^Mobile number/), {
+      target: { value: '12345' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(
+      await within(dialog).findByText('Enter a 10-digit Indian mobile number.'),
+    ).toBeInTheDocument();
+    expect(callsTo(fetchMock, 'POST', `/orders/${ORDER_ID}/guest`)).toHaveLength(0);
+    await expectNoAxeViolations();
+
+    fireEvent.change(within(dialog).getByLabelText(/^Mobile number/), {
+      target: { value: '98765 43210' },
+    });
+    fireEvent.change(within(dialog).getByLabelText('Guest’s name (optional)'), {
+      target: { value: 'Ananya' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('button', { name: 'Guest ••3210' })).toBeInTheDocument();
+    const [post] = callsTo(fetchMock, 'POST', `/orders/${ORDER_ID}/guest`);
+    expect(bodyOf(post!)).toEqual({ version: 1, phone: '+919876543210', name: 'Ananya' });
+
+    // Taken off again.
+    fireEvent.click(screen.getByRole('button', { name: 'Guest ••3210' }));
+    const again = await screen.findByRole('dialog', { name: 'Guest’s phone' });
+    expect(within(again).getByText(/On the order now: ••3210/)).toBeInTheDocument();
+    fireEvent.click(within(again).getByRole('button', { name: 'Take it off' }));
+    expect(await screen.findByRole('button', { name: 'Add guest’s phone' })).toBeInTheDocument();
+    expect(bodyOf(callsTo(fetchMock, 'POST', `/orders/${ORDER_ID}/guest`)[1]!)).toEqual({
+      version: 2,
+      phone: null,
+    });
+  });
+
   it('marks a READY KOT served', async () => {
     order = makeOrder({
       items: [makeLine({ status: 'READY', kotId: KOT_1 })],

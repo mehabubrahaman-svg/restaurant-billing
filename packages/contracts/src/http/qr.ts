@@ -63,11 +63,19 @@ export const QrMenuSchema = z.object({
       ),
     }),
   ),
-  /**
-   * The dishes guests ordered most over the last 30 days (each at least 3
-   * times), most first: the menu marks them as bestsellers.
-   */
+  /** The bestsellers an admin published (Admin → Ratings), in their order. */
   popularItemIds: z.array(IdSchema).default([]),
+  /** Stars from the guest ratings an admin counted, per dish (dishes without any are left out). */
+  ratings: z
+    .array(
+      z.object({
+        menuItemId: IdSchema,
+        /** To one decimal, 1 to 5. */
+        average: z.number().min(1).max(5),
+        count: z.number().int().min(1),
+      }),
+    )
+    .default([]),
 });
 export type QrMenu = z.infer<typeof QrMenuSchema>;
 

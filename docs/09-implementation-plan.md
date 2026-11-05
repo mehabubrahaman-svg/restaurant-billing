@@ -103,6 +103,11 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 >   - a full dish view with a large photo and its facts as tags;
 >   - an order that survives a reload.
 > - **Fixed on the way:** in a menu upload, an empty `food_type` made a dish veg and an empty `active` put it back on the menu. Both now keep the dish's own, as the other columns do.
+> - **Guest ratings** (2026-11-05; migration 0022):
+>   - the captain puts the guest's phone on the table order, and the bill picks the guest up;
+>   - the guest finds today's order on the table's QR page by that phone and rates the captain and each dish, once;
+>   - Admin → Ratings: every rating, counting dish ratings toward the stars on the menu or leaving them out, captain and dish averages, and the bestseller list the admin publishes (it replaces the automatic one).
+> - **Tests with guest ratings:** web 415, server 156, domain 152, contracts 148, infrastructure 32, UI 32, application 8, relay 2, desktop 10, spike 55. End-to-end: 9.
 
 ## Definition of Done (every WP)
 
