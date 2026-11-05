@@ -65,6 +65,9 @@ nothing shows it.
   Customers and at the POS.
 - **QR self-ordering:** `packages/application/src/ordering/qr-ordering.ts`.
   The accept step is `OrderService.addGuestOrder`. Routes are in `qr.ts`: public `/public/qr/...`, staff `/qr-requests`. Web: `apps/web/src/portals/qr-menu/`, and `features/orders/qr-requests-panel.tsx` on the captain floor.
+  - The guest menu (`qr-menu-page.tsx`) is built from `menu-parts.tsx` (dish card, section chips and list, bestseller strip), `dish-sheet.tsx` and `cart.ts` (the order, kept in sessionStorage as ids, priced again from the menu on load).
+  - Search is `menu-search.ts`: folded text, a sound key for romanised Indian spellings, and a bounded edit distance, weighted name > translations > sizes > section > description.
+  - Bestsellers come from `SqlitePopularDishes` (order lines of the last 30 days).
 - **Online orders:**
   - the relay: `apps/relay`;
   - the protocol: `packages/contracts/src/relay.ts`;
@@ -213,7 +216,7 @@ nothing shows it.
 
 - CI (`ci.yml`) runs only on `main` and pull requests. Pushes to this branch aren't checked on GitHub, so the local checks below are the gate. The desktop and iOS workflows run on their tags and paths.
 - **Locale files:** add keys as text, never by a `JSON.parse`/`JSON.stringify` round trip. The round trip moves integer-like keys, such as the state codes ("19"), to the front of their object. Check for duplicate keys afterwards.
-- **Flaky tests:** under full-suite load, a few tests can time out: on the web, device pairing and the recipe section; on the server, the backup import (scrypt). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
+- **Flaky tests:** under full-suite load, a few tests can time out: on the web, device pairing and the recipe section; on the server, the backup import (scrypt) and the first dish-photo test in `menu-images.test.ts` (it decodes a 1280 px PNG). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
 - **Relay tests:** both the relay's own tests and the Hub's `relay.test.ts` run a real relay and WebSocket on 127.0.0.1, on a random port.
 - **Migrations:** 0014 to 0019 were added in Phase 5. Every new business table has a no-delete trigger, as in 0004.
 - **Rebuilding a table that others point at** (to change a CHECK): rebuild the child tables too, with their new copies pointing at the new parent, and drop the old children before the old parent. 0019 does this for `report_schedules` and `report_files`. Dropping a parent while children still point at it fails at commit, even with `defer_foreign_keys`, because SQLite counts those references when the old parent's rows go and doesn't recount them after the rename.

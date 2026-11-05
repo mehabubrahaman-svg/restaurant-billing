@@ -265,9 +265,8 @@ export class MenuImporter {
         fail('price', 'a rupee amount like 249 or 249.50');
       }
 
-      const foodRaw = get('food_type').toLowerCase() || 'veg';
-      const foodType = FOOD_TYPES[foodRaw];
-      if (!foodType) fail('food_type', 'veg, non-veg, egg, vegan or na');
+      const foodRaw = get('food_type').toLowerCase();
+      if (foodRaw && !FOOD_TYPES[foodRaw]) fail('food_type', 'veg, non-veg, egg, vegan or na');
 
       const taxName = get('tax_group');
       const taxGroupId = taxName ? this.d.catalog.taxGroupIdByName(taxName) : undefined;
@@ -280,6 +279,9 @@ export class MenuImporter {
 
       const existingId = sku ? this.d.catalog.itemIdBySku(sku) : undefined;
       const existing = existingId ? this.d.catalog.item(ctx.branchId, existingId) : undefined;
+      // Empty keeps what the dish is (a short sheet of prices mustn't make
+      // non-veg dishes veg); a new dish without one is veg.
+      const foodType = (foodRaw ? FOOD_TYPES[foodRaw] : undefined) ?? existing?.foodType ?? 'VEG';
 
       const translated = (current: Translations | undefined, hi: string, bn: string) => {
         const next: Translations = { ...(current ?? {}) };
@@ -302,10 +304,12 @@ export class MenuImporter {
         else prepTimeSec = Number(prep) * 60;
       }
 
-      let isActive = true;
+      // Empty keeps the dish on or off the menu as it is; a new dish goes on.
+      let isActive = existing?.isActive ?? true;
       const active = get('active').toLowerCase();
       if (active && !YES.has(active) && !NO.has(active)) fail('active', 'yes or no');
       else if (NO.has(active)) isActive = false;
+      else if (YES.has(active)) isActive = true;
 
       // Variants: keep the ids of sizes that keep their name, so old bills still point at them.
       let variants: ItemInput['variants'] = (existing?.variants ?? []).map((v) => ({ ...v }));
@@ -404,7 +408,7 @@ export class MenuImporter {
             'description_bn',
           ),
           categoryId: '',
-          foodType: foodType ?? 'VEG',
+          foodType,
           basePrice: price,
           taxGroupId: taxName ? (taxGroupId ?? null) : (existing?.taxGroupId ?? null),
           hsnSacCode,

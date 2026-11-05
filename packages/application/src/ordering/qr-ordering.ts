@@ -85,7 +85,18 @@ export interface QrMenuView {
     maxSelect: number;
     addons: { id: string; name: string; nameTranslations: Translations; price: number }[];
   }[];
+  /** Ordered most over the last 30 days, most first. */
+  popularItemIds: string[];
 }
+
+/** What a branch's guests order most: menu item ids by quantity, most first. */
+export interface PopularDishes {
+  /** Lines ordered since `since` (ISO), not cancelled or complimentary, at least `minQuantity` in all. */
+  top(branchId: string, since: string, limit: number, minQuantity: number): string[];
+}
+
+/** Bestsellers: the last 30 days, up to 8 dishes, each ordered at least 3 times. */
+export const POPULAR = { days: 30, limit: 8, minQuantity: 3 } as const;
 
 export interface QrRequestInput {
   kind: QrRequestKind;
@@ -119,6 +130,7 @@ export class QrOrderingService {
       catalog: CatalogRepository;
       settings: SettingsRepository;
       orders: OrderService;
+      popular: PopularDishes;
       unitOfWork: UnitOfWork;
       clock: Clock;
       ids: IdGenerator;
@@ -181,12 +193,19 @@ export class QrOrderingService {
           price: a.price,
         })),
       }));
+    const since = new Date(this.d.clock.now().getTime() - POPULAR.days * 86_400_000).toISOString();
+    const onMenu = new Set(items.map((i) => i.id));
+    const popularItemIds = this.d.popular
+      .top(table.branchId, since, POPULAR.limit + items.length, POPULAR.minQuantity)
+      .filter((id) => onMenu.has(id))
+      .slice(0, POPULAR.limit);
     return {
       branchName: this.d.settings.branch(table.branchId)?.name ?? '',
       tableLabel: table.label,
       categories,
       items,
       addonGroups,
+      popularItemIds,
     };
   }
 

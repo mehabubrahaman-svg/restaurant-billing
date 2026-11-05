@@ -170,4 +170,31 @@ describe('QR self-ordering', () => {
     );
     expect((await phone('GET', `/public/qr/${token}/menu`)).statusCode).toBe(404);
   });
+
+  it('marks the dishes ordered most in the last 30 days as bestsellers', async () => {
+    const { admin, menu, tables, token, phone, openAt } = await qrTable();
+    const popular = async () =>
+      QrMenuSchema.parse((await phone('GET', `/public/qr/${token}/menu`)).json()).popularItemIds;
+    expect(await popular()).toEqual([]);
+
+    const order = async (tableId: string, items: object[]) => {
+      const o = await openAt(admin, tableId);
+      await admin('POST', `/orders/${o.id}/items`, { items });
+    };
+    // Four naans and two biryanis: only the naan has been ordered three times.
+    await order(tables.t2.id, [
+      { menuItemId: menu.naan.id, quantity: 4 },
+      { menuItemId: menu.biryani.id, variantId: menu.full.id, quantity: 2 },
+    ]);
+    expect(await popular()).toEqual([menu.naan.id]);
+    // A third biryani at another table: both now, the most ordered first.
+    await order(tables.t3.id, [
+      { menuItemId: menu.biryani.id, variantId: menu.half.id, quantity: 1 },
+    ]);
+    expect(await popular()).toEqual([menu.naan.id, menu.biryani.id]);
+
+    // A month later those orders no longer count.
+    s!.clock.advance(31 * 24 * 60 * 60_000);
+    expect(await popular()).toEqual([]);
+  });
 });

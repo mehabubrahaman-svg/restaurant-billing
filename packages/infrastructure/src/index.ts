@@ -83,7 +83,10 @@ export {
   type ScriptExecutor,
 } from './printing/chromium-raster';
 export { SqliteSalesChannelRepository } from './ordering/sqlite-sales-channel-repository';
-export { SqliteQrRequestRepository } from './ordering/sqlite-qr-request-repository';
+export {
+  SqlitePopularDishes,
+  SqliteQrRequestRepository,
+} from './ordering/sqlite-qr-request-repository';
 export {
   ONLINE_ORDERS_USERNAME,
   SqliteRelayRepository,

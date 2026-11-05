@@ -1,4 +1,4 @@
-import type { QrRequestRecord, QrRequestRepository } from '@restroos/application';
+import type { PopularDishes, QrRequestRecord, QrRequestRepository } from '@restroos/application';
 import type { SqliteDatabase } from '../db/connection';
 import { assertVersionMatched } from '../db/optimistic';
 
@@ -11,6 +11,28 @@ const toRecord = ({ itemsJson, ...r }: Row): QrRequestRecord => ({
   ...r,
   items: JSON.parse(itemsJson) as QrRequestRecord['items'],
 });
+
+/** Dishes by quantity ordered, from the order lines (docs/03 §4.2). */
+export class SqlitePopularDishes implements PopularDishes {
+  constructor(private readonly db: SqliteDatabase) {}
+
+  top(branchId: string, since: string, limit: number, minQuantity: number): string[] {
+    return this.db
+      .prepare<{ branchId: string; since: string; limit: number; min: number }, { id: string }>(
+        `SELECT oi.menu_item_id AS id
+           FROM order_items oi JOIN orders o ON o.id = oi.order_id
+          WHERE o.branch_id = @branchId AND oi.created_at >= @since
+            AND oi.status <> 'CANCELLED' AND oi.is_complimentary = 0
+            AND o.status NOT IN ('CANCELLED', 'VOID')
+          GROUP BY oi.menu_item_id
+         HAVING sum(oi.quantity) >= @min
+          ORDER BY sum(oi.quantity) DESC, oi.menu_item_id
+          LIMIT @limit`,
+      )
+      .all({ branchId, since, limit, min: minQuantity })
+      .map((r) => r.id);
+  }
+}
 
 export class SqliteQrRequestRepository implements QrRequestRepository {
   constructor(private readonly db: SqliteDatabase) {}

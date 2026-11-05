@@ -1,5 +1,5 @@
 import type { QrMenu, QrRequest, QrRequestStatusResponse } from '@restroos/contracts';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAuthStore } from '../../features/auth/auth-store';
 import { i18n } from '../../i18n';
@@ -12,6 +12,7 @@ import { makeSession } from '../../test/session';
 
 const TOKEN = 'tok_12345678';
 const CAT = '0c100000-0000-4000-8000-000000000001';
+const SWEETS = '0c100000-0000-4000-8000-000000000002';
 const NAAN = '0c200000-0000-4000-8000-000000000001';
 const BIRYANI = '0c200000-0000-4000-8000-000000000002';
 const KULFI = '0c200000-0000-4000-8000-000000000003';
@@ -47,9 +48,16 @@ const item = (
 const MENU: QrMenu = {
   branchName: 'Park Street',
   tableLabel: 'T1',
-  categories: [{ id: CAT, name: 'Mains', nameTranslations: { hi: 'मुख्य' }, sortOrder: 1 }],
+  categories: [
+    { id: CAT, name: 'Mains', nameTranslations: { hi: 'मुख्य' }, sortOrder: 1 },
+    { id: SWEETS, name: 'Desserts', nameTranslations: {}, sortOrder: 2 },
+  ],
   items: [
-    item(NAAN, 'Butter Naan', 6000, { nameTranslations: { hi: 'बटर नान' } }),
+    item(NAAN, 'Butter Naan', 6000, {
+      nameTranslations: { hi: 'बटर नान' },
+      description:
+        'Soft, buttery naan from the tandoor. 1 piece · 240 kcal · Contains gluten, dairy',
+    }),
     item(BIRYANI, 'Chicken Biryani', 25000, {
       foodType: 'NON_VEG',
       variants: [
@@ -58,7 +66,7 @@ const MENU: QrMenu = {
       ],
       addonGroupIds: [SIDES],
     }),
-    item(KULFI, 'Kulfi', 9000, { isAvailable: false }),
+    item(KULFI, 'Kulfi', 9000, { categoryId: SWEETS, isAvailable: false }),
   ],
   addonGroups: [
     {
@@ -70,6 +78,7 @@ const MENU: QrMenu = {
       addons: [{ id: RAITA, name: 'Raita', nameTranslations: none, price: 3000 }],
     },
   ],
+  popularItemIds: [],
 };
 const sentOrder = (status: QrRequestStatusResponse['status']): QrRequestStatusResponse => ({
   id: REQUEST,
@@ -81,6 +90,7 @@ const sentOrder = (status: QrRequestStatusResponse['status']): QrRequestStatusRe
 });
 
 beforeEach(async () => {
+  sessionStorage.clear();
   useAuthStore.setState({ status: 'restoring', session: null });
   await i18n.changeLanguage('en-IN');
 });
@@ -120,7 +130,8 @@ describe('QR menu (the guest’s phone)', () => {
     expect(screen.queryByRole('button', { name: 'Add Kulfi' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add Butter Naan' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Add Butter Naan' }));
+    // In the order now: the card counts it up and down instead.
+    fireEvent.click(screen.getByRole('button', { name: 'One more Butter Naan' }));
     expect(screen.getByText('2 items · ₹120.00')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Add Chicken Biryani' }));
@@ -155,6 +166,7 @@ describe('QR menu (the guest’s phone)', () => {
       covers: 3,
     });
     expect(screen.queryByText(/items ·/)).toBeNull();
+    expect(sessionStorage.getItem(`qr-cart:${TOKEN}`)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Call a server' }));
     expect(await screen.findByText('A server has been called.')).toBeInTheDocument();
@@ -167,6 +179,128 @@ describe('QR menu (the guest’s phone)', () => {
     renderApp(`/qr/${TOKEN}`);
     expect(await screen.findByRole('heading', { name: 'मुख्य' })).toBeInTheDocument();
     expect(screen.getByText('बटर नान')).toBeInTheDocument();
+  });
+
+  const dishes = () => screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+
+  it('finds dishes by a near spelling, and says so when nothing matches', async () => {
+    mockHub({ ...BASE_ROUTES, [`GET /public/qr/${TOKEN}/menu`]: () => json(MENU) });
+    renderApp(`/qr/${TOKEN}`);
+    const box = await screen.findByRole('searchbox', { name: 'Search the menu' });
+    fireEvent.change(box, { target: { value: 'biriyani' } });
+    expect(await screen.findByText('1 dish found')).toBeInTheDocument();
+    expect(dishes()).toEqual(['Chicken Biryani']);
+    // Results mix sections, so each says which one it is from.
+    expect(screen.getByText('Mains', { selector: 'span' })).toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    fireEvent.change(box, { target: { value: 'pizza' } });
+    expect(await screen.findByText('Nothing matches “pizza”.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'See the full menu' }));
+    expect(box).toHaveValue('');
+    expect(await screen.findByRole('heading', { name: 'Desserts' })).toBeInTheDocument();
+    fireEvent.change(box, { target: { value: 'naan' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear search' }));
+    expect(box).toHaveValue('');
+  });
+
+  it('narrows to a kind of food, sorts by price, and jumps to a section', async () => {
+    mockHub({ ...BASE_ROUTES, [`GET /public/qr/${TOKEN}/menu`]: () => json(MENU) });
+    renderApp(`/qr/${TOKEN}`);
+    expect(await screen.findByRole('heading', { name: 'Mains' })).toBeInTheDocument();
+    expect(screen.getByText('2 dishes')).toBeInTheDocument();
+    expect(dishes()).toEqual(['Butter Naan', 'Chicken Biryani', 'Kulfi']);
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sort' }), {
+      target: { value: 'priceHigh' },
+    });
+    expect(dishes()).toEqual(['Chicken Biryani', 'Butter Naan', 'Kulfi']);
+
+    const veg = screen.getByRole('button', { name: 'Veg' });
+    fireEvent.click(veg);
+    expect(veg).toHaveAttribute('aria-pressed', 'true');
+    expect(dishes()).toEqual(['Butter Naan', 'Kulfi']);
+    fireEvent.click(screen.getByRole('button', { name: 'Non-veg' }));
+    expect(dishes()).toEqual(['Chicken Biryani', 'Butter Naan', 'Kulfi']);
+    await expectNoAxeViolations();
+
+    const sections = screen.getByRole('navigation', { name: 'Menu sections' });
+    fireEvent.click(within(sections).getByRole('button', { name: 'Desserts' }));
+    expect(within(sections).getByRole('button', { name: 'Desserts' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Desserts' })).toHaveFocus());
+
+    // The floating Menu button lists every section with its count.
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+    const list = await screen.findByRole('dialog', { name: 'Browse the menu' });
+    fireEvent.click(within(list).getByRole('button', { name: /^Mains/ }));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mains' })).toHaveFocus());
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('shows the dish in full, and marks bestsellers', async () => {
+    mockHub({
+      ...BASE_ROUTES,
+      [`GET /public/qr/${TOKEN}/menu`]: () => json({ ...MENU, popularItemIds: [NAAN, KULFI] }),
+    });
+    renderApp(`/qr/${TOKEN}`);
+    const popular = (await screen.findByRole('heading', { name: 'Popular here' })).closest(
+      'section',
+    )!;
+    // Only what can be ordered now.
+    expect(
+      within(popular)
+        .getAllByRole('button')
+        .map((b) => b.getAttribute('aria-label')),
+    ).toEqual(['See Butter Naan']);
+    expect(screen.getAllByText('Bestseller')).toHaveLength(2);
+    expect(screen.getByText('Soft, buttery naan from the tandoor.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Butter Naan' }));
+    const dish = await screen.findByRole('dialog', { name: 'Butter Naan' });
+    const facts = within(dish).getByRole('list', { name: 'Good to know' });
+    expect(
+      within(facts)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['1 piece', '240 kcal', 'Contains gluten, dairy']);
+    await expectNoAxeViolations();
+    fireEvent.click(within(dish).getByRole('button', { name: 'One more Butter Naan' }));
+    fireEvent.click(within(dish).getByRole('button', { name: 'Add · ₹120.00' }));
+    expect(screen.getByText('2 items · ₹120.00')).toBeInTheDocument();
+
+    // A dish that has run out says so instead of offering Add.
+    fireEvent.click(screen.getByRole('button', { name: 'Kulfi' }));
+    const kulfi = await screen.findByRole('dialog', { name: 'Kulfi' });
+    expect(within(kulfi).queryByRole('button', { name: /^Add/ })).toBeNull();
+    expect(within(kulfi).getByText('Not available now')).toBeInTheDocument();
+  });
+
+  it('keeps the order on the phone through a reload, at the menu prices', async () => {
+    mockHub({ ...BASE_ROUTES, [`GET /public/qr/${TOKEN}/menu`]: () => json(MENU) });
+    renderApp(`/qr/${TOKEN}`);
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Butter Naan' }));
+    expect(screen.getByText('1 item · ₹60.00')).toBeInTheDocument();
+    cleanup();
+
+    renderApp(`/qr/${TOKEN}`);
+    expect(await screen.findByText('1 item · ₹60.00')).toBeInTheDocument();
+    cleanup();
+
+    // What the menu no longer has, or has run out of, is left out.
+    sessionStorage.setItem(
+      `qr-cart:${TOKEN}`,
+      JSON.stringify([
+        { key: 'k1', itemId: NAAN, addonIds: [], quantity: 3, note: '' },
+        { key: 'k2', itemId: KULFI, addonIds: [], quantity: 1, note: '' },
+        { key: 'k3', itemId: '0c200000-0000-4000-8000-000000000099', addonIds: [], quantity: 1 },
+        { key: 'k4', itemId: BIRYANI, variantId: 'gone', addonIds: [], quantity: 1 },
+      ]),
+    );
+    renderApp(`/qr/${TOKEN}`);
+    expect(await screen.findByText('3 items · ₹180.00')).toBeInTheDocument();
   });
 
   it('says so when the code is not in use', async () => {

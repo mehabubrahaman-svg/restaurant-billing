@@ -255,6 +255,41 @@ describe('menu CSV import', () => {
     });
   });
 
+  it('keeps what a dish is, and whether it is on the menu, when those cells are empty', async () => {
+    const { admin } = await menuServer();
+    await admin('POST', '/menu/import', { csv: sheet, dryRun: false });
+    const upload = async (csv: string) =>
+      MenuImportResponseSchema.parse(
+        (await admin('POST', '/menu/import', { csv, dryRun: false })).json(),
+      );
+    // The mutton comes off the menu: the sheet has no food_type, so it stays non-veg.
+    await upload(
+      'sku,name,category,price,active\nMTN-RJ,"Mutton Rogan Josh, bone-in",Mains,420,no',
+    );
+    // A short sheet of prices only, with one new dish.
+    expect(
+      await upload(
+        'sku,name,category,price\nMTN-RJ,"Mutton Rogan Josh, bone-in",Mains,450\nRIC-1,Plain Rice,Mains,90',
+      ),
+    ).toMatchObject({ created: 1, updated: 1, errors: [] });
+    const items = MenuItemSchema.array().parse(
+      (await admin('GET', '/menu-items?includeInactive=true')).json().data,
+    );
+    expect(items.find((i) => i.sku === 'MTN-RJ')).toMatchObject({
+      foodType: 'NON_VEG',
+      isActive: false,
+      basePrice: 45000,
+    });
+    expect(items.find((i) => i.sku === 'RIC-1')).toMatchObject({ foodType: 'VEG', isActive: true });
+    // Saying so still changes it.
+    await upload('sku,name,category,price,food_type,active\nMTN-RJ,Mutton,Mains,450,egg,yes');
+    expect(
+      MenuItemSchema.array()
+        .parse((await admin('GET', '/menu-items')).json().data)
+        .find((i) => i.sku === 'MTN-RJ'),
+    ).toMatchObject({ foodType: 'EGG', isActive: true });
+  });
+
   it('writes nothing when any row is wrong', async () => {
     const { admin } = await menuServer();
     const bad = `${sheet}\nBAD,Bad Item,Mains,12.345,veg,No Such Tax,,`;

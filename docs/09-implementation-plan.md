@@ -95,6 +95,14 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 >   - XLSX, CSV and print. It can be scheduled, so the month-end closing stock arrives as a file.
 > - **Tests with the stock value:** web 385, server 146, domain 152, contracts 148, infrastructure 32, UI 32, application 8, relay 2, desktop 10, spike 55. End-to-end: the same 8 golden paths; the stock one now ends on the stock value.
 > - Phase 5 is complete. Its open items are in `docs/HANDOFF.md`.
+> - **Guest QR menu, rebuilt** (2026-11-05), for guests to browse a large menu fast on a phone:
+>   - search across English, Hindi and Bengali that forgives spellings;
+>   - veg, egg, non-veg and vegan filters, and sorting by price;
+>   - section chips that follow the scroll, and a Menu button with every section;
+>   - bestsellers from the last 30 days of orders;
+>   - a full dish view with a large photo and its facts as tags;
+>   - an order that survives a reload.
+> - **Fixed on the way:** in a menu upload, an empty `food_type` made a dish veg and an empty `active` put it back on the menu. Both now keep the dish's own, as the other columns do.
 
 ## Definition of Done (every WP)
 

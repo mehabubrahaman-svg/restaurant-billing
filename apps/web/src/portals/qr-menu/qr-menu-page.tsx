@@ -1,48 +1,71 @@
 import type { QrMenu, QrRequestStatusResponse } from '@restroos/contracts';
-import { Money } from '@restroos/domain';
 import {
   Alert,
   BellRing,
   Button,
   Card,
   CardContent,
-  Checkbox,
   cn,
   Dialog,
+  FoodMark,
   Input,
   QrCode,
   ReceiptText,
+  Search,
+  Select,
   ShoppingBag,
-  Spinner,
   Stepper,
+  X,
 } from '@restroos/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import {
+  useDeferredValue,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router';
 import { newIdempotencyKey } from '../../api/client';
 import { api } from '../../api/endpoints';
-import { FoodTypeMark } from '../../features/menu/food-type';
-import { photoUrl } from '../../lib/dish-photos';
 import { localizedName } from '../../features/menu/localized-name';
 import { LanguageSwitcher } from '../../i18n/language-switcher';
-import { useFormat } from '../../i18n/use-format';
 import { useErrorMessage } from '../../lib/errors';
+import {
+  addLine,
+  addPlain,
+  loadCart,
+  MAX_QUANTITY,
+  quantities,
+  saveCart,
+  setQuantity,
+  type CartLine,
+} from './cart';
+import { DishSheet } from './dish-sheet';
+import {
+  CategoryBar,
+  CategorySheet,
+  DishCard,
+  fromPrice,
+  hasOptions,
+  MenuButton,
+  MenuSkeleton,
+  PopularStrip,
+  useMoney,
+  type Category,
+  type Item,
+} from './menu-parts';
+import { queryTokens, searchMenu } from './menu-search';
 
-type Item = QrMenu['items'][number];
-type Group = QrMenu['addonGroups'][number];
-
-/** One line of the guest's order, before it is sent. */
-interface CartLine {
-  key: string;
-  item: Item;
-  variantId: string | undefined;
-  addonIds: string[];
-  quantity: number;
-  note: string;
-  /** Paise for one, with the size and add-ons. */
-  unit: number;
-}
+type FoodType = Item['foodType'];
+type Sort = 'recommended' | 'priceLow' | 'priceHigh';
+const SORTS: readonly Sort[] = ['recommended', 'priceLow', 'priceHigh'];
+/** The kinds a guest can narrow the menu to, in the order the chips show. */
+const FOOD_FILTERS: readonly Exclude<FoodType, 'NA'>[] = ['VEG', 'EGG', 'NON_VEG', 'VEGAN'];
 
 /** While a sent request waits for a captain, the phone checks this often. */
 export const STATUS_POLL_MS = 5_000;
@@ -58,24 +81,33 @@ export function QrMenuPage() {
   });
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 p-4 pb-28">
+    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-4 px-4 pt-4 pb-32">
       <title>
         {menu.data
           ? `${menu.data.branchName} · ${t('qr.table', { table: menu.data.tableLabel })}`
           : t('portals.qrMenu.title')}
       </title>
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-lg font-bold">
-          <QrCode aria-hidden="true" className="size-6 shrink-0 text-primary" />
-          <span className="min-w-0 break-words">
-            {menu.data?.branchName ?? t('portals.qrMenu.title')}
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <QrCode aria-hidden="true" className="size-6" />
           </span>
-        </span>
+          <div className="flex min-w-0 flex-col">
+            <span className="text-lg leading-tight font-bold break-words">
+              {menu.data?.branchName ?? t('portals.qrMenu.title')}
+            </span>
+            {menu.data && (
+              <span className="text-sm text-muted-foreground">
+                {t('qr.table', { table: menu.data.tableLabel })}
+              </span>
+            )}
+          </div>
+        </div>
         <LanguageSwitcher />
       </header>
       <main className="flex flex-col gap-4">
         {menu.isPending ? (
-          <Spinner label={t('common.loading')} />
+          <MenuSkeleton />
         ) : menu.isError ? (
           <Card>
             <CardContent className="pt-5">
@@ -90,22 +122,162 @@ export function QrMenuPage() {
   );
 }
 
+/** Available dishes before the ones that have run out; by price when asked. Keeps order otherwise. */
+function arrange(items: readonly Item[], sort: Sort): Item[] {
+  return [...items].sort(
+    (a, b) =>
+      Number(b.isAvailable) - Number(a.isAvailable) ||
+      (sort === 'priceLow' ? fromPrice(a) - fromPrice(b) : 0) ||
+      (sort === 'priceHigh' ? fromPrice(b) - fromPrice(a) : 0),
+  );
+}
+
+/** A Veg filter shows vegan dishes too: they are vegetarian. */
+const ofKind = (item: Item, kinds: readonly FoodType[]) =>
+  kinds.length === 0 ||
+  kinds.includes(item.foodType) ||
+  (item.foodType === 'VEGAN' && kinds.includes('VEG'));
+
+/** The element's height, kept up to date as it wraps or changes. */
+function useHeight(ref: RefObject<HTMLElement | null>) {
+  const [height, setHeight] = useState(0);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (element === null) return;
+    const update = () => setHeight(element.offsetHeight);
+    update();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return height;
+}
+
+const prefersLessMotion = () =>
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
   const { t, i18n } = useTranslation();
-  const format = useFormat();
+  const money = useMoney();
   const errorMessage = useErrorMessage();
   const lang = i18n.language;
-  const money = (paise: number) => format.money(Money.ofPaise(paise));
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [choosing, setChoosing] = useState<Item | null>(null);
+  const [cart, setCart] = useState<CartLine[]>(() => loadCart(token, menu));
+  const [query, setQuery] = useState('');
+  const search = useDeferredValue(query);
+  const [kinds, setKinds] = useState<FoodType[]>([]);
+  const [sort, setSort] = useState<Sort>('recommended');
+  const [opened, setOpened] = useState<Item | null>(null);
+  const [browsing, setBrowsing] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [sent, setSent] = useState<QrRequestStatusResponse[]>([]);
-  const categories = [...menu.categories].sort(
-    (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+  const [active, setActive] = useState<string | null>(null);
+  const sticky = useRef<HTMLDivElement>(null);
+  const results = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const spyPausedUntil = useRef(0);
+  const stickyHeight = useHeight(sticky);
+
+  useEffect(() => saveCart(token, cart), [token, cart]);
+
+  const categories = useMemo(
+    () =>
+      [...menu.categories].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+      ),
+    [menu],
   );
+  const categoryNames = useMemo(
+    () => new Map(categories.map((c) => [c.id, localizedName(c.name, c.nameTranslations, lang)])),
+    [categories, lang],
+  );
+  const popular = useMemo(() => new Set(menu.popularItemIds), [menu]);
+  const kindsOnMenu = FOOD_FILTERS.filter((k) => menu.items.some((i) => i.foodType === k));
+  const shown = useMemo(
+    () =>
+      arrange(
+        menu.items.filter((i) => ofKind(i, kinds)),
+        sort,
+      ),
+    [menu, kinds, sort],
+  );
+  const sections = useMemo(
+    () =>
+      categories
+        .map((category) => ({
+          category,
+          items: shown.filter((i) => i.categoryId === category.id),
+        }))
+        .filter((s) => s.items.length > 0),
+    [categories, shown],
+  );
+  const searching = queryTokens(search).length > 0;
+  const found = useMemo(
+    () => (searching ? arrange(searchMenu(shown, menu, search), sort) : []),
+    [searching, shown, menu, search, sort],
+  );
+  const bestsellers = useMemo(
+    () =>
+      menu.popularItemIds
+        .map((id) => shown.find((i) => i.id === id))
+        .filter((i): i is Item => i !== undefined && i.isAvailable),
+    [menu, shown],
+  );
+  const inOrder = useMemo(() => quantities(cart), [cart]);
   const count = cart.reduce((n, l) => n + l.quantity, 0);
   const total = cart.reduce((n, l) => n + l.unit * l.quantity, 0);
   const taxExtra = menu.items.some((i) => !i.taxIncluded);
+  const sectionKey = sections.map((s) => s.category.id).join();
+
+  // The section chip follows the page: the topmost section under the search bar is marked.
+  useEffect(() => {
+    if (searching || typeof IntersectionObserver === 'undefined') return;
+    const ids = sectionKey.split(',');
+    const inView = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const id = (e.target as HTMLElement).dataset.section!;
+          if (e.isIntersecting) inView.add(id);
+          else inView.delete(id);
+        }
+        if (Date.now() < spyPausedUntil.current) return;
+        const top = ids.find((id) => inView.has(id));
+        if (top !== undefined) setActive(top);
+      },
+      { rootMargin: `-${stickyHeight + 1}px 0px -55% 0px` },
+    );
+    document.querySelectorAll('[data-section]').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [searching, sectionKey, stickyHeight]);
+
+  // Results start under the search bar, not somewhere far above the guest's thumb.
+  useEffect(() => {
+    if (!searching || results.current === null) return;
+    const top = Math.max(
+      0,
+      results.current.getBoundingClientRect().top + window.scrollY - stickyHeight - 8,
+    );
+    if (window.scrollY > top) window.scrollTo({ top });
+    // Only when a search starts: typing more shouldn't jump the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searching]);
+
+  function jump(id: string) {
+    setBrowsing(false);
+    setActive(id);
+    spyPausedUntil.current = Date.now() + 900;
+    // After the section list has closed (and handed focus back), go to the section.
+    setTimeout(() => {
+      const section = document.getElementById(`cat-${id}`);
+      section?.scrollIntoView?.({
+        behavior: prefersLessMotion() ? 'auto' : 'smooth',
+        block: 'start',
+      });
+      section?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+    }, 0);
+  }
 
   const call = useMutation({
     mutationFn: (kind: 'WAITER' | 'BILL') =>
@@ -113,42 +285,41 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
     onSuccess: (request) => setSent((s) => [request, ...s]),
   });
 
-  function add(item: Item) {
-    const groups = groupsOf(item, menu);
-    if (item.variants.length === 0 && groups.length === 0) {
-      setCart((c) => {
-        const same = c.find(
-          (l) => l.item.id === item.id && l.addonIds.length === 0 && l.note === '',
-        );
-        if (same)
-          return c.map((l) => (l === same ? { ...l, quantity: Math.min(20, l.quantity + 1) } : l));
-        return [
-          ...c,
-          {
-            key: newIdempotencyKey(),
-            item,
-            variantId: undefined,
-            addonIds: [],
-            quantity: 1,
-            note: '',
-            unit: item.price,
-          },
-        ];
-      });
-    } else {
-      setChoosing(item);
-    }
-  }
+  const add = (item: Item) =>
+    hasOptions(item) ? setOpened(item) : setCart((c) => addPlain(c, item));
+  const card = (item: Item, categoryName?: string) => (
+    <DishCard
+      key={item.id}
+      item={item}
+      query={search}
+      popular={popular.has(item.id)}
+      quantity={inOrder.get(item.id) ?? 0}
+      categoryName={categoryName}
+      onOpen={() => setOpened(item)}
+      onAdd={() => add(item)}
+      onChange={(q) => setCart((c) => setQuantity(c, item, Math.min(MAX_QUANTITY, q)))}
+    />
+  );
+  const sectionList = sections.map((s) => ({ category: s.category, count: s.items.length }));
 
   return (
     <>
-      <p className="text-muted-foreground">{t('qr.table', { table: menu.tableLabel })}</p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled={call.isPending} onClick={() => call.mutate('WAITER')}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={call.isPending}
+          onClick={() => call.mutate('WAITER')}
+        >
           <BellRing aria-hidden="true" />
           {t('qr.callWaiter')}
         </Button>
-        <Button variant="outline" disabled={call.isPending} onClick={() => call.mutate('BILL')}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={call.isPending}
+          onClick={() => call.mutate('BILL')}
+        >
           <ReceiptText aria-hidden="true" />
           {t('qr.askBill')}
         </Button>
@@ -161,97 +332,157 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
       {sent.map((request) => (
         <SentRequest key={request.id} token={token} request={request} />
       ))}
-      <nav aria-label={t('qr.categories')} className="-mx-4 overflow-x-auto px-4">
-        <ul className="flex gap-2">
-          {categories.map((c) => (
-            <li key={c.id}>
-              <a
-                href={`#cat-${c.id}`}
-                className="block rounded-full border px-3 py-1.5 text-sm whitespace-nowrap"
-              >
-                {localizedName(c.name, c.nameTranslations, lang)}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      {categories.map((c) => {
-        const items = menu.items.filter((i) => i.categoryId === c.id);
-        if (items.length === 0) return null;
-        return (
-          <section
-            key={c.id}
-            id={`cat-${c.id}`}
-            aria-labelledby={`cat-h-${c.id}`}
-            className="flex flex-col gap-2"
-          >
-            <h2 id={`cat-h-${c.id}`} className="text-lg font-semibold">
-              {localizedName(c.name, c.nameTranslations, lang)}
-            </h2>
-            <ul className="flex flex-col divide-y rounded-xl border bg-surface">
-              {items.map((item) => {
-                const name = localizedName(item.name, item.nameTranslations, lang);
-                const description = item.description
-                  ? localizedName(item.description, item.descriptionTranslations, lang)
-                  : null;
-                const from =
-                  item.variants.length > 0
-                    ? Math.min(...item.variants.map((v) => v.price))
-                    : item.price;
+
+      <div
+        ref={sticky}
+        className="sticky top-0 z-20 -mx-4 flex flex-col gap-2.5 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      >
+        <div role="search" className="relative">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3.5 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            ref={input}
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
+            spellCheck={false}
+            aria-label={t('qr.search')}
+            placeholder={t('qr.searchHint')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && query !== '') {
+                e.preventDefault();
+                setQuery('');
+              } else if (e.key === 'Enter') {
+                // "Search" on a phone keyboard: put the keyboard away to show the results.
+                e.currentTarget.blur();
+              }
+            }}
+            className="rounded-full ps-11 pe-12 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query !== '' && (
+            <button
+              type="button"
+              aria-label={t('qr.clearSearch')}
+              className="absolute end-0.5 top-1/2 grid size-touch -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted"
+              onClick={() => {
+                setQuery('');
+                input.current?.focus();
+              }}
+            >
+              <X aria-hidden="true" className="size-5" />
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {kindsOnMenu.length > 1 && (
+            <div
+              role="group"
+              aria-label={t('qr.showOnly')}
+              className="-ms-1 flex min-w-0 flex-1 gap-2 overflow-x-auto ps-1 [scrollbar-width:none]"
+            >
+              {kindsOnMenu.map((kind) => {
+                const on = kinds.includes(kind);
                 return (
-                  <li
-                    key={item.id}
-                    className={cn('flex items-start gap-3 p-3', !item.isAvailable && 'opacity-60')}
+                  <button
+                    key={kind}
+                    type="button"
+                    aria-pressed={on}
+                    className={cn(
+                      'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors',
+                      on
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'bg-surface hover:bg-muted',
+                    )}
+                    onClick={() =>
+                      setKinds((k) => (on ? k.filter((x) => x !== kind) : [...k, kind]))
+                    }
                   >
-                    {item.imageId !== null && (
-                      <img
-                        src={photoUrl(item.imageId)}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        width={72}
-                        height={72}
-                        className="size-18 shrink-0 rounded-lg object-cover"
-                      />
-                    )}
-                    <FoodTypeMark type={item.foodType} size="sm" className="mt-1 shrink-0" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="font-medium break-words">{name}</span>
-                      {description && (
-                        <span className="text-sm break-words text-muted-foreground">
-                          {description}
-                        </span>
-                      )}
-                      <span className="text-sm tabular-nums">
-                        {item.variants.length > 0
-                          ? t('qr.from', { price: money(from) })
-                          : money(from)}
-                      </span>
-                    </div>
-                    {item.isAvailable ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        aria-label={t('qr.addNamed', { name })}
-                        onClick={() => add(item)}
-                      >
-                        {t('qr.add')}
-                      </Button>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">{t('qr.unavailable')}</span>
-                    )}
-                  </li>
+                    <span aria-hidden="true" className="flex">
+                      <FoodMark type={kind} label={t(`menu.foodTypes.${kind}`)} size="sm" />
+                    </span>
+                    {t(`menu.foodTypes.${kind}`)}
+                  </button>
                 );
               })}
-            </ul>
+            </div>
+          )}
+          <Select
+            aria-label={t('qr.sort')}
+            value={sort}
+            onChange={(e) => setSort(e.target.value as Sort)}
+            className={cn('shrink-0', kindsOnMenu.length > 1 ? 'w-40' : 'ms-auto w-48')}
+          >
+            {SORTS.map((s) => (
+              <option key={s} value={s}>
+                {t(`qr.sorts.${s}`)}
+              </option>
+            ))}
+          </Select>
+        </div>
+        {!searching && sections.length > 1 && (
+          <CategoryBar categories={sectionList} active={active} onJump={jump} />
+        )}
+      </div>
+
+      <div ref={results} className="flex flex-col gap-6">
+        {searching ? (
+          <section aria-label={t('qr.search')} className="flex flex-col">
+            <p role="status" className="text-sm text-muted-foreground">
+              {found.length > 0 ? t('qr.results', { count: found.length }) : ''}
+            </p>
+            {found.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-12 text-center">
+                <Search aria-hidden="true" className="size-10 text-muted-foreground/60" />
+                <p className="font-semibold break-words">
+                  {t('qr.noResults', { query: search.trim() })}
+                </p>
+                <p className="text-sm text-muted-foreground">{t('qr.noResultsHint')}</p>
+                <Button variant="outline" className="mt-2" onClick={() => setQuery('')}>
+                  {t('qr.fullMenu')}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col divide-y">
+                {found.map((item) => card(item, categoryNames.get(item.categoryId)))}
+              </div>
+            )}
           </section>
-        );
-      })}
-      {taxExtra && <p className="text-sm text-muted-foreground">{t('qr.taxNote')}</p>}
+        ) : sections.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <p className="font-semibold">{t('qr.noneOfKind')}</p>
+            <Button variant="outline" onClick={() => setKinds([])}>
+              {t('qr.allDishes')}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <PopularStrip items={bestsellers} onOpen={setOpened} />
+            {sections.map(({ category, items }) => (
+              <MenuSection
+                key={category.id}
+                category={category}
+                count={items.length}
+                stickyHeight={stickyHeight}
+              >
+                {items.map((item) => card(item))}
+              </MenuSection>
+            ))}
+          </>
+        )}
+        {taxExtra && <p className="text-sm text-muted-foreground">{t('qr.taxNote')}</p>}
+      </div>
+
+      {!searching && sections.length > 1 && (
+        <MenuButton raised={count > 0} onClick={() => setBrowsing(true)} />
+      )}
       {count > 0 && (
-        <div className="fixed inset-x-0 bottom-0 border-t bg-surface p-3 shadow-lg">
-          <div className="mx-auto flex max-w-md items-center justify-between gap-3">
-            <span className="tabular-nums">
+        <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto flex max-w-xl items-center justify-between gap-3 rounded-2xl border bg-surface p-2 ps-4 shadow-xl">
+            <span className="font-semibold tabular-nums">
               {t('qr.cartSummary', { count, total: money(total) })}
             </span>
             <Button onClick={() => setReviewing(true)}>
@@ -261,14 +492,23 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
           </div>
         </div>
       )}
-      {choosing !== null && (
-        <OptionsDialog
-          item={choosing}
-          groups={groupsOf(choosing, menu)}
-          onClose={() => setChoosing(null)}
+      {browsing && (
+        <CategorySheet
+          categories={sectionList}
+          active={active}
+          onJump={jump}
+          onClose={() => setBrowsing(false)}
+        />
+      )}
+      {opened !== null && (
+        <DishSheet
+          item={opened}
+          menu={menu}
+          popular={popular.has(opened.id)}
+          onClose={() => setOpened(null)}
           onAdd={(line) => {
-            setCart((c) => [...c, line]);
-            setChoosing(null);
+            setCart((c) => addLine(c, line));
+            setOpened(null);
           }}
         />
       )}
@@ -290,121 +530,38 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
   );
 }
 
-function groupsOf(item: Item, menu: QrMenu): Group[] {
-  return item.addonGroupIds
-    .map((id) => menu.addonGroups.find((g) => g.id === id))
-    .filter((g): g is Group => g !== undefined);
-}
-
-/** Size and add-ons, within each group's fewest and most. */
-function OptionsDialog({
-  item,
-  groups,
-  onAdd,
-  onClose,
+/** One section of the menu, with its name and how many dishes it has. */
+function MenuSection({
+  category,
+  count,
+  stickyHeight,
+  children,
 }: {
-  item: Item;
-  groups: Group[];
-  onAdd: (line: CartLine) => void;
-  onClose: () => void;
+  category: Category;
+  count: number;
+  stickyHeight: number;
+  children: ReactNode;
 }) {
   const { t, i18n } = useTranslation();
-  const format = useFormat();
-  const lang = i18n.language;
-  const money = (paise: number) => format.money(Money.ofPaise(paise));
-  const [variantId, setVariantId] = useState(item.variants[0]?.id);
-  const [addonIds, setAddonIds] = useState<string[]>([]);
-  const [quantity, setQuantity] = useState(1);
-  const [note, setNote] = useState('');
-  const variant = item.variants.find((v) => v.id === variantId);
-  const addons = groups.flatMap((g) => g.addons).filter((a) => addonIds.includes(a.id));
-  const unit = (variant?.price ?? item.price) + addons.reduce((n, a) => n + a.price, 0);
-  const short = groups.filter((g) => {
-    const picked = g.addons.filter((a) => addonIds.includes(a.id)).length;
-    return picked < g.minSelect || picked > g.maxSelect;
-  });
-  const name = localizedName(item.name, item.nameTranslations, lang);
-
+  const headingId = `cat-h-${category.id}`;
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      closeLabel={t('common.close')}
-      title={name}
-      footer={
-        <Button
-          disabled={short.length > 0}
-          onClick={() =>
-            onAdd({
-              key: newIdempotencyKey(),
-              item,
-              variantId,
-              addonIds,
-              quantity,
-              note: note.trim(),
-              unit,
-            })
-          }
-        >
-          {t('qr.addWithTotal', { total: money(unit * quantity) })}
-        </Button>
-      }
+    <section
+      id={`cat-${category.id}`}
+      data-section={category.id}
+      aria-labelledby={headingId}
+      style={{ scrollMarginTop: stickyHeight + 8 }}
+      className="flex flex-col"
     >
-      <div className="flex flex-col gap-4">
-        {item.variants.length > 0 && (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 font-medium">{t('qr.size')}</legend>
-            {item.variants.map((v) => (
-              <label key={v.id} className="flex min-h-touch items-center gap-3">
-                <input
-                  type="radio"
-                  name="size"
-                  checked={variantId === v.id}
-                  onChange={() => setVariantId(v.id)}
-                />
-                <span className="flex-1">{localizedName(v.name, v.nameTranslations, lang)}</span>
-                <span className="tabular-nums">{money(v.price)}</span>
-              </label>
-            ))}
-          </fieldset>
-        )}
-        {groups.map((g) => (
-          <fieldset key={g.id} className="flex flex-col gap-1">
-            <legend className="mb-1 font-medium">
-              {localizedName(g.name, g.nameTranslations, lang)}
-              <span className="ms-2 text-sm font-normal text-muted-foreground">
-                {g.minSelect === g.maxSelect
-                  ? t('qr.chooseExactly', { count: g.minSelect })
-                  : t('qr.chooseUpTo', { count: g.maxSelect })}
-              </span>
-            </legend>
-            {g.addons.map((a) => (
-              <Checkbox
-                key={a.id}
-                label={`${localizedName(a.name, a.nameTranslations, lang)} · +${money(a.price)}`}
-                checked={addonIds.includes(a.id)}
-                onChange={(e) =>
-                  setAddonIds((ids) =>
-                    e.target.checked ? [...ids, a.id] : ids.filter((id) => id !== a.id),
-                  )
-                }
-              />
-            ))}
-          </fieldset>
-        ))}
-        <label className="flex flex-col gap-1.5">
-          <span className="font-medium">{t('qr.note')}</span>
-          <Input value={note} maxLength={120} onChange={(e) => setNote(e.target.value)} />
-        </label>
-        <Stepper
-          value={quantity}
-          onValueChange={setQuantity}
-          max={20}
-          decrementLabel={t('qr.less', { name })}
-          incrementLabel={t('qr.more', { name })}
-        />
+      <div className="flex items-baseline justify-between gap-3 border-b pb-2">
+        <h2 id={headingId} tabIndex={-1} className="text-xl font-bold outline-none">
+          {localizedName(category.name, category.nameTranslations, i18n.language)}
+        </h2>
+        <span className="shrink-0 text-sm text-muted-foreground">
+          {t('qr.dishCount', { count })}
+        </span>
       </div>
-    </Dialog>
+      <div className="flex flex-col divide-y">{children}</div>
+    </section>
   );
 }
 
@@ -424,10 +581,9 @@ function CartDialog({
   onSent: (request: QrRequestStatusResponse) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const format = useFormat();
+  const money = useMoney();
   const errorMessage = useErrorMessage();
   const lang = i18n.language;
-  const money = (paise: number) => format.money(Money.ofPaise(paise));
   const [covers, setCovers] = useState('');
   const [name, setName] = useState('');
   // One key per order: sending again after a dropped connection is the same order.
@@ -498,7 +654,7 @@ function CartDialog({
                 <Stepper
                   value={l.quantity}
                   min={0}
-                  max={20}
+                  max={MAX_QUANTITY}
                   onValueChange={(q) =>
                     onChange(
                       q === 0

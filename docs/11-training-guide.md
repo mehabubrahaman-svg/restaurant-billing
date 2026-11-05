@@ -39,6 +39,28 @@ review by native speakers at the pilot; note anything that reads oddly.
 Practice: open T1 for 2, add 2 × Chicken Biryani (Full) with raita and 4
 naan, note "less spicy", send; then add a lassi and send again.
 
+### Guests ordering from the table's QR code
+
+Guests scan the code on the table and get the menu on their phone, in
+English, Hindi or Bengali. No app and no sign-in.
+
+- **Search** finds a dish by its name in any of the three languages, by
+  section ("beverages") or by size ("half"). It forgives everyday
+  spellings: "biriyani", "panir" and "chiken" all work.
+- **Veg / Egg / Non-veg / Vegan** chips narrow the menu. **Sort** puts it
+  by price. The section chips follow the page as it scrolls, and the
+  **Menu** button lists every section to jump to.
+- **Popular here** shows the dishes ordered most in the last 30 days, and
+  each has a **Bestseller** tag.
+- Tapping a dish opens it in full: a large photo, its pieces, calories,
+  allergens and spice level, its sizes and add-ons, and a note.
+- The order stays on the phone if the guest reloads the page or looks at
+  another app.
+- The order comes to you as a **guest request** on the floor: accept it to
+  put it on the table and send it to the kitchen, or decline it with a
+  reason. **Call a server** and **Ask for the bill** come to you the same
+  way.
+
 ---
 
 ## Kitchen (KDS screen)
