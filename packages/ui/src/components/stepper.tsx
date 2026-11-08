@@ -1,6 +1,7 @@
 import { Minus, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export interface StepperProps {
   readonly value: number;
@@ -53,8 +54,8 @@ export function Stepper({
       </button>
       <span
         className={cn(
-          'min-w-8 text-center font-semibold tabular-nums',
-          size === 'lg' ? 'text-xl' : 'text-lg',
+          'min-w-8 text-center tabular-nums',
+          size === 'lg' ? TYPO.titleLarge : TYPO.titleMedium,
         )}
       >
         {display ?? value}

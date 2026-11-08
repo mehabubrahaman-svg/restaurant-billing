@@ -11,16 +11,16 @@ struct ConnectView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
         Text(verbatim: "R")
-          .font(.system(size: 40, weight: .bold))
+          .font(AppTypography.brandMark)
           .foregroundStyle(.white)
           .frame(width: 72, height: 72)
           .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 16))
           .accessibilityHidden(true)
-        Text("connect.title").font(.largeTitle.bold())
-        Text("connect.body").foregroundStyle(.secondary)
+        Text("connect.title").font(AppTypography.displayMedium)
+        Text("connect.body").font(AppTypography.bodyLarge).foregroundStyle(.secondary)
         TextField("connect.placeholder", text: $address)
           .textFieldStyle(.roundedBorder)
-          .font(.title3)
+          .font(AppTypography.titleSmall)
           .keyboardType(.URL)
           .textInputAutocapitalization(.never)
           .autocorrectionDisabled()
@@ -28,17 +28,17 @@ struct ConnectView: View {
           .onSubmit(connect)
           .accessibilityLabel(Text("connect.label"))
         if let problem {
-          Text(problem).foregroundStyle(.red)
+          Text(problem).font(AppTypography.bodyMedium).foregroundStyle(.red)
         }
         Button(action: connect) {
           Group {
-            if checking { ProgressView() } else { Text("connect.button") }
+            if checking { ProgressView() } else { Text("connect.button").font(AppTypography.labelLarge) }
           }
           .frame(maxWidth: .infinity, minHeight: 32)
         }
         .buttonStyle(.borderedProminent)
         .disabled(checking || address.trimmingCharacters(in: .whitespaces).isEmpty)
-        Text("connect.hint").font(.footnote).foregroundStyle(.secondary)
+        Text("connect.hint").font(AppTypography.bodySmall).foregroundStyle(.secondary)
       }
       .padding(32)
       .frame(maxWidth: 560)

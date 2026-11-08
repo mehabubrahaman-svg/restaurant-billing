@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 /** Native select (best on touch devices), styled like Input. */
 export function Select({ className, children, ...props }: ComponentProps<'select'>) {
@@ -8,7 +9,7 @@ export function Select({ className, children, ...props }: ComponentProps<'select
     <div className={cn('relative min-w-0', className)}>
       <select
         className={cn(
-          'min-h-touch w-full appearance-none rounded-lg border border-input bg-surface py-2 ps-3 pe-10 text-base text-surface-foreground',
+          `min-h-touch w-full appearance-none rounded-lg border border-input bg-surface py-2 ps-3 pe-10 ${TYPO.bodyLarge} text-surface-foreground`,
           'disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive',
         )}
         {...props}

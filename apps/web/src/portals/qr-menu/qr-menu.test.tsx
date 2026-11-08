@@ -174,6 +174,62 @@ describe('QR menu (the guest’s phone)', () => {
     expect(sent[1]).toMatchObject({ kind: 'WAITER' });
   });
 
+  it('counts a chosen dish up and down right under it, and takes it off', async () => {
+    mockHub({ ...BASE_ROUTES, [`GET /public/qr/${TOKEN}/menu`]: () => json(MENU) });
+    renderApp(`/qr/${TOKEN}`);
+    fireEvent.click(await screen.findByRole('button', { name: 'Add Butter Naan' }));
+    // Add gives way to − 1 + and Remove, with what the dish comes to.
+    const naan = screen.getByRole('group', { name: 'Butter Naan in your order' });
+    expect(screen.queryByRole('button', { name: 'Add Butter Naan' })).toBeNull();
+    expect(within(naan).getByText('₹60.00')).toBeInTheDocument();
+    fireEvent.click(within(naan).getByRole('button', { name: 'One more Butter Naan' }));
+    expect(within(naan).getByText('₹120.00')).toBeInTheDocument();
+    expect(screen.getByText('2 items · ₹120.00')).toBeInTheDocument();
+    await expectNoAxeViolations();
+
+    // One more of a dish with choices is one more of the way it was last chosen.
+    fireEvent.click(screen.getByRole('button', { name: 'Add Chicken Biryani' }));
+    const options = await screen.findByRole('dialog', { name: 'Chicken Biryani' });
+    fireEvent.click(within(options).getByRole('radio', { name: /Full/ }));
+    fireEvent.click(within(options).getByRole('button', { name: 'Add · ₹400.00' }));
+    const biryani = screen.getByRole('group', { name: 'Chicken Biryani in your order' });
+    fireEvent.click(within(biryani).getByRole('button', { name: 'One more Chicken Biryani' }));
+    expect(within(biryani).getByText('₹800.00')).toBeInTheDocument();
+    expect(screen.getByText('4 items · ₹920.00')).toBeInTheDocument();
+
+    fireEvent.click(within(biryani).getByRole('button', { name: 'Remove Chicken Biryani' }));
+    expect(screen.queryByRole('group', { name: 'Chicken Biryani in your order' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add Chicken Biryani' })).toBeInTheDocument();
+    fireEvent.click(within(naan).getByRole('button', { name: 'Remove Butter Naan' }));
+    expect(screen.queryByText(/items ·/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add Butter Naan' })).toBeInTheDocument();
+  });
+
+  it('keeps only the search bar pinned on a phone turned sideways', async () => {
+    mockHub({ ...BASE_ROUTES, [`GET /public/qr/${TOKEN}/menu`]: () => json(MENU) });
+    // A tall screen: the filters and the sections stay pinned under the search bar.
+    const tall = (query: string) => ({
+      matches: query === '(max-height: 500px)' ? false : false,
+      addEventListener() {},
+      removeEventListener() {},
+    });
+    vi.stubGlobal('matchMedia', tall);
+    const { unmount } = renderApp(`/qr/${TOKEN}`);
+    expect(await screen.findByText('Table T1')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-filters')).toHaveClass('sticky');
+    unmount();
+
+    // Turned sideways (little height): the filters scroll with the page.
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      ...tall(query),
+      matches: query === '(max-height: 500px)',
+    }));
+    renderApp(`/qr/${TOKEN}`);
+    expect(await screen.findByText('Table T1')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-filters')).toHaveClass('relative');
+    expect(screen.getByTestId('menu-filters')).not.toHaveClass('sticky');
+  });
+
   it('shows names in the guest’s language', async () => {
     mockHub({ ...BASE_ROUTES, [`GET /public/qr/${TOKEN}/menu`]: () => json(MENU) });
     await i18n.changeLanguage('hi-IN');

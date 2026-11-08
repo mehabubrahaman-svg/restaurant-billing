@@ -74,7 +74,7 @@ restaurant-billing/
 │   │       ├── printing/            #   ESC/POS templates (bill, KOT, report), adapters
 │   │       ├── export/              #   PDF / XLSX / CSV writers
 │   │       └── sync/                #   Phase 6 cloud client
-│   ├── ui/                          # shadcn/ui components + design tokens + POS-specific widgets
+│   ├── ui/                          # shadcn/ui components + design tokens (styles.css) + the type scale (typography.ts) + POS-specific widgets
 │
 ├── database/
 │   ├── migrations/                  # Ordered SQL migrations (source of truth for schema)

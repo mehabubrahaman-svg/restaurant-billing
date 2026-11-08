@@ -1,4 +1,4 @@
-import { SegmentedControl } from '@restroos/ui';
+import { SegmentedControl, TYPO } from '@restroos/ui';
 import { useTranslation } from 'react-i18next';
 import { usePreferencesStore } from '../stores/preferences-store';
 import { hasNativeDigits, type DigitStyle } from './config';
@@ -17,7 +17,7 @@ export function DigitsSwitcher() {
   };
   return (
     <>
-      <p className="text-sm font-medium">{t('digits.label')}</p>
+      <p className={TYPO.labelMedium}>{t('digits.label')}</p>
       <SegmentedControl<DigitStyle>
         aria-label={t('digits.label')}
         value={digits}

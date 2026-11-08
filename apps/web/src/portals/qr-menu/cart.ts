@@ -88,13 +88,31 @@ export function quantities(cart: readonly CartLine[]): Map<string, number> {
   return counts;
 }
 
+/** What each dish in the order comes to, in paise, however it was made. */
+export function subtotals(cart: readonly CartLine[]): Map<string, number> {
+  const sums = new Map<string, number>();
+  for (const l of cart) sums.set(l.item.id, (sums.get(l.item.id) ?? 0) + l.unit * l.quantity);
+  return sums;
+}
+
+/** Sizes or add-ons to choose before it goes in the order. */
+const hasChoices = (item: Item) => item.variants.length > 0 || item.addonGroupIds.length > 0;
+
 /**
- * The dish's quantity set from its card: more goes on the plain line, fewer
- * comes off the most recent lines first.
+ * The dish's quantity set from under its card. More of a plain dish goes on
+ * its plain line; more of a dish with choices goes on the line the guest made
+ * last, the same way. Fewer comes off the most recent lines first.
  */
 export function setQuantity(cart: readonly CartLine[], item: Item, quantity: number): CartLine[] {
   const current = quantities(cart).get(item.id) ?? 0;
   if (quantity > current) {
+    const latest = hasChoices(item)
+      ? [...cart].reverse().find((l) => l.item.id === item.id)
+      : undefined;
+    if (latest !== undefined) {
+      const more = Math.min(MAX_QUANTITY, latest.quantity + quantity - current);
+      return cart.map((l) => (l === latest ? { ...l, quantity: more } : l));
+    }
     let next = [...cart];
     for (let i = current; i < quantity; i++) next = addPlain(next, item);
     return next;

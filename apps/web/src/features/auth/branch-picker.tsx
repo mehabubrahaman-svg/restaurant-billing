@@ -1,5 +1,5 @@
 import type { BranchSummary } from '@restroos/contracts';
-import { Alert, Button, ChevronRight, MapPin } from '@restroos/ui';
+import { Alert, Button, ChevronRight, MapPin, cn, TYPO } from '@restroos/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useErrorMessage } from '../../lib/errors';
@@ -32,7 +32,7 @@ export function BranchPicker({
 
   return (
     <section className="flex w-full flex-col gap-3">
-      <h2 className="text-lg font-semibold">{t('login.chooseBranch')}</h2>
+      <h2 className={TYPO.titleMedium}>{t('login.chooseBranch')}</h2>
       {error !== null && (
         <Alert tone="danger" role="alert">
           {error}
@@ -49,8 +49,8 @@ export function BranchPicker({
             >
               <MapPin aria-hidden="true" />
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="font-semibold">{b.name}</span>
-                <span className="text-sm text-muted-foreground">
+                <span className={TYPO.titleSmall}>{b.name}</span>
+                <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
                   {b.id === currentId ? t('login.branchCurrent', { code: b.code }) : b.code}
                 </span>
               </span>

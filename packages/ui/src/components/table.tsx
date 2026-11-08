@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 /**
  * Scrolls sideways inside its own box on narrow screens instead of widening the page.
@@ -9,7 +10,10 @@ import { cn } from '../lib/cn';
 export function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
     <div className="relative w-full overflow-x-auto rounded-xl border bg-surface">
-      <table className={cn('w-full border-collapse text-start text-sm', className)} {...props} />
+      <table
+        className={cn('w-full border-collapse text-start', TYPO.bodyMedium, className)}
+        {...props}
+      />
     </div>
   );
 }
@@ -30,7 +34,7 @@ export function Th({ className, ...props }: ComponentProps<'th'>) {
   return (
     <th
       scope="col"
-      className={cn('px-3 py-2.5 text-start text-xs font-semibold whitespace-nowrap', className)}
+      className={cn('px-3 py-2.5 text-start whitespace-nowrap', TYPO.labelSmall, className)}
       {...props}
     />
   );

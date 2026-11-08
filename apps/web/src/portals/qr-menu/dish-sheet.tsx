@@ -1,5 +1,5 @@
 import type { QrMenu } from '@restroos/contracts';
-import { Badge, Button, Checkbox, Crown, Dialog, Input, Stepper } from '@restroos/ui';
+import { Badge, Button, Checkbox, cn, Crown, Dialog, Input, Stepper, TYPO } from '@restroos/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { newIdempotencyKey } from '../../api/client';
@@ -14,6 +14,8 @@ import { splitDescription } from './menu-search';
 /**
  * One dish, in full: a large photo, what it is, its facts (pieces, calories,
  * allergens, spice) as tags, then its size, add-ons, a note and how many.
+ * On a phone held upright the photo is on top; sideways, and on a tablet, it
+ * sits beside the details so both stay in view.
  */
 export function DishSheet({
   item,
@@ -56,6 +58,7 @@ export function DishSheet({
       onClose={onClose}
       closeLabel={t('common.close')}
       title={name}
+      size="lg"
       footer={
         item.isAvailable ? (
           <Button
@@ -76,107 +79,111 @@ export function DishSheet({
             {t('qr.addWithTotal', { total: money(unit * quantity) })}
           </Button>
         ) : (
-          <p className="font-medium text-muted-foreground">{t('qr.unavailable')}</p>
+          <p className={cn(TYPO.labelLarge, 'text-muted-foreground')}>{t('qr.unavailable')}</p>
         )
       }
     >
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
         {item.imageId !== null && (
           <img
             src={photoUrl(item.imageId, 'full')}
             alt=""
             decoding="async"
-            className="-mx-5 -mt-5 aspect-[4/3] w-[calc(100%+2.5rem)] max-w-none bg-muted object-cover"
+            className="-mx-5 -mt-5 aspect-[4/3] w-[calc(100%+2.5rem)] max-w-none bg-muted object-cover sm:sticky sm:top-0 sm:mx-0 sm:mt-0 sm:aspect-square sm:w-2/5 sm:max-w-xs sm:shrink-0 sm:rounded-2xl"
           />
         )}
-        {/* Focus starts here, not in the note box, so a phone keyboard doesn't cover the dish. */}
-        <div data-autofocus tabIndex={-1} className="flex flex-col gap-2 outline-none">
-          <div className="flex flex-wrap items-center gap-2">
-            <FoodTypeMark type={item.foodType} size="sm" />
-            {popular && (
-              <Badge variant="warning" className="gap-1 text-xs font-semibold">
-                <Crown aria-hidden="true" className="size-3.5" />
-                {t('qr.bestseller')}
-              </Badge>
+        <div className="flex min-w-0 flex-1 flex-col gap-5">
+          {/* Focus starts here, not in the note box, so a phone keyboard doesn't cover the dish. */}
+          <div data-autofocus tabIndex={-1} className="flex flex-col gap-2 outline-none">
+            <div className="flex flex-wrap items-center gap-2">
+              <FoodTypeMark type={item.foodType} size="sm" />
+              {popular && (
+                <Badge variant="warning" className="gap-1">
+                  <Crown aria-hidden="true" className="size-3.5" />
+                  {t('qr.bestseller')}
+                </Badge>
+              )}
+            </div>
+            <p className={cn(TYPO.titleMedium, 'flex flex-wrap items-center gap-x-3 tabular-nums')}>
+              <span>{money(variant?.price ?? item.price)}</span>
+              {score && <StarScore average={score.average} count={score.count} />}
+            </p>
+            {lead && (
+              <p className={cn(TYPO.bodyLarge, 'break-words text-muted-foreground')}>{lead}</p>
+            )}
+            {facts.length > 0 && (
+              <ul aria-label={t('qr.facts')} className="flex flex-wrap gap-2">
+                {facts.map((fact) => (
+                  <li key={fact} className={cn(TYPO.bodyMedium, 'rounded-full bg-muted px-3 py-1')}>
+                    {fact}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-          <p className="flex flex-wrap items-center gap-x-3 text-lg font-semibold tabular-nums">
-            <span>{money(variant?.price ?? item.price)}</span>
-            {score && <StarScore average={score.average} count={score.count} />}
-          </p>
-          {lead && <p className="break-words text-muted-foreground">{lead}</p>}
-          {facts.length > 0 && (
-            <ul aria-label={t('qr.facts')} className="flex flex-wrap gap-2">
-              {facts.map((fact) => (
-                <li key={fact} className="rounded-full bg-muted px-3 py-1 text-sm">
-                  {fact}
-                </li>
+          {item.isAvailable && (
+            <>
+              {item.variants.length > 0 && (
+                <fieldset className="flex flex-col gap-1">
+                  <legend className={cn(TYPO.titleSmall, 'mb-1')}>{t('qr.size')}</legend>
+                  {item.variants.map((v) => (
+                    <label
+                      key={v.id}
+                      className="flex min-h-touch items-center gap-3 rounded-lg px-2 has-checked:bg-primary/10"
+                    >
+                      <input
+                        type="radio"
+                        name="size"
+                        className="size-5 accent-primary"
+                        checked={variantId === v.id}
+                        onChange={() => setVariantId(v.id)}
+                      />
+                      <span className={cn(TYPO.bodyLarge, 'flex-1')}>
+                        {localizedName(v.name, v.nameTranslations, lang)}
+                      </span>
+                      <span className={cn(TYPO.bodyLarge, 'tabular-nums')}>{money(v.price)}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
+              {groups.map((g) => (
+                <fieldset key={g.id} className="flex flex-col gap-1">
+                  <legend className={cn(TYPO.titleSmall, 'mb-1')}>
+                    {localizedName(g.name, g.nameTranslations, lang)}
+                    <span className={cn(TYPO.bodyMedium, 'ms-2 font-normal text-muted-foreground')}>
+                      {g.minSelect === g.maxSelect
+                        ? t('qr.chooseExactly', { count: g.minSelect })
+                        : t('qr.chooseUpTo', { count: g.maxSelect })}
+                    </span>
+                  </legend>
+                  {g.addons.map((a) => (
+                    <Checkbox
+                      key={a.id}
+                      label={`${localizedName(a.name, a.nameTranslations, lang)} · +${money(a.price)}`}
+                      checked={addonIds.includes(a.id)}
+                      onChange={(e) =>
+                        setAddonIds((ids) =>
+                          e.target.checked ? [...ids, a.id] : ids.filter((id) => id !== a.id),
+                        )
+                      }
+                    />
+                  ))}
+                </fieldset>
               ))}
-            </ul>
+              <label className="flex flex-col gap-1.5">
+                <span className={TYPO.titleSmall}>{t('qr.note')}</span>
+                <Input value={note} maxLength={120} onChange={(e) => setNote(e.target.value)} />
+              </label>
+              <Stepper
+                value={quantity}
+                onValueChange={setQuantity}
+                max={MAX_QUANTITY}
+                decrementLabel={t('qr.less', { name })}
+                incrementLabel={t('qr.more', { name })}
+              />
+            </>
           )}
         </div>
-        {item.isAvailable && (
-          <>
-            {item.variants.length > 0 && (
-              <fieldset className="flex flex-col gap-1">
-                <legend className="mb-1 font-semibold">{t('qr.size')}</legend>
-                {item.variants.map((v) => (
-                  <label
-                    key={v.id}
-                    className="flex min-h-touch items-center gap-3 rounded-lg px-2 has-checked:bg-primary/10"
-                  >
-                    <input
-                      type="radio"
-                      name="size"
-                      className="size-5 accent-primary"
-                      checked={variantId === v.id}
-                      onChange={() => setVariantId(v.id)}
-                    />
-                    <span className="flex-1">
-                      {localizedName(v.name, v.nameTranslations, lang)}
-                    </span>
-                    <span className="tabular-nums">{money(v.price)}</span>
-                  </label>
-                ))}
-              </fieldset>
-            )}
-            {groups.map((g) => (
-              <fieldset key={g.id} className="flex flex-col gap-1">
-                <legend className="mb-1 font-semibold">
-                  {localizedName(g.name, g.nameTranslations, lang)}
-                  <span className="ms-2 text-sm font-normal text-muted-foreground">
-                    {g.minSelect === g.maxSelect
-                      ? t('qr.chooseExactly', { count: g.minSelect })
-                      : t('qr.chooseUpTo', { count: g.maxSelect })}
-                  </span>
-                </legend>
-                {g.addons.map((a) => (
-                  <Checkbox
-                    key={a.id}
-                    label={`${localizedName(a.name, a.nameTranslations, lang)} · +${money(a.price)}`}
-                    checked={addonIds.includes(a.id)}
-                    onChange={(e) =>
-                      setAddonIds((ids) =>
-                        e.target.checked ? [...ids, a.id] : ids.filter((id) => id !== a.id),
-                      )
-                    }
-                  />
-                ))}
-              </fieldset>
-            ))}
-            <label className="flex flex-col gap-1.5">
-              <span className="font-semibold">{t('qr.note')}</span>
-              <Input value={note} maxLength={120} onChange={(e) => setNote(e.target.value)} />
-            </label>
-            <Stepper
-              value={quantity}
-              onValueChange={setQuantity}
-              max={MAX_QUANTITY}
-              decrementLabel={t('qr.less', { name })}
-              incrementLabel={t('qr.more', { name })}
-            />
-          </>
-        )}
       </div>
     </Dialog>
   );

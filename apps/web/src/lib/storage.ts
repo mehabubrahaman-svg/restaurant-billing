@@ -9,6 +9,8 @@
 export const STORAGE_KEYS = {
   locale: 'restroos.locale',
   theme: 'restroos.theme',
+  /** Text size on this device: large or xlarge (index.html reads it before React starts). */
+  textSize: 'restroos.text-size',
   digits: 'restroos.digits',
   /** The kind the Hub last reported for this device (index.html reads it for the KDS theme). */
   deviceKind: 'restroos.device-kind',

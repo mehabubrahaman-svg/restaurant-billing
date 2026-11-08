@@ -1,4 +1,4 @@
-import { cn, Star } from '@restroos/ui';
+import { cn, Star, TYPO } from '@restroos/ui';
 import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,7 +21,7 @@ export function StarInput({
   const name = useId();
   return (
     <fieldset className="flex flex-col gap-1.5">
-      <legend className="mb-1 font-medium break-words">{legend}</legend>
+      <legend className={cn(TYPO.labelLarge, 'mb-1 break-words')}>{legend}</legend>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <label
@@ -70,7 +70,7 @@ export function StarScore({
   return (
     <span
       role="img"
-      className={cn('inline-flex items-center gap-1 text-sm font-semibold', className)}
+      className={cn(TYPO.labelMedium, 'inline-flex items-center gap-1', className)}
       aria-label={t('ratings.score', { average, count })}
     >
       <Star aria-hidden="true" className="size-4 fill-state-reserved text-state-reserved" />

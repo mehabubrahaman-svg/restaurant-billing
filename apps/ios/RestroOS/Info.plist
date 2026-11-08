@@ -53,6 +53,11 @@
 		<key>UIColorName</key>
 		<string>AccentColor</string>
 	</dict>
+	<!-- The app's face is Inter, as on the web (docs/13-design-system.md). -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>InterVariable.ttf</string>
+	</array>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>

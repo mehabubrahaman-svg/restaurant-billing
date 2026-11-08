@@ -707,7 +707,13 @@
     "system": "Auto",
     "light": "Light",
     "dark": "Dark",
-    "highContrast": "High contrast"
+    "highContrast": "High contrast",
+    "textSize": {
+      "label": "Text size",
+      "default": "Default",
+      "large": "Large",
+      "xlarge": "Extra large"
+    }
   },
   "digits": {
     "label": "Digits",
@@ -3240,6 +3246,9 @@
     "add": "Add",
     "addNamed": "Add {name}",
     "unavailable": "Not available now",
+    "remove": "Remove",
+    "removeNamed": "Remove {name}",
+    "inOrderNamed": "{name} in your order",
     "taxNote": "Prices are before GST; tax is added on the bill.",
     "cartSummary": "{count, plural, one {# item} other {# items}} · {total}",
     "viewOrder": "View order",

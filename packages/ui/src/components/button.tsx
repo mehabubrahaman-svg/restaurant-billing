@@ -2,6 +2,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 /**
  * Text may wrap rather than being clipped: Hindi and Bengali labels are often
@@ -9,7 +10,7 @@ import { cn } from '../lib/cn';
  */
 export const buttonVariants = cva(
   [
-    'inline-flex shrink-0 items-center justify-center gap-2 rounded-lg text-center leading-tight font-medium',
+    'inline-flex shrink-0 items-center justify-center gap-2 rounded-lg text-center',
     'transition-[color,background-color,border-color,transform] duration-150 motion-safe:active:scale-[0.98]',
     'disabled:pointer-events-none disabled:opacity-50',
     'aria-disabled:pointer-events-none aria-disabled:opacity-50',
@@ -27,14 +28,14 @@ export const buttonVariants = cva(
       },
       size: {
         /** Dense desktop-only controls. Never use on touch screens. */
-        sm: 'min-h-9 px-3 text-sm',
+        sm: `min-h-9 px-3 ${TYPO.labelMedium}`,
         /** Default: the 48 px minimum touch target. */
-        touch: 'min-h-touch min-w-touch px-4 text-base',
-        lg: 'min-h-14 px-6 text-lg',
+        touch: `min-h-touch min-w-touch px-4 ${TYPO.labelLarge}`,
+        lg: `min-h-14 px-6 ${TYPO.titleMedium}`,
         /** Kitchen display: 56 px, readable at arm's length. */
-        kds: 'min-h-kds min-w-kds px-6 text-lg font-semibold',
+        kds: `min-h-kds min-w-kds px-6 ${TYPO.titleMedium}`,
         /** Square icon-only button; give it an aria-label. */
-        icon: 'size-touch',
+        icon: `size-touch ${TYPO.labelLarge}`,
       },
     },
     defaultVariants: { variant: 'primary', size: 'touch' },

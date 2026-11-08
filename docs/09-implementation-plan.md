@@ -108,6 +108,11 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 >   - the guest finds today's order on the table's QR page by that phone and rates the captain and each dish, once;
 >   - Admin → Ratings: every rating, counting dish ratings toward the stars on the menu or leaving them out, captain and dish averages, and the bestseller list the admin publishes (it replaces the automatic one).
 > - **Tests with guest ratings:** web 415, server 156, domain 152, contracts 148, infrastructure 32, UI 32, application 8, relay 2, desktop 10, spike 55. End-to-end: 9.
+> - **The guest menu fits the phone, and one type scale** (2026-11-08; docs/13):
+>   - the menu follows the phone's width and orientation: one column held upright, two side by side in landscape and on tablets, three on wide screens; on a short screen only the search bar stays pinned;
+>   - a dish in the order shows − n + and Remove right under it, with what it comes to;
+>   - one type scale (`TYPO`, Material 3 names) in the UI kit, the guest menu, the staff shell and sign-in; the face is Inter with Noto Devanagari and Bengali; staff pick a text size per device; the iOS and Android apps carry the same scale and font.
+> - **Tests with the type scale:** web 422, server 156, domain 152, contracts 148, infrastructure 32, UI 35, application 8, relay 2, desktop 10, spike 55. End-to-end: 9.
 
 ## Definition of Done (every WP)
 

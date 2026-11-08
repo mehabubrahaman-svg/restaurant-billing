@@ -1,5 +1,5 @@
 import type { PinUser } from '@restroos/contracts';
-import { Button, cn, Spinner } from '@restroos/ui';
+import { Button, cn, Spinner, TYPO } from '@restroos/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PinPad } from './pin-pad';
@@ -27,14 +27,15 @@ export function PinLogin({
   return (
     <div className="flex w-full flex-col items-center gap-5">
       <section className="flex w-full flex-col items-center gap-2">
-        <h2 className="text-sm font-medium text-muted-foreground">{t('login.whoIsThis')}</h2>
+        <h2 className={cn(TYPO.labelMedium, 'text-muted-foreground')}>{t('login.whoIsThis')}</h2>
         <ul className="flex max-h-56 flex-wrap justify-center gap-3 overflow-y-auto p-1">
           {users.map((u) => (
             <li key={u.id} className="flex w-20 flex-col items-center gap-1">
               <Button
                 variant="outline"
                 className={cn(
-                  'size-16 rounded-full text-lg font-semibold',
+                  'size-16 rounded-full',
+                  TYPO.titleMedium,
                   user?.id === u.id && 'ring-2 ring-primary ring-offset-2 ring-offset-surface',
                 )}
                 aria-pressed={user?.id === u.id}
@@ -46,7 +47,7 @@ export function PinLogin({
               >
                 {u.initials}
               </Button>
-              <span aria-hidden="true" className="text-center text-xs leading-tight break-words">
+              <span aria-hidden="true" className={cn(TYPO.bodySmall, 'text-center break-words')}>
                 {u.fullName}
               </span>
             </li>
@@ -57,7 +58,7 @@ export function PinLogin({
         <p className="text-muted-foreground">{t('login.chooseUser')}</p>
       ) : (
         <>
-          <p className="font-medium">{t('login.pinFor', { name: user.fullName })}</p>
+          <p className={TYPO.labelLarge}>{t('login.pinFor', { name: user.fullName })}</p>
           <PinPad
             entered={pin.pin.length}
             length={pin.length}

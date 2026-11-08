@@ -62,6 +62,9 @@ English, Hindi or Bengali. No app and no sign-in.
   order, that day. If their number isn't found, add it to the order.
 - Tapping a dish opens it in full: a large photo, its pieces, calories,
   allergens and spice level, its sizes and add-ons, and a note.
+- The menu fits the phone: one column held upright, two side by side when
+  the phone is turned sideways or on a tablet. A dish the guest has added
+  shows **− 1 +** and **Remove** right under it, with what it comes to.
 - The order stays on the phone if the guest reloads the page or looks at
   another app.
 - The order comes to you as a **guest request** on the floor: accept it to

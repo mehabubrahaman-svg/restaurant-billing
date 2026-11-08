@@ -1,6 +1,7 @@
 import { CircleCheck, Info, TriangleAlert, OctagonAlert, type LucideIcon } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -33,12 +34,12 @@ export function Alert({ tone = 'info', title, children, className, ...props }: A
   return (
     <div
       data-tone={tone}
-      className={cn('flex gap-3 rounded-lg border p-3 text-sm', look.className, className)}
+      className={cn('flex gap-3 rounded-lg border p-3', TYPO.bodyMedium, look.className, className)}
       {...props}
     >
       <Icon aria-hidden="true" className={cn('mt-0.5 size-5 shrink-0', ICON_COLOUR[tone])} />
       <div className="flex min-w-0 flex-col gap-1">
-        {title !== undefined && <p className="font-semibold">{title}</p>}
+        {title !== undefined && <p className={TYPO.labelMedium}>{title}</p>}
         {children !== undefined && <div className="text-foreground">{children}</div>}
       </div>
     </div>

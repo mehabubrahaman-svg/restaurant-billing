@@ -1,16 +1,11 @@
 /*
  * Bundled fonts (architecture §5.8): nothing is fetched from the internet.
- * Only the subsets the UI needs: Latin for English and ₹, plus the
- * Devanagari and Bengali scripts from their own Noto families.
+ * Inter is the face (one variable file per script range, so every weight the
+ * type scale uses comes from one download), and the Devanagari and Bengali
+ * scripts come from their own Noto families. `@fontsource/noto-sans` stays a
+ * dependency for the printed slips, which Chromium draws with Noto.
  */
-import '@fontsource/noto-sans/latin-400.css';
-import '@fontsource/noto-sans/latin-500.css';
-import '@fontsource/noto-sans/latin-600.css';
-import '@fontsource/noto-sans/latin-700.css';
-import '@fontsource/noto-sans/latin-ext-400.css';
-import '@fontsource/noto-sans/latin-ext-500.css';
-import '@fontsource/noto-sans/latin-ext-600.css';
-import '@fontsource/noto-sans/latin-ext-700.css';
+import '@fontsource-variable/inter/wght.css';
 import '@fontsource/noto-sans-devanagari/devanagari-400.css';
 import '@fontsource/noto-sans-devanagari/devanagari-500.css';
 import '@fontsource/noto-sans-devanagari/devanagari-600.css';

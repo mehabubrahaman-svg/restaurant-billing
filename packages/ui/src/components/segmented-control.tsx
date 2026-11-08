@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export interface SegmentedOption<T extends string> {
   readonly value: T;
@@ -100,9 +101,11 @@ export function SegmentedControl<T extends string>({
             tabIndex={checked ? 0 : -1}
             onClick={() => onValueChange(option.value)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 font-medium leading-none',
+              'inline-flex items-center justify-center gap-1.5 rounded-md px-2.5',
               'transition-colors duration-150 [&_svg]:size-5 [&_svg]:shrink-0',
-              size === 'sm' ? 'min-h-8 min-w-8 text-sm' : 'min-h-touch min-w-touch text-base',
+              size === 'sm'
+                ? `min-h-8 min-w-8 ${TYPO.labelMedium}`
+                : `min-h-touch min-w-touch ${TYPO.labelLarge}`,
               checked
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',

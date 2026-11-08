@@ -1,5 +1,5 @@
 import { IndianMobileSchema, type RatableOrder } from '@restroos/contracts';
-import { Alert, Button, CircleCheck, Dialog, Field, Input, Textarea } from '@restroos/ui';
+import { Alert, Button, CircleCheck, cn, Dialog, Field, Input, Textarea, TYPO } from '@restroos/ui';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -63,8 +63,8 @@ export function RateDialog({ token, onClose }: { token: string; onClose: () => v
       {step.kind === 'thanks' && (
         <div className="flex flex-col items-center gap-3 py-6 text-center" role="status">
           <CircleCheck aria-hidden="true" className="size-12 text-state-available" />
-          <p className="text-lg font-semibold">{t('qr.rate.thanks')}</p>
-          <p className="text-muted-foreground">{t('qr.rate.thanksNote')}</p>
+          <p className={TYPO.titleMedium}>{t('qr.rate.thanks')}</p>
+          <p className={cn(TYPO.bodyLarge, 'text-muted-foreground')}>{t('qr.rate.thanksNote')}</p>
           <Button className="mt-2" onClick={onClose}>
             {t('qr.rate.backToMenu')}
           </Button>
@@ -155,7 +155,7 @@ function ChooseStep({
   const format = useFormat();
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-muted-foreground">{t('qr.rate.choose')}</p>
+      <p className={cn(TYPO.bodyLarge, 'text-muted-foreground')}>{t('qr.rate.choose')}</p>
       <ul className="flex flex-col gap-2">
         {orders.map((o) => (
           <li key={o.id}>
@@ -165,14 +165,14 @@ function ChooseStep({
               className="flex min-h-touch w-full flex-col items-start gap-0.5 rounded-xl border p-3 text-start hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => onChoose(o)}
             >
-              <span className="font-semibold">
+              <span className={TYPO.titleSmall}>
                 {o.tableLabel === null
                   ? t('order.number', { orderNo: o.orderNo })
                   : t('qr.rate.orderAtTable', { orderNo: o.orderNo, table: o.tableLabel })}
                 {' · '}
                 {format.dateTime(o.openedAt, { hour: 'numeric', minute: '2-digit' })}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
                 {o.rated ? t('qr.rate.rated') : t('qr.rate.dishCount', { count: o.dishes.length })}
               </span>
             </button>
@@ -238,7 +238,7 @@ function RateStep({
         />
       )}
       <section aria-labelledby="rate-dishes" className="flex flex-col gap-4">
-        <h3 id="rate-dishes" className="font-semibold">
+        <h3 id="rate-dishes" className={TYPO.titleSmall}>
           {t('qr.rate.dishes')}
         </h3>
         {order.dishes.map((d) => {

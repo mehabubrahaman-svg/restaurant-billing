@@ -8,8 +8,9 @@
 | Touch first | Minimum hit target **48 × 48 px** (56 px on KDS). No hover-only affordances. Swipe actions also have a button. |
 | Glanceable | Colour encodes state, and **every colour is paired with an icon/label** (colour-blind safe, WCAG AA contrast). |
 | Calm motion | Framer Motion ≤ 200 ms. Only state changes animate (new KOT slides in, table changes colour). Respects `prefers-reduced-motion`. |
-| Themes | Light (front of house), Dark (default for KDS, reduces kitchen glare), High-contrast. Tokens live in `packages/ui/tokens.css`. |
-| Responsive | Phone 360 px (owner, QR guest) · Tablet 768–1280 px (captain, KDS) · Desktop 1366 px+ (POS, admin). |
+| Themes | Light (front of house), Dark (default for KDS, reduces kitchen glare), High-contrast. Tokens live in `packages/ui/src/styles.css`. Staff also pick a text size per device (default, large, extra large) from the user menu. |
+| Typography | One type scale with Material 3 names (`TYPO.titleMedium`, `bodyMedium`, `labelLarge`, …) in `packages/ui/src/typography.ts`, mirrored in the iOS and Android apps. The face is Inter, with Noto Sans Devanagari and Bengali for Hindi and Bengali. Text picks a token by what it is, never a raw size. See docs/13. |
+| Responsive | Phone 360 px (owner, QR guest) · Tablet 768–1280 px (captain, KDS) · Desktop 1366 px+ (POS, admin). The guest menu follows the phone's width and orientation: one column held upright, two side by side in landscape and on tablets, three on wide screens. |
 | Offline visible | A persistent status pill shows `● Live` / `◐ Reconnecting` / `ᛒ Bluetooth mode` (Wi-Fi down, orders still flowing) / `○ Offline — 3 actions queued`. |
 | Language | Every screen ships in English, हिन्दी and বাংলা. Layouts are tested with the longest translation, and nothing is truncated without a tooltip. Prices use Indian grouping (₹1,00,000). |
 

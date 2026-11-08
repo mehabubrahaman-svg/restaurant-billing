@@ -1,9 +1,9 @@
-import { Button, CircleUserRound, LogOut } from '@restroos/ui';
+import { Button, CircleUserRound, LogOut, cn, TYPO } from '@restroos/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 import { useAuthStore, useSession } from '../../features/auth/auth-store';
-import { ThemeSwitcher } from '../../features/theme/theme-switcher';
+import { TextSizeSwitcher, ThemeSwitcher } from '../../features/theme/theme-switcher';
 import { DigitsSwitcher } from '../../i18n/digits-switcher';
 import { initialsOf } from '../../lib/initials';
 
@@ -36,7 +36,7 @@ export function UserMenu() {
       <Button
         variant="outline"
         size="icon"
-        className="rounded-full font-semibold"
+        className="rounded-full"
         popoverTarget={POPOVER_ID}
         aria-label={t('user.menu', { name: session.user.fullName })}
       >
@@ -47,11 +47,13 @@ export function UserMenu() {
         popover="auto"
         className="fixed inset-auto end-3 top-18 m-0 w-80 max-w-[calc(100vw-1.5rem)] rounded-xl border bg-surface p-4 text-surface-foreground shadow-lg"
       >
-        <p className="font-semibold">{session.user.fullName}</p>
-        <p className="text-sm text-muted-foreground">{session.branch.name}</p>
+        <p className={TYPO.titleSmall}>{session.user.fullName}</p>
+        <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>{session.branch.name}</p>
         <div className="mt-4 flex flex-col gap-3">
-          <p className="text-sm font-medium">{t('theme.label')}</p>
+          <p className={TYPO.labelMedium}>{t('theme.label')}</p>
           <ThemeSwitcher />
+          <p className={TYPO.labelMedium}>{t('theme.textSize.label')}</p>
+          <TextSizeSwitcher />
           <DigitsSwitcher />
           <Button asChild variant="outline" className="mt-2 w-full">
             <Link to="/account" onClick={closeMenu}>

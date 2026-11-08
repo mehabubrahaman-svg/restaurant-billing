@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export type SwitchProps = Omit<ComponentProps<'button'>, 'onChange' | 'children' | 'role'> & {
   readonly checked: boolean;
@@ -26,9 +27,9 @@ export function Switch({
         htmlFor={id}
         className={cn('flex min-w-0 flex-col gap-0.5', disabled === true && 'opacity-60')}
       >
-        <span className="font-medium">{label}</span>
+        <span className={TYPO.labelLarge}>{label}</span>
         {description !== undefined && (
-          <span className="text-sm text-muted-foreground">{description}</span>
+          <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>{description}</span>
         )}
       </label>
       <button

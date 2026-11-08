@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Star,
   Stepper,
+  TYPO,
   X,
 } from '@restroos/ui';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -44,13 +45,16 @@ import {
   quantities,
   saveCart,
   setQuantity,
+  subtotals,
   type CartLine,
 } from './cart';
 import { DishSheet } from './dish-sheet';
 import { RateDialog } from './rate-dialog';
 import {
+  BLEED,
   CategoryBar,
   CategorySheet,
+  DISH_GRID,
   DishCard,
   fromPrice,
   hasOptions,
@@ -83,7 +87,7 @@ export function QrMenuPage() {
   });
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-xl flex-col gap-4 px-4 pt-4 pb-32">
+    <div className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col gap-4 px-4 pt-4 pb-32 sm:px-6">
       <title>
         {menu.data
           ? `${menu.data.branchName} · ${t('qr.table', { table: menu.data.tableLabel })}`
@@ -95,11 +99,11 @@ export function QrMenuPage() {
             <QrCode aria-hidden="true" className="size-6" />
           </span>
           <div className="flex min-w-0 flex-col">
-            <span className="text-lg leading-tight font-bold break-words">
+            <span className={cn(TYPO.titleMedium, 'break-words')}>
               {menu.data?.branchName ?? t('portals.qrMenu.title')}
             </span>
             {menu.data && (
-              <span className="text-sm text-muted-foreground">
+              <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
                 {t('qr.table', { table: menu.data.tableLabel })}
               </span>
             )}
@@ -160,6 +164,23 @@ const prefersLessMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** A phone turned sideways: too little height for the filters to stay pinned as well. */
+const SHORT_SCREEN = '(max-height: 500px)';
+function useShortScreen() {
+  const [short, setShort] = useState(
+    () => typeof window.matchMedia === 'function' && window.matchMedia(SHORT_SCREEN).matches,
+  );
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia(SHORT_SCREEN);
+    const update = () => setShort(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return short;
+}
+
 function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
   const { t, i18n } = useTranslation();
   const money = useMoney();
@@ -176,11 +197,16 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
   const [rating, setRating] = useState(false);
   const [sent, setSent] = useState<QrRequestStatusResponse[]>([]);
   const [active, setActive] = useState<string | null>(null);
-  const sticky = useRef<HTMLDivElement>(null);
+  const searchBar = useRef<HTMLDivElement>(null);
+  const filterBar = useRef<HTMLDivElement>(null);
   const results = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const spyPausedUntil = useRef(0);
-  const stickyHeight = useHeight(sticky);
+  // What stays pinned at the top: the search bar, and the filters too when the screen is tall enough.
+  const short = useShortScreen();
+  const searchHeight = useHeight(searchBar);
+  const filterHeight = useHeight(filterBar);
+  const stickyHeight = searchHeight + (short ? 0 : filterHeight);
 
   useEffect(() => saveCart(token, cart), [token, cart]);
 
@@ -232,6 +258,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
     [menu, shown],
   );
   const inOrder = useMemo(() => quantities(cart), [cart]);
+  const owed = useMemo(() => subtotals(cart), [cart]);
   const count = cart.reduce((n, l) => n + l.quantity, 0);
   const total = cart.reduce((n, l) => n + l.unit * l.quantity, 0);
   const taxExtra = menu.items.some((i) => !i.taxIncluded);
@@ -302,6 +329,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
       popular={popular.has(item.id)}
       score={scores.get(item.id)}
       quantity={inOrder.get(item.id) ?? 0}
+      subtotal={owed.get(item.id) ?? 0}
       categoryName={categoryName}
       onOpen={() => setOpened(item)}
       onAdd={() => add(item)}
@@ -345,9 +373,13 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
         <SentRequest key={request.id} token={token} request={request} />
       ))}
 
+      {/* Both bars are direct children of <main>, so each can stay pinned the whole way down. */}
       <div
-        ref={sticky}
-        className="sticky top-0 z-20 -mx-4 flex flex-col gap-2.5 border-b bg-background/95 px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        ref={searchBar}
+        className={cn(
+          BLEED,
+          'sticky top-0 z-20 bg-background/95 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+        )}
       >
         <div role="search" className="relative">
           <Search
@@ -389,6 +421,18 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
             </button>
           )}
         </div>
+      </div>
+      <div
+        ref={filterBar}
+        data-testid="menu-filters"
+        style={short ? undefined : { top: searchHeight }}
+        className={cn(
+          BLEED,
+          // -mt-4 cancels the page's gap, so the filters sit flush under the search bar.
+          '-mt-4 z-10 flex flex-col gap-2.5 border-b bg-background/95 pb-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/80',
+          short ? 'relative' : 'sticky',
+        )}
+      >
         <div className="flex items-center gap-2">
           {kindsOnMenu.length > 1 && (
             <div
@@ -404,7 +448,8 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
                     type="button"
                     aria-pressed={on}
                     className={cn(
-                      'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors',
+                      TYPO.labelMedium,
+                      'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 whitespace-nowrap transition-colors',
                       on
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'bg-surface hover:bg-muted',
@@ -443,29 +488,31 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
       <div ref={results} className="flex flex-col gap-6">
         {searching ? (
           <section aria-label={t('qr.search')} className="flex flex-col">
-            <p role="status" className="text-sm text-muted-foreground">
+            <p role="status" className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
               {found.length > 0 ? t('qr.results', { count: found.length }) : ''}
             </p>
             {found.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <Search aria-hidden="true" className="size-10 text-muted-foreground/60" />
-                <p className="font-semibold break-words">
+                <p className={cn(TYPO.titleSmall, 'break-words')}>
                   {t('qr.noResults', { query: search.trim() })}
                 </p>
-                <p className="text-sm text-muted-foreground">{t('qr.noResultsHint')}</p>
+                <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
+                  {t('qr.noResultsHint')}
+                </p>
                 <Button variant="outline" className="mt-2" onClick={() => setQuery('')}>
                   {t('qr.fullMenu')}
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col divide-y">
+              <div className={DISH_GRID}>
                 {found.map((item) => card(item, categoryNames.get(item.categoryId)))}
               </div>
             )}
           </section>
         ) : sections.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
-            <p className="font-semibold">{t('qr.noneOfKind')}</p>
+            <p className={TYPO.titleSmall}>{t('qr.noneOfKind')}</p>
             <Button variant="outline" onClick={() => setKinds([])}>
               {t('qr.allDishes')}
             </Button>
@@ -485,7 +532,9 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
             ))}
           </>
         )}
-        {taxExtra && <p className="text-sm text-muted-foreground">{t('qr.taxNote')}</p>}
+        {taxExtra && (
+          <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>{t('qr.taxNote')}</p>
+        )}
       </div>
 
       {!searching && sections.length > 1 && (
@@ -494,7 +543,7 @@ function Ordering({ token, menu }: { token: string; menu: QrMenu }) {
       {count > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-xl items-center justify-between gap-3 rounded-2xl border bg-surface p-2 ps-4 shadow-xl">
-            <span className="font-semibold tabular-nums">
+            <span className={cn(TYPO.titleSmall, 'tabular-nums')}>
               {t('qr.cartSummary', { count, total: money(total) })}
             </span>
             <Button onClick={() => setReviewing(true)}>
@@ -567,14 +616,14 @@ function MenuSection({
       className="flex flex-col"
     >
       <div className="flex items-baseline justify-between gap-3 border-b pb-2">
-        <h2 id={headingId} tabIndex={-1} className="text-xl font-bold outline-none">
+        <h2 id={headingId} tabIndex={-1} className={cn(TYPO.titleLarge, 'outline-none')}>
           {localizedName(category.name, category.nameTranslations, i18n.language)}
         </h2>
-        <span className="shrink-0 text-sm text-muted-foreground">
+        <span className={cn(TYPO.bodyMedium, 'shrink-0 text-muted-foreground')}>
           {t('qr.dishCount', { count })}
         </span>
       </div>
-      <div className="flex flex-col divide-y">{children}</div>
+      <div className={DISH_GRID}>{children}</div>
     </section>
   );
 }
@@ -662,8 +711,10 @@ function CartDialog({
             return (
               <li key={l.key} className="flex flex-wrap items-center gap-3 py-2">
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-medium break-words">{itemName}</span>
-                  {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
+                  <span className={cn(TYPO.labelLarge, 'break-words')}>{itemName}</span>
+                  {detail && (
+                    <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>{detail}</span>
+                  )}
                 </span>
                 <Stepper
                   value={l.quantity}
@@ -686,7 +737,7 @@ function CartDialog({
         </ul>
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{t('qr.guests')}</span>
+            <span className={TYPO.labelMedium}>{t('qr.guests')}</span>
             <Input
               inputMode="numeric"
               value={covers}
@@ -695,7 +746,7 @@ function CartDialog({
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{t('qr.name')}</span>
+            <span className={TYPO.labelMedium}>{t('qr.name')}</span>
             <Input
               value={name}
               maxLength={60}
@@ -704,7 +755,7 @@ function CartDialog({
             />
           </label>
         </div>
-        <p className="text-sm text-muted-foreground">{t('qr.confirmNote')}</p>
+        <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>{t('qr.confirmNote')}</p>
       </div>
     </Dialog>
   );
@@ -727,9 +778,9 @@ function SentRequest({ token, request }: { token: string; request: QrRequestStat
     current.status === 'REJECTED' ? 'danger' : current.status === 'PENDING' ? 'info' : 'success';
   return (
     <Alert tone={tone} role="status">
-      <span className="font-medium">{t(`qr.status.${kind}.${current.status}`)}</span>
+      <span className={TYPO.labelMedium}>{t(`qr.status.${kind}.${current.status}`)}</span>
       {current.status === 'REJECTED' && current.rejectReason && (
-        <span className="block text-sm">{current.rejectReason}</span>
+        <span className="block">{current.rejectReason}</span>
       )}
     </Alert>
   );

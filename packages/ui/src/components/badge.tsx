@@ -1,9 +1,10 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs leading-normal font-medium [&_svg]:size-3.5',
+  `inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 ${TYPO.labelSmall} [&_svg]:size-3.5`,
   {
     variants: {
       variant: {

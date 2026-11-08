@@ -1,4 +1,4 @@
-import { ArrowRight, Button, cn, Delete } from '@restroos/ui';
+import { ArrowRight, Button, cn, Delete, TYPO } from '@restroos/ui';
 import { motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +32,7 @@ export function PinPad({
 }: PinPadProps) {
   const { t } = useTranslation();
   const format = useFormat();
-  const key = 'h-16 text-2xl font-semibold tabular-nums';
+  const key = `h-16 tabular-nums ${TYPO.displayMedium}`;
 
   // Latest handlers without re-subscribing on every keystroke.
   const handlers = useRef({ onDigit, onBackspace, onSubmit });

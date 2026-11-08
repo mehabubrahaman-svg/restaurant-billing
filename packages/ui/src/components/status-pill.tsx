@@ -1,6 +1,7 @@
 import { Bluetooth, Circle, RefreshCw, WifiOff, type LucideIcon } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 /** How this device currently reaches the Hub (wireframes §1, "Offline visible"). */
 export type ConnectionStatus = 'live' | 'reconnecting' | 'bluetooth' | 'offline';
@@ -54,7 +55,7 @@ export function StatusPill({ status, label, detail, className, ...props }: Statu
       aria-live="polite"
       data-status={status}
       className={cn(
-        'inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border px-3 py-1 text-sm leading-tight font-medium',
+        `inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border px-3 py-1 ${TYPO.labelMedium}`,
         'transition-colors duration-200',
         look.className,
         className,

@@ -15,15 +15,18 @@ struct HubScreen: View {
       if failed {
         VStack(spacing: 16) {
           Image(systemName: "wifi.exclamationmark").font(.system(size: 44)).accessibilityHidden(true)
-          Text("hub.unreachable.title").font(.title2.bold())
-          Text("hub.unreachable.body \(url.absoluteString)").multilineTextAlignment(.center)
+          Text("hub.unreachable.title").font(AppTypography.titleLarge)
+          Text("hub.unreachable.body \(url.absoluteString)")
+            .font(AppTypography.bodyLarge)
+            .multilineTextAlignment(.center)
           HStack(spacing: 12) {
             Button("hub.retry") {
               failed = false
               reloads += 1
             }
+            .font(AppTypography.labelLarge)
             .buttonStyle(.borderedProminent)
-            Button("hub.change") { hub.forget() }.buttonStyle(.bordered)
+            Button("hub.change") { hub.forget() }.font(AppTypography.labelLarge).buttonStyle(.bordered)
           }
         }
         .padding(32)

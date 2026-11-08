@@ -1,4 +1,4 @@
-import { MapPin, Store } from '@restroos/ui';
+import { MapPin, Store, cn, TYPO } from '@restroos/ui';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { ConnectionPill } from '../../features/connection/connection-pill';
@@ -17,7 +17,7 @@ export function TopBar() {
     <header className="sticky top-0 z-20 flex print:hidden flex-wrap items-center gap-x-3 gap-y-2 border-b bg-surface px-3 py-2 md:px-4">
       <Link
         to={home}
-        className="flex min-h-touch items-center gap-2 rounded-lg pe-1 text-lg font-bold"
+        className={cn(TYPO.titleMedium, 'flex min-h-touch items-center gap-2 rounded-lg pe-1')}
       >
         <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
           <Store aria-hidden="true" className="size-5" />
@@ -27,7 +27,10 @@ export function TopBar() {
 
       {/* The signed-in branch. People with several branches switch at sign-in. */}
       <p
-        className="hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm lg:flex"
+        className={cn(
+          TYPO.bodyMedium,
+          'hidden items-center gap-1.5 rounded-lg border px-3 py-1.5 lg:flex',
+        )}
         title={t('app.branchLabel')}
       >
         <MapPin aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />

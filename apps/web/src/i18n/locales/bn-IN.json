@@ -707,7 +707,13 @@
     "system": "অটো",
     "light": "লাইট",
     "dark": "ডার্ক",
-    "highContrast": "হাই কনট্রাস্ট"
+    "highContrast": "হাই কনট্রাস্ট",
+    "textSize": {
+      "label": "লেখার আকার",
+      "default": "সাধারণ",
+      "large": "বড়",
+      "xlarge": "আরও বড়"
+    }
   },
   "digits": {
     "label": "সংখ্যা",
@@ -3240,6 +3246,9 @@
     "add": "যোগ করুন",
     "addNamed": "{name} যোগ করুন",
     "unavailable": "এখন পাওয়া যাচ্ছে না",
+    "remove": "বাদ দিন",
+    "removeNamed": "{name} বাদ দিন",
+    "inOrderNamed": "আপনার অর্ডারে {name}",
     "taxNote": "দাম GST-এর আগের; কর বিলে যোগ হয়।",
     "cartSummary": "{count, plural, one {#টি পদ} other {#টি পদ}} · {total}",
     "viewOrder": "অর্ডার দেখুন",

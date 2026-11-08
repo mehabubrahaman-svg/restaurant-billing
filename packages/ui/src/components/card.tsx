@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
@@ -15,11 +16,11 @@ export function CardHeader({ className, ...props }: ComponentProps<'div'>) {
 }
 
 export function CardTitle({ className, ...props }: ComponentProps<'h3'>) {
-  return <h3 className={cn('text-lg leading-snug font-semibold', className)} {...props} />;
+  return <h3 className={cn(TYPO.titleMedium, className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: ComponentProps<'p'>) {
-  return <p className={cn('text-sm text-muted-foreground', className)} {...props} />;
+  return <p className={cn(TYPO.bodyMedium, 'text-muted-foreground', className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: ComponentProps<'div'>) {

@@ -7,6 +7,8 @@
     <item name="android:windowBackground">@color/surface</item>
     <item name="android:statusBarColor">@color/brand_dark</item>
     <item name="android:navigationBarColor">@color/surface</item>
+    <!-- Inter everywhere, as on the web (res/values/typography.xml, docs/13). -->
+    <item name="android:fontFamily">@font/inter_regular</item>
   </style>
 
   <style name="Theme.RestroOS" parent="Base.Theme.RestroOS" />

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 /** Dining table states (wireframes §1), plus `blocked`: taken out of use by a manager. */
 export type TableState = 'available' | 'occupied' | 'billing' | 'reserved' | 'cleaning' | 'blocked';
@@ -85,9 +86,9 @@ export function StateChip({
       data-state={state}
       data-tone={look.tone}
       className={cn(
-        'inline-flex max-w-full items-center gap-1.5 rounded-md border font-medium leading-tight',
+        'inline-flex max-w-full items-center gap-1.5 rounded-md border',
         'transition-colors duration-200',
-        size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm',
+        size === 'sm' ? `px-2 py-0.5 ${TYPO.labelSmall}` : `px-2.5 py-1 ${TYPO.labelMedium}`,
         STATE_TONE_CLASSES[look.tone],
         className,
       )}

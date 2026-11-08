@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The type scale, shared with the web app (TYPO in @restroos/ui) and the iOS app
+  (AppTypography.swift): the same token names and sizes (docs/13-design-system.md).
+  The face is Inter, as three static files for the weights the scale uses
+  (res/font/inter_regular.ttf, inter_semibold.ttf, inter_bold.ttf): the attribute
+  that sets a variable font's weight needs API 28, and the app supports 26. Each
+  appearance names its weight's file, so there is no synthetic bold. Colour is set
+  where the text is.
+-->
+<resources>
+  <style name="TextAppearance.RestroOS" parent="android:TextAppearance.Material">
+    <item name="android:fontFamily">@font/inter_regular</item>
+    <item name="android:textColor">@color/on_surface</item>
+  </style>
+
+  <!-- Display: hero text -->
+  <style name="TextAppearance.RestroOS.DisplayLarge">
+    <item name="android:textSize">30sp</item>
+    <item name="android:fontFamily">@font/inter_bold</item>
+  </style>
+  <style name="TextAppearance.RestroOS.DisplayMedium">
+    <item name="android:textSize">24sp</item>
+    <item name="android:fontFamily">@font/inter_bold</item>
+  </style>
+
+  <!-- Titles: sections, dialogs, cards, rows -->
+  <style name="TextAppearance.RestroOS.TitleLarge">
+    <item name="android:textSize">20sp</item>
+    <item name="android:fontFamily">@font/inter_bold</item>
+  </style>
+  <style name="TextAppearance.RestroOS.TitleMedium">
+    <item name="android:textSize">18sp</item>
+    <item name="android:fontFamily">@font/inter_semibold</item>
+  </style>
+  <style name="TextAppearance.RestroOS.TitleSmall">
+    <item name="android:textSize">16sp</item>
+    <item name="android:fontFamily">@font/inter_semibold</item>
+  </style>
+
+  <!-- Body: running text -->
+  <style name="TextAppearance.RestroOS.BodyLarge">
+    <item name="android:textSize">16sp</item>
+  </style>
+  <style name="TextAppearance.RestroOS.BodyMedium">
+    <item name="android:textSize">14sp</item>
+  </style>
+  <style name="TextAppearance.RestroOS.BodySmall">
+    <item name="android:textSize">12sp</item>
+  </style>
+
+  <!-- Labels: text that belongs to a control -->
+  <style name="TextAppearance.RestroOS.LabelLarge">
+    <item name="android:textSize">16sp</item>
+    <item name="android:fontFamily">@font/inter_semibold</item>
+  </style>
+  <style name="TextAppearance.RestroOS.LabelMedium">
+    <item name="android:textSize">14sp</item>
+    <item name="android:fontFamily">@font/inter_semibold</item>
+  </style>
+  <style name="TextAppearance.RestroOS.LabelSmall">
+    <item name="android:textSize">12sp</item>
+    <item name="android:fontFamily">@font/inter_semibold</item>
+  </style>
+
+  <!-- The smallest readable note -->
+  <style name="TextAppearance.RestroOS.Caption">
+    <item name="android:textSize">11sp</item>
+  </style>
+</resources>

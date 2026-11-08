@@ -1,6 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 export type CheckboxProps = Omit<ComponentProps<'input'>, 'type' | 'children'> & {
   readonly label: ReactNode;
@@ -41,7 +42,7 @@ export function Checkbox({
       <span className="flex min-w-0 flex-col gap-0.5 leading-snug">
         <span>{label}</span>
         {description !== undefined && (
-          <span className="text-sm text-muted-foreground">{description}</span>
+          <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>{description}</span>
         )}
       </span>
     </label>

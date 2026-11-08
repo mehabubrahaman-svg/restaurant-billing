@@ -92,6 +92,7 @@ nothing shows it.
   `lib/dish-photos.ts` (shrink and re-encode in the browser),
   `features/menu/menu-workbook.ts`, `import-page.tsx` and `photo-field.tsx`.
   E2E: `e2e/tests/07-menu-upload.spec.ts`.
+- **Design system (type scale, font, text size):** `packages/ui/src/typography.ts` (`TYPO` tokens; docs/13), `packages/ui/src/styles.css` (Inter with Noto Devanagari/Bengali; the `data-text-size` attribute), `apps/web/src/features/theme/` (theme and text size per device), iOS `Sources/AppTypography.swift`, Android `res/values/typography.xml`. The guest menu's layout: `DISH_GRID` and the `@container` card in `apps/web/src/portals/qr-menu/menu-parts.tsx`.
 - **Windows/Linux Hub:** `apps/desktop`, `.github/workflows/desktop.yml`.
 
 ## Releases
@@ -216,6 +217,7 @@ nothing shows it.
 ## Working notes for the next session
 
 - CI (`ci.yml`) runs only on `main` and pull requests. Pushes to this branch aren't checked on GitHub, so the local checks below are the gate. The desktop and iOS workflows run on their tags and paths.
+- **Text styles:** new or changed web code takes size and weight from `TYPO` (`@restroos/ui`), not from hand-rolled `text-sm font-medium` classes; colour, layout and truncation stay in the caller's classes. The screens not yet moved over are listed in docs/13 §6; move a screen when you touch it.
 - **Locale files:** add keys as text, never by a `JSON.parse`/`JSON.stringify` round trip. The round trip moves integer-like keys, such as the state codes ("19"), to the front of their object. Check for duplicate keys afterwards.
 - **Flaky tests:** under full-suite load, a few tests can time out: on the web, device pairing and the recipe section; on the server, the backup import (scrypt) and the first dish-photo test in `menu-images.test.ts` (it decodes a 1280 px PNG). Rerun the file on its own before treating it as a failure. `--continue` on `turbo run test` shows every package's result, not just up to the first failure.
 - **Relay tests:** both the relay's own tests and the Hub's `relay.test.ts` run a real relay and WebSocket on 127.0.0.1, on a random port.

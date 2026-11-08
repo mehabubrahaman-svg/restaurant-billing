@@ -1,6 +1,6 @@
 import type { QrMenu } from '@restroos/contracts';
 import { Money } from '@restroos/domain';
-import { Badge, BookOpen, Button, cn, Crown, Dialog, Stepper } from '@restroos/ui';
+import { Badge, BookOpen, Button, cn, Crown, Dialog, Stepper, Trash, TYPO } from '@restroos/ui';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FoodTypeMark } from '../../features/menu/food-type';
@@ -8,6 +8,7 @@ import { localizedName } from '../../features/menu/localized-name';
 import { StarScore } from '../../features/ratings/stars';
 import { useFormat } from '../../i18n/use-format';
 import { photoUrl } from '../../lib/dish-photos';
+import { MAX_QUANTITY } from './cart';
 import { matchRanges, splitDescription } from './menu-search';
 
 export type Item = QrMenu['items'][number];
@@ -20,6 +21,16 @@ export const fromPrice = (item: Item) =>
   item.variants.length > 0 ? Math.min(...item.variants.map((v) => v.price)) : item.price;
 /** Sizes or add-ons to choose before it goes in the order. */
 export const hasOptions = (item: Item) => item.variants.length > 0 || item.addonGroupIds.length > 0;
+
+/**
+ * Dishes side by side as the screen allows: one column on a phone held
+ * upright, two when it is turned sideways or on a tablet, three on a wide
+ * screen. Each card draws its own rule underneath, so the columns line up.
+ */
+export const DISH_GRID = 'grid grid-cols-1 gap-x-8 sm:grid-cols-2 xl:grid-cols-3';
+
+/** A strip that runs to the screen's edge, matching the page's side gutter. */
+export const BLEED = '-mx-4 px-4 sm:-mx-6 sm:px-6';
 
 export function useMoney() {
   const format = useFormat();
@@ -47,7 +58,9 @@ export function Highlight({ text, query }: { text: string; query: string }) {
 
 /**
  * One dish in the list: what it is, its price, a short line, and its photo
- * with Add on it. Tapping the name or photo opens the dish.
+ * with Add on it. Tapping the name or photo opens the dish. Once it is in the
+ * order, − n + and Remove sit right under it, with what it comes to. The card
+ * measures itself (`@container`), so the photo takes the room the column has.
  */
 export function DishCard({
   item,
@@ -55,6 +68,7 @@ export function DishCard({
   popular,
   score,
   quantity,
+  subtotal,
   categoryName,
   onOpen,
   onAdd,
@@ -66,11 +80,13 @@ export function DishCard({
   score?: Score | undefined;
   /** How many of it are in the order already. */
   quantity: number;
+  /** What those come to, in paise. */
+  subtotal: number;
   /** Shown in search results, where dishes from every section mix. */
   categoryName?: string | undefined;
   onOpen: () => void;
   onAdd: () => void;
-  /** A new quantity for a dish without options (0 takes it out). */
+  /** A new quantity for the dish (0 takes it out). */
   onChange: (quantity: number) => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -82,71 +98,80 @@ export function DishCard({
     : '';
   const price = fromPrice(item);
   const options = hasOptions(item);
+  const chosen = quantity > 0 && item.isAvailable;
 
-  const control = !item.isAvailable ? (
-    <span className="rounded-lg bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground">
+  // On the photo (or beside the text): Add, or why it can't be ordered. Nothing once chosen.
+  const add = !item.isAvailable ? (
+    <span className={cn(TYPO.labelMedium, 'rounded-lg bg-muted px-3 py-1.5 text-muted-foreground')}>
       {t('qr.unavailable')}
     </span>
-  ) : quantity > 0 && !options ? (
-    <Stepper
-      value={quantity}
-      min={0}
-      max={20}
-      onValueChange={onChange}
-      decrementLabel={t('qr.less', { name })}
-      incrementLabel={t('qr.more', { name })}
-      className="rounded-lg bg-surface shadow-md"
-    />
-  ) : (
+  ) : chosen ? null : (
     <Button
       size="sm"
       variant="outline"
       aria-label={t('qr.addNamed', { name })}
-      className="min-w-24 border-primary bg-surface font-semibold text-primary uppercase shadow-md"
+      className="min-w-24 border-primary bg-surface text-primary uppercase shadow-md"
       onClick={onAdd}
     >
       {t('qr.add')}
-      {quantity > 0 && <span className="ms-1 tabular-nums">· {quantity}</span>}
     </Button>
   );
 
   return (
     <article
-      className={cn('flex gap-4 py-4', !item.isAvailable && 'opacity-70')}
+      className={cn(
+        '@container flex flex-col gap-3 border-b py-4',
+        !item.isAvailable && 'opacity-70',
+      )}
       aria-labelledby={`dish-${item.id}`}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <FoodTypeMark type={item.foodType} size="sm" />
-          {popular && (
-            <Badge variant="warning" className="gap-1 text-xs font-semibold">
-              <Crown aria-hidden="true" className="size-3.5" />
-              {t('qr.bestseller')}
-            </Badge>
+      <div className="flex gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <FoodTypeMark type={item.foodType} size="sm" />
+            {popular && (
+              <Badge variant="warning" className="gap-1">
+                <Crown aria-hidden="true" className="size-3.5" />
+                {t('qr.bestseller')}
+              </Badge>
+            )}
+            {categoryName && (
+              <span className={cn(TYPO.bodySmall, 'text-muted-foreground')}>{categoryName}</span>
+            )}
+          </div>
+          <h3 id={`dish-${item.id}`} className={TYPO.titleSmall}>
+            <button
+              type="button"
+              className="text-start break-words hover:underline"
+              onClick={onOpen}
+            >
+              <Highlight text={name} query={query} />
+            </button>
+          </h3>
+          <p
+            className={cn(
+              TYPO.labelLarge,
+              'flex flex-wrap items-center gap-x-3 gap-y-1 tabular-nums',
+            )}
+          >
+            <span>
+              {item.variants.length > 0 ? t('qr.from', { price: money(price) }) : money(price)}
+            </span>
+            {score && <StarScore average={score.average} count={score.count} />}
+          </p>
+          {description && (
+            <p className={cn(TYPO.bodyMedium, 'line-clamp-2 break-words text-muted-foreground')}>
+              {description}
+            </p>
           )}
-          {categoryName && <span className="text-xs text-muted-foreground">{categoryName}</span>}
+          {options && item.isAvailable && (
+            <span className={cn(TYPO.bodySmall, 'text-muted-foreground')}>
+              {t('qr.customisable')}
+            </span>
+          )}
         </div>
-        <h3 id={`dish-${item.id}`} className="text-base leading-snug font-semibold">
-          <button type="button" className="text-start break-words hover:underline" onClick={onOpen}>
-            <Highlight text={name} query={query} />
-          </button>
-        </h3>
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-medium tabular-nums">
-          <span>
-            {item.variants.length > 0 ? t('qr.from', { price: money(price) }) : money(price)}
-          </span>
-          {score && <StarScore average={score.average} count={score.count} />}
-        </p>
-        {description && (
-          <p className="line-clamp-2 text-sm break-words text-muted-foreground">{description}</p>
-        )}
-        {options && item.isAvailable && (
-          <span className="text-xs text-muted-foreground">{t('qr.customisable')}</span>
-        )}
-      </div>
-      <div className="flex w-32 shrink-0 flex-col items-center">
         {item.imageId !== null ? (
-          <>
+          <div className="flex w-24 shrink-0 flex-col items-center @[22rem]:w-32">
             <button
               type="button"
               className="block overflow-hidden rounded-2xl bg-muted"
@@ -160,15 +185,41 @@ export function DishCard({
                 decoding="async"
                 width={128}
                 height={128}
-                className="size-32 object-cover"
+                className="size-24 object-cover @[22rem]:size-32"
               />
             </button>
-            <div className="-mt-5">{control}</div>
-          </>
+            {add !== null && <div className="-mt-5">{add}</div>}
+          </div>
         ) : (
-          <div className="mt-2">{control}</div>
+          add !== null && <div className="mt-2 shrink-0">{add}</div>
         )}
       </div>
+      {chosen && (
+        <div
+          role="group"
+          aria-label={t('qr.inOrderNamed', { name })}
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-primary/30 bg-primary/5 p-2 ps-3"
+        >
+          <Stepper
+            value={quantity}
+            min={0}
+            max={MAX_QUANTITY}
+            onValueChange={onChange}
+            decrementLabel={t('qr.less', { name })}
+            incrementLabel={t('qr.more', { name })}
+          />
+          <span className={cn(TYPO.titleSmall, 'tabular-nums')}>{money(subtotal)}</span>
+          <Button
+            variant="ghost"
+            className="ms-auto text-destructive hover:text-destructive"
+            aria-label={t('qr.removeNamed', { name })}
+            onClick={() => onChange(0)}
+          >
+            <Trash aria-hidden="true" />
+            {t('qr.remove')}
+          </Button>
+        </div>
+      )}
     </article>
   );
 }
@@ -195,7 +246,7 @@ export function CategoryBar({
   return (
     <nav
       aria-label={t('qr.categories')}
-      className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]"
+      className={cn(BLEED, 'overflow-x-auto [scrollbar-width:none]')}
     >
       <ul ref={bar} className="flex gap-2 pb-1">
         {categories.map(({ category: c }) => (
@@ -205,7 +256,8 @@ export function CategoryBar({
               data-category={c.id}
               aria-current={active === c.id ? 'true' : undefined}
               className={cn(
-                'rounded-full border px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors',
+                TYPO.labelMedium,
+                'rounded-full border px-3.5 py-1.5 whitespace-nowrap transition-colors',
                 active === c.id
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'bg-surface text-foreground hover:bg-muted',
@@ -258,7 +310,7 @@ export function CategorySheet({
               <span className="break-words">
                 {localizedName(c.name, c.nameTranslations, i18n.language)}
               </span>
-              <span className="text-sm text-muted-foreground tabular-nums">
+              <span className={cn(TYPO.bodyMedium, 'text-muted-foreground tabular-nums')}>
                 {format.number(count)}
               </span>
             </button>
@@ -293,11 +345,11 @@ export function PopularStrip({ items, onOpen }: { items: Item[]; onOpen: (item: 
   if (items.length === 0) return null;
   return (
     <section aria-labelledby="qr-popular" className="flex flex-col gap-3">
-      <h2 id="qr-popular" className="flex items-center gap-2 text-lg font-bold">
+      <h2 id="qr-popular" className={cn(TYPO.titleMedium, 'flex items-center gap-2')}>
         <Crown aria-hidden="true" className="size-5 text-primary" />
         {t('qr.popular')}
       </h2>
-      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+      <ul className={cn(BLEED, 'flex snap-x gap-3 overflow-x-auto pb-1 [scrollbar-width:none]')}>
         {items.map((item) => {
           const name = localizedName(item.name, item.nameTranslations, i18n.language);
           return (
@@ -323,9 +375,9 @@ export function PopularStrip({ items, onOpen }: { items: Item[]; onOpen: (item: 
                 </span>
                 <span className="flex items-start gap-1.5">
                   <FoodTypeMark type={item.foodType} size="sm" className="mt-0.5 shrink-0" />
-                  <span className="line-clamp-2 text-sm font-semibold break-words">{name}</span>
+                  <span className={cn(TYPO.labelMedium, 'line-clamp-2 break-words')}>{name}</span>
                 </span>
-                <span className="text-sm tabular-nums">
+                <span className={cn(TYPO.bodyMedium, 'tabular-nums')}>
                   {item.variants.length > 0
                     ? t('qr.from', { price: money(fromPrice(item)) })
                     : money(item.price)}
@@ -350,16 +402,18 @@ export function MenuSkeleton() {
           <div key={i} className="h-8 w-24 animate-pulse rounded-full bg-muted" />
         ))}
       </div>
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="flex gap-4 py-2">
-          <div className="flex flex-1 flex-col gap-2">
-            <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
-            <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />
-            <div className="h-3 w-full animate-pulse rounded bg-muted" />
+      <div className={DISH_GRID}>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex gap-4 py-4">
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-full animate-pulse rounded bg-muted" />
+            </div>
+            <div className="size-24 animate-pulse rounded-2xl bg-muted" />
           </div>
-          <div className="size-32 animate-pulse rounded-2xl bg-muted" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

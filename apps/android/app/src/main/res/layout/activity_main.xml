@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One screen: the Hub's web app, with the connect form or the "can't reach" panel over it. -->
+<!-- One screen: the Hub's web app, with the connect form or the "can't reach" panel over it.
+     Text takes its size and weight from the shared type scale (res/values/typography.xml). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
   android:layout_width="match_parent"
   android:layout_height="match_parent"
@@ -41,9 +42,7 @@
         android:layout_marginTop="24dp"
         android:gravity="center"
         android:text="@string/connect_title"
-        android:textColor="@color/on_surface"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        android:textAppearance="@style/TextAppearance.RestroOS.DisplayMedium" />
 
       <TextView
         android:layout_width="match_parent"
@@ -52,8 +51,8 @@
         android:gravity="center"
         android:maxWidth="480dp"
         android:text="@string/connect_body"
-        android:textColor="@color/muted"
-        android:textSize="16sp" />
+        android:textAppearance="@style/TextAppearance.RestroOS.BodyLarge"
+        android:textColor="@color/muted" />
 
       <EditText
         android:id="@+id/address"
@@ -67,7 +66,7 @@
         android:inputType="textUri"
         android:minHeight="56dp"
         android:singleLine="true"
-        android:textSize="20sp" />
+        android:textAppearance="@style/TextAppearance.RestroOS.TitleSmall" />
 
       <TextView
         android:id="@+id/connect_error"
@@ -75,8 +74,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:accessibilityLiveRegion="polite"
+        android:textAppearance="@style/TextAppearance.RestroOS.BodyMedium"
         android:textColor="@color/danger"
-        android:textSize="15sp"
         android:visibility="gone" />
 
       <CheckBox
@@ -86,7 +85,7 @@
         android:layout_marginTop="12dp"
         android:minHeight="48dp"
         android:text="@string/connect_kiosk"
-        android:textSize="16sp" />
+        android:textAppearance="@style/TextAppearance.RestroOS.BodyLarge" />
 
       <Button
         android:id="@+id/connect_button"
@@ -96,8 +95,8 @@
         android:backgroundTint="@color/brand"
         android:minHeight="56dp"
         android:text="@string/connect_button"
-        android:textColor="#FFFFFF"
-        android:textSize="18sp" />
+        android:textAppearance="@style/TextAppearance.RestroOS.LabelLarge"
+        android:textColor="#FFFFFF" />
     </LinearLayout>
   </ScrollView>
 
@@ -116,9 +115,7 @@
       android:layout_height="wrap_content"
       android:gravity="center"
       android:text="@string/hub_unreachable_title"
-      android:textColor="@color/on_surface"
-      android:textSize="24sp"
-      android:textStyle="bold" />
+      android:textAppearance="@style/TextAppearance.RestroOS.DisplayMedium" />
 
     <TextView
       android:id="@+id/unreachable_body"
@@ -127,8 +124,8 @@
       android:layout_marginTop="8dp"
       android:gravity="center"
       android:maxWidth="480dp"
-      android:textColor="@color/muted"
-      android:textSize="16sp" />
+      android:textAppearance="@style/TextAppearance.RestroOS.BodyLarge"
+      android:textColor="@color/muted" />
 
     <LinearLayout
       android:layout_width="wrap_content"
@@ -143,6 +140,7 @@
         android:backgroundTint="@color/brand"
         android:minHeight="56dp"
         android:text="@string/hub_retry"
+        android:textAppearance="@style/TextAppearance.RestroOS.LabelLarge"
         android:textColor="#FFFFFF" />
 
       <Button
@@ -153,6 +151,7 @@
         android:layout_marginStart="12dp"
         android:minHeight="56dp"
         android:text="@string/hub_change"
+        android:textAppearance="@style/TextAppearance.RestroOS.LabelLarge"
         android:textColor="@color/brand" />
     </LinearLayout>
   </LinearLayout>

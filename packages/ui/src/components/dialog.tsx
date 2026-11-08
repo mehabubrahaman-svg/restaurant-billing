@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -107,11 +108,11 @@ export function Dialog({
       >
         <div className="flex items-start gap-3 border-b p-4 ps-5">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <h2 id={titleId} className="text-lg leading-snug font-semibold">
+            <h2 id={titleId} className={TYPO.titleMedium}>
               {title}
             </h2>
             {description !== undefined && (
-              <p id={descriptionId} className="text-sm text-muted-foreground">
+              <p id={descriptionId} className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
                 {description}
               </p>
             )}

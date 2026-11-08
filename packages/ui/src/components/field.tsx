@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { cn } from '../lib/cn';
+import { TYPO } from '../typography';
 
 /** Props a form control needs so its label, hint and error are announced with it. */
 export interface FieldControlProps {
@@ -36,7 +37,7 @@ export function Field({ label, hint, error, required, className, children }: Fie
 
   return (
     <div className={cn('flex min-w-0 flex-col gap-1.5', className)}>
-      <label htmlFor={id} className="text-sm font-medium">
+      <label htmlFor={id} className={TYPO.labelMedium}>
         {label}
         {required === true && (
           <span aria-hidden="true" className="ms-0.5 text-state-danger-fg">
@@ -51,12 +52,12 @@ export function Field({ label, hint, error, required, className, children }: Fie
         ...(required === true ? { required: true as const } : {}),
       })}
       {hint !== undefined && (
-        <p id={hintId} className="text-sm text-muted-foreground">
+        <p id={hintId} className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
           {hint}
         </p>
       )}
       {hasError && (
-        <p id={errorId} className="text-sm font-medium text-state-danger-fg">
+        <p id={errorId} className={cn(TYPO.labelMedium, 'text-state-danger-fg')}>
           {error}
         </p>
       )}

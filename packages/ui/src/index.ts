@@ -1,4 +1,5 @@
 export { cn } from './lib/cn';
+export { TYPO, typo, type TypoToken } from './typography';
 export { Alert, type AlertProps, type AlertTone } from './components/alert';
 export { Checkbox, type CheckboxProps } from './components/checkbox';
 export { Dialog, type DialogProps } from './components/dialog';

@@ -707,7 +707,13 @@
     "system": "ऑटो",
     "light": "लाइट",
     "dark": "डार्क",
-    "highContrast": "हाई कॉन्ट्रास्ट"
+    "highContrast": "हाई कॉन्ट्रास्ट",
+    "textSize": {
+      "label": "टेक्स्ट का आकार",
+      "default": "सामान्य",
+      "large": "बड़ा",
+      "xlarge": "और बड़ा"
+    }
   },
   "digits": {
     "label": "अंक",
@@ -3240,6 +3246,9 @@
     "add": "जोड़ें",
     "addNamed": "{name} जोड़ें",
     "unavailable": "अभी उपलब्ध नहीं",
+    "remove": "हटाएँ",
+    "removeNamed": "{name} हटाएँ",
+    "inOrderNamed": "आपके ऑर्डर में {name}",
     "taxNote": "दाम GST से पहले के हैं; टैक्स बिल में जुड़ता है।",
     "cartSummary": "{count, plural, one {# चीज़} other {# चीज़ें}} · {total}",
     "viewOrder": "ऑर्डर देखें",

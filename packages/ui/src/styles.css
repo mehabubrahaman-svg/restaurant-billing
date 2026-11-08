@@ -222,13 +222,15 @@
 
 @theme {
   /*
-   * Noto Sans has no Indic glyphs, so the browser falls through to the
-   * Devanagari / Bengali families per character. All three are bundled by the
-   * app (no network font loading) and share metrics, so mixed-script lines
-   * such as "KOT 34 · तैयार" sit on one baseline.
+   * The face is Inter (docs/13-design-system.md), the same as the owner's
+   * other product. Inter has no Indic glyphs, so the browser falls through to
+   * the Noto Devanagari / Bengali families per character; mixed-script lines
+   * such as "KOT 34 · तैयार" get a little extra line height below. All three
+   * are bundled by the app: nothing is fetched from the internet.
    */
   --font-sans:
-    'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Bengali', ui-sans-serif, system-ui, sans-serif;
+    'Inter Variable', 'Noto Sans Devanagari', 'Noto Sans Bengali', ui-sans-serif, system-ui,
+    sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 
   /* Touch targets (wireframes §1): 48 px everywhere, 56 px on KDS. */
@@ -249,6 +251,18 @@
     color: var(--color-foreground);
     -webkit-tap-highlight-color: transparent;
     text-size-adjust: 100%;
+  }
+
+  /*
+   * Text size, chosen per device from the user menu (`data-text-size` on
+   * <html>; the theme store sets it, index.html restores it before the first
+   * paint). Everything is in rem, so controls and touch targets grow with it.
+   */
+  :root[data-text-size='large'] {
+    font-size: 112.5%;
+  }
+  :root[data-text-size='xlarge'] {
+    font-size: 125%;
   }
 
   /* Indic scripts have tall matras; give them a little more room. */

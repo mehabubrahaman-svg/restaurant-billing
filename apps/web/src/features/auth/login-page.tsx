@@ -1,5 +1,5 @@
 import type { SessionResponse } from '@restroos/contracts';
-import { Alert, Button, Card, Link as LinkIcon, SegmentedControl, Store } from '@restroos/ui';
+import { Alert, Button, Card, Link as LinkIcon, SegmentedControl, Store, TYPO } from '@restroos/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -98,7 +98,7 @@ export function LoginPage() {
           <span className="grid size-12 place-items-center rounded-xl bg-primary text-primary-foreground">
             <Store aria-hidden="true" className="size-6" />
           </span>
-          <h1 className="text-2xl font-bold">{t('app.name')}</h1>
+          <h1 className={TYPO.displayMedium}>{t('app.name')}</h1>
           <p className="text-muted-foreground">
             {device === null
               ? t('login.unpairedDevice')

@@ -17,6 +17,8 @@
             localStorage.getItem('restroos.device-kind');
           if (!theme && kind === 'KDS') theme = 'dark';
           if (theme && theme !== 'system') root.dataset.theme = theme;
+          var size = localStorage.getItem('restroos.text-size');
+          if (size && size !== 'default') root.dataset.textSize = size;
           var locale = localStorage.getItem('restroos.locale');
           if (locale) root.lang = locale;
         } catch (e) {}

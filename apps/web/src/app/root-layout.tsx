@@ -1,4 +1,4 @@
-import { Button, Spinner, Store } from '@restroos/ui';
+import { Button, Spinner, Store, TYPO } from '@restroos/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,12 @@ import { RestoreOverlay } from '../features/backups/restore-overlay';
 import { useConnectionMonitor } from '../features/connection/use-connection-monitor';
 import { useLiveConnection } from '../features/live/use-live-connection';
 import { startCommandQueue } from '../features/offline/command-queue';
-import { applyTheme, effectiveTheme, useThemeStore } from '../features/theme/theme-store';
+import {
+  applyTextSize,
+  applyTheme,
+  effectiveTheme,
+  useThemeStore,
+} from '../features/theme/theme-store';
 import { Toaster } from '../features/toast/toaster';
 import { useDevicePrintAgent } from '../features/devices/device-print-agent';
 import { DEVICE_ME_KEY, fetchThisDevice } from '../features/devices/this-device';
@@ -60,12 +65,16 @@ function RootGates() {
   // Commands queued offline (captain tablets) replay from here, whatever screen is open.
   useEffect(() => startCommandQueue(queryClient), [queryClient]);
   const preference = useThemeStore((s) => s.preference);
+  const textSize = useThemeStore((s) => s.textSize);
   const kind = useDeviceStore((s) => s.kind);
   const authStatus = useAuthStore((s) => s.status);
 
   useEffect(() => {
     applyTheme(effectiveTheme(preference, kind));
   }, [preference, kind]);
+  useEffect(() => {
+    applyTextSize(textSize);
+  }, [textSize]);
 
   // Concurrent calls (StrictMode runs effects twice) share one refresh request.
   useEffect(() => {
@@ -92,7 +101,7 @@ function RootGates() {
   if (setup.isError) {
     return (
       <Splash>
-        <h1 className="text-xl font-bold">{t('boot.hubUnreachableTitle')}</h1>
+        <h1 className={TYPO.titleLarge}>{t('boot.hubUnreachableTitle')}</h1>
         <p className="text-muted-foreground">{t('boot.hubUnreachableBody')}</p>
         <Button onClick={() => void setup.refetch()} disabled={setup.isFetching}>
           {t('common.retry')}
