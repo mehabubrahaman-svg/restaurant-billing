@@ -204,6 +204,7 @@ nothing shows it.
 
 ## Waiting on the owner (2026-10-28)
 
+- **Released 3.0.2** (2026-11-09, tag `hub-v3.0.2`): the staff screens scale with the device (14 px root on a phone held upright, 16 px from about 800 px; the guest menu opts out), the captain and kitchen portals on the type tokens with the KDS cards a step smaller, icon-only header buttons on narrow and short screens (commit d4af1e1), on top of 3.0.1. The owner asked for it as "Build 3.0.2". The Android app needs no rebuild: it loads the Hub's web app.
 - **Released 3.0.1** (2026-11-08, tag `hub-v3.0.1`): the guest menu that fits the phone and its orientation, − n + and Remove under a chosen dish, the type scale with Inter and the per-device text size (commit 9507f8f), on top of 3.0.0. The owner asked for it as "installer 3.0.1". The iOS and Android apps keep 0.2.0; their builds for 9507f8f ran on push.
 - **Released 3.0.0** (2026-11-05, tag `hub-v3.0.0`): the owner asked for the next Windows installer to be "version 3.0", so the Hub went from 0.2.0 to 3.0.0. It carries Phase 5, the QR guest menu, guest ratings and the menu-upload fix. The iOS and Android apps keep their own versions (0.2.0); tag them only when the owner asks.
 - **Online orders going live.** This needs an aggregator middleware account (UrbanPiper, for example) and a small cloud server for the relay. Then write an adapter from that provider's webhook and API format to `packages/contracts/src/relay.ts`.
