@@ -19,6 +19,8 @@
           if (theme && theme !== 'system') root.dataset.theme = theme;
           var size = localStorage.getItem('restroos.text-size');
           if (size && size !== 'default') root.dataset.textSize = size;
+          // The guest menu keeps the phone's own text size (docs/13 §4).
+          if (location.pathname.indexOf('/qr/') === 0) root.dataset.guest = '';
           var locale = localStorage.getItem('restroos.locale');
           if (locale) root.lang = locale;
         } catch (e) {}

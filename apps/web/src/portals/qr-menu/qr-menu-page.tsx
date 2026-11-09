@@ -35,6 +35,7 @@ import { useParams } from 'react-router';
 import { newIdempotencyKey } from '../../api/client';
 import { api } from '../../api/endpoints';
 import { localizedName } from '../../features/menu/localized-name';
+import { markGuestPage } from '../../features/theme/theme-store';
 import { LanguageSwitcher } from '../../i18n/language-switcher';
 import { useErrorMessage } from '../../lib/errors';
 import {
@@ -80,6 +81,8 @@ export const STATUS_POLL_MS = 5_000;
 export function QrMenuPage() {
   const { t } = useTranslation();
   const { token = '' } = useParams();
+  // Staff screens shrink on a phone; the guest's menu stays at the phone's own size.
+  useLayoutEffect(() => markGuestPage(), []);
   const menu = useQuery({
     queryKey: ['qr-menu', token],
     queryFn: () => api.qr.menu(token),

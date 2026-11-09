@@ -8,6 +8,7 @@ import {
   Select,
   Spinner,
   TriangleAlert,
+  TYPO,
   type KotState,
 } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -206,9 +207,9 @@ export function KdsBoard({ portal }: { portal: Portal }) {
     >
       <title>{`${t(portal.titleKey)} · ${t('app.name')}`}</title>
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-surface px-3 py-2">
-        <h1 className="text-xl font-bold tracking-wide uppercase">{t('kds.title')}</h1>
+        <h1 className={cn(TYPO.titleMedium, 'tracking-wide uppercase')}>{t('kds.title')}</h1>
         <label className="flex items-center gap-2">
-          <span className="text-sm font-medium">{t('kds.station')}</span>
+          <span className={TYPO.labelMedium}>{t('kds.station')}</span>
           <Select
             value={station ?? 'all'}
             className="w-48"
@@ -228,15 +229,17 @@ export function KdsBoard({ portal }: { portal: Portal }) {
         </label>
         <dl
           aria-label={t('kds.metrics.label')}
-          className="flex flex-wrap items-center gap-x-4 gap-y-1 text-base"
+          className={cn(TYPO.bodyMedium, 'flex flex-wrap items-center gap-x-4 gap-y-1')}
         >
           <div className="flex gap-1.5">
             <dt className="text-muted-foreground">{t('kds.metrics.pending')}</dt>
-            <dd className="font-bold tabular-nums">{format.number(m?.pending ?? list.length)}</dd>
+            <dd className={cn(TYPO.labelMedium, 'tabular-nums')}>
+              {format.number(m?.pending ?? list.length)}
+            </dd>
           </div>
           <div className="flex gap-1.5">
             <dt className="text-muted-foreground">{t('kds.metrics.avg')}</dt>
-            <dd className="font-bold tabular-nums">
+            <dd className={cn(TYPO.labelMedium, 'tabular-nums')}>
               {m?.avgCookSeconds === null || m === undefined
                 ? t('kds.metrics.none')
                 : t('time.elapsedMinutes', { minutes: Math.round(m.avgCookSeconds / 60) })}
@@ -248,14 +251,17 @@ export function KdsBoard({ portal }: { portal: Portal }) {
             <dt className={cn(delayedCount === 0 && 'text-muted-foreground')}>
               {t('kds.metrics.delayed')}
             </dt>
-            <dd className="flex items-center gap-1 font-bold tabular-nums">
+            <dd className={cn(TYPO.labelMedium, 'flex items-center gap-1 tabular-nums')}>
               {format.number(delayedCount)}
               {delayedCount > 0 && <TriangleAlert aria-hidden="true" className="size-4" />}
             </dd>
           </div>
         </dl>
         <div className="ms-auto flex flex-wrap items-center gap-3">
-          <time dateTime={new Date(now).toISOString()} className="text-2xl font-bold tabular-nums">
+          <time
+            dateTime={new Date(now).toISOString()}
+            className={cn(TYPO.titleLarge, 'tabular-nums')}
+          >
             {format.dateTime(new Date(now).toISOString(), { timeStyle: 'short' })}
           </time>
           <SoundToggle />
@@ -288,7 +294,10 @@ export function KdsBoard({ portal }: { portal: Portal }) {
               >
                 <h2
                   id={headingId}
-                  className="flex items-center gap-2 border-b px-3 py-2 text-lg font-bold uppercase"
+                  className={cn(
+                    TYPO.titleSmall,
+                    'flex items-center gap-2 border-b px-3 py-2 uppercase',
+                  )}
                 >
                   <Icon aria-hidden="true" className="size-5" />
                   {t('kds.column', {
@@ -298,7 +307,9 @@ export function KdsBoard({ portal }: { portal: Portal }) {
                 </h2>
                 <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-2">
                   {col.kots.length === 0 ? (
-                    <p className="p-3 text-center text-muted-foreground">{t('kds.empty')}</p>
+                    <p className={cn(TYPO.bodyMedium, 'p-3 text-center text-muted-foreground')}>
+                      {t('kds.empty')}
+                    </p>
                   ) : (
                     col.kots.map((kot) => (
                       <KotCard

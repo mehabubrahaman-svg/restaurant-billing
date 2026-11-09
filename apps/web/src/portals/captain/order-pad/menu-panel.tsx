@@ -1,6 +1,6 @@
 import type { MenuItem, MenuSnapshot } from '@restroos/contracts';
 import { Money } from '@restroos/domain';
-import { Badge, cn, Input, Search, StickyNote } from '@restroos/ui';
+import { Badge, cn, Input, Search, StickyNote, TYPO } from '@restroos/ui';
 import { memo, useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CategorySwatch } from '../../../features/menu/category-swatch';
@@ -91,7 +91,8 @@ export function MenuPanel({
                       setSearch('');
                     }}
                     className={cn(
-                      'flex min-h-touch w-full items-center gap-2 rounded-lg border px-3 text-start font-medium whitespace-nowrap lg:whitespace-normal',
+                      TYPO.labelLarge,
+                      'flex min-h-touch w-full items-center gap-2 rounded-lg border px-3 text-start whitespace-nowrap lg:whitespace-normal',
                       selected
                         ? 'border-primary bg-accent text-accent-foreground'
                         : 'bg-surface hover:bg-muted',
@@ -106,7 +107,7 @@ export function MenuPanel({
           </ul>
         </nav>
         {items.length === 0 ? (
-          <p className="text-muted-foreground">{t('menu.items.empty')}</p>
+          <p className={cn(TYPO.bodyLarge, 'text-muted-foreground')}>{t('menu.items.empty')}</p>
         ) : (
           <ul className="grid content-start gap-2 [grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr))]">
             {items.map((item) => (
@@ -169,7 +170,7 @@ const ItemTile = memo(function ItemTile({
       <span className="flex items-start gap-2">
         <FoodTypeMark type={item.foodType} className="mt-1" />
         <span
-          className={cn('min-w-0 flex-1 font-semibold break-words', out && 'line-through')}
+          className={cn(TYPO.titleSmall, 'min-w-0 flex-1 break-words', out && 'line-through')}
           lang={lang}
         >
           {name}
@@ -187,7 +188,7 @@ const ItemTile = memo(function ItemTile({
         )}
       </span>
       <span className="flex flex-wrap items-center justify-between gap-1">
-        <span className="font-semibold tabular-nums">
+        <span className={cn(TYPO.labelLarge, 'tabular-nums')}>
           {item.variants.length > 0 ? t('order.menu.fromPrice', { price }) : price}
         </span>
         {out ? (
@@ -199,7 +200,10 @@ const ItemTile = memo(function ItemTile({
       {count > 0 && (
         <span
           aria-hidden="true"
-          className="absolute -end-1.5 -top-1.5 grid min-w-7 place-items-center rounded-full bg-primary px-1.5 text-sm font-bold text-primary-foreground tabular-nums"
+          className={cn(
+            TYPO.labelMedium,
+            'absolute -end-1.5 -top-1.5 grid min-w-7 place-items-center rounded-full bg-primary px-1.5 text-primary-foreground tabular-nums',
+          )}
         >
           {format.number(count)}
         </span>

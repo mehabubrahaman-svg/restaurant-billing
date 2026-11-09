@@ -1,5 +1,5 @@
 import type { Order, OrderItem } from '@restroos/contracts';
-import { Alert, Button, Checkbox, Dialog, Field, Input } from '@restroos/ui';
+import { Alert, Button, Checkbox, cn, Dialog, Field, Input, TYPO } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -93,7 +93,7 @@ function ReasonField<K extends string>({
   const { t } = useTranslation();
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1 font-semibold">{t('order.cancel.reason')}</legend>
+      <legend className={cn(TYPO.titleSmall, 'mb-1')}>{t('order.cancel.reason')}</legend>
       <div className="flex flex-wrap gap-2">
         {keys.map((key) => {
           const text = labelOf(key);

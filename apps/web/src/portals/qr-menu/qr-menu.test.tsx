@@ -123,6 +123,8 @@ describe('QR menu (the guest’s phone)', () => {
     });
     renderApp(`/qr/${TOKEN}`);
     expect(await screen.findByText('Table T1')).toBeInTheDocument();
+    // The guest's page keeps the phone's own text size (the staff scale is compact on a phone).
+    expect(document.documentElement.dataset['guest']).toBe('');
     expect(screen.getByText('Park Street')).toBeInTheDocument();
     expect(screen.getByText('Not available now')).toBeInTheDocument();
     expect(

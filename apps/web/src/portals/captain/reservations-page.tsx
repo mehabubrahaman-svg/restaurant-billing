@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Card,
   Clock,
+  cn,
   Dialog,
   Field,
   Input,
@@ -18,6 +19,7 @@ import {
   Stepper,
   StickyNote,
   Textarea,
+  TYPO,
   UserRound,
   Users,
 } from '@restroos/ui';
@@ -93,8 +95,10 @@ export function ReservationsPage() {
       </div>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-bold">{t('reservations.title')}</h1>
-          <p className="text-muted-foreground">{t('reservations.description')}</p>
+          <h1 className={TYPO.displayMedium}>{t('reservations.title')}</h1>
+          <p className={cn(TYPO.bodyLarge, 'text-muted-foreground')}>
+            {t('reservations.description')}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <SegmentedControl<Show>
@@ -151,7 +155,12 @@ function ReservationList({
   const [seating, setSeating] = useState<Reservation | null>(null);
   if (reservations.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">
+      <p
+        className={cn(
+          TYPO.bodyLarge,
+          'rounded-xl border border-dashed p-6 text-center text-muted-foreground',
+        )}
+      >
         {t('reservations.empty')}
       </p>
     );
@@ -169,10 +178,10 @@ function ReservationList({
     <div className="flex flex-col gap-5">
       {upcomingByDay(reservations).map(({ day, reservations: list }) => (
         <section key={day} aria-labelledby={`day-${day}`} className="flex flex-col gap-2">
-          <h2 id={`day-${day}`} className="flex items-center gap-2 font-semibold">
+          <h2 id={`day-${day}`} className={cn(TYPO.titleSmall, 'flex items-center gap-2')}>
             <CalendarDays aria-hidden="true" className="size-5 text-muted-foreground" />
             {dayTitle(day, list[0]!.reservedFor)}
-            <span className="text-sm font-normal text-muted-foreground">
+            <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
               {t('reservations.guestsTotal', {
                 count: list
                   .filter((r) => r.status === 'BOOKED')
@@ -239,16 +248,20 @@ function ReservationRow({
 
   return (
     <Card className="flex flex-wrap items-start gap-x-4 gap-y-2 p-3">
-      <span className="flex w-20 shrink-0 items-center gap-1.5 text-lg font-bold tabular-nums">
+      <span
+        className={cn(TYPO.titleMedium, 'flex w-20 shrink-0 items-center gap-1.5 tabular-nums')}
+      >
         <Clock aria-hidden="true" className="size-4 text-muted-foreground" />
         {time}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold break-words">{r.guestName}</span>
+          <span className={cn(TYPO.titleSmall, 'break-words')}>{r.guestName}</span>
           <Badge variant={STATUS_BADGE[r.status]}>{t(`reservations.status.${r.status}`)}</Badge>
         </span>
-        <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span
+          className={cn(TYPO.bodyMedium, 'flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground')}
+        >
           <span className="inline-flex items-center gap-1">
             <Users aria-hidden="true" className="size-4" />
             {t('reservations.guests', { count: r.partySize })}
@@ -266,7 +279,7 @@ function ReservationRow({
           )}
         </span>
         {r.notes !== null && (
-          <span className="inline-flex items-start gap-1 text-sm break-words">
+          <span className={cn(TYPO.bodyMedium, 'inline-flex items-start gap-1 break-words')}>
             <StickyNote aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
             {r.notes}
           </span>
@@ -448,7 +461,7 @@ export function ReservationDialog({
             )}
           </Field>
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{t('reservations.partySize')}</span>
+            <span className={TYPO.labelMedium}>{t('reservations.partySize')}</span>
             <Stepper
               value={party}
               onValueChange={setParty}
@@ -577,7 +590,7 @@ function SeatDialog({
         )}
         {canOrder && tableId !== '' && (
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{t('reservations.partySize')}</span>
+            <span className={TYPO.labelMedium}>{t('reservations.partySize')}</span>
             <Stepper
               value={covers}
               onValueChange={setCovers}

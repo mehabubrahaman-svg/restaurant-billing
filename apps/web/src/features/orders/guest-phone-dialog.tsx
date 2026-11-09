@@ -1,5 +1,5 @@
 import { IndianMobileSchema, type Order } from '@restroos/contracts';
-import { Alert, Button, Dialog, Field, Input } from '@restroos/ui';
+import { Alert, Button, cn, Dialog, Field, Input, TYPO } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,7 +76,7 @@ export function GuestPhoneDialog({ order, onClose }: { order: Order; onClose: ()
           </Alert>
         )}
         {order.guest !== null && (
-          <p className="text-sm text-muted-foreground">
+          <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
             {t('order.guest.current', { last4: order.guest.phoneLast4 })}
           </p>
         )}

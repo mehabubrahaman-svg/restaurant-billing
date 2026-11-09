@@ -1,5 +1,5 @@
 import type { DiningTable } from '@restroos/contracts';
-import { Alert, Button, cn, Dialog, Stepper } from '@restroos/ui';
+import { Alert, Button, cn, Dialog, Stepper, TYPO } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -120,7 +120,8 @@ export function CoversPicker({
               aria-checked={value === n}
               onClick={() => onChange(n)}
               className={cn(
-                'min-h-touch rounded-lg border text-lg font-semibold tabular-nums',
+                TYPO.titleMedium,
+                'min-h-touch rounded-lg border tabular-nums',
                 value === n
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-input bg-surface hover:bg-muted',
@@ -131,7 +132,7 @@ export function CoversPicker({
           ))}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="font-medium">{t('order.covers.label')}</span>
+          <span className={TYPO.labelLarge}>{t('order.covers.label')}</span>
           <Stepper
             value={value}
             onValueChange={onChange}

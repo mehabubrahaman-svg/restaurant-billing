@@ -238,6 +238,14 @@
   --spacing-kds: 3.5rem;
 }
 
+/*
+ * `short:` matches a screen under 500 px tall: a phone turned sideways.
+ * Header buttons drop their labels there (`short:sr-only`) so the work
+ * area keeps the height; the guest menu pins only its search bar for the
+ * same reason (qr-menu-page.tsx, SHORT_SCREEN).
+ */
+@custom-variant short (@media (max-height: 500px));
+
 @layer base {
   *,
   ::before,
@@ -254,15 +262,30 @@
   }
 
   /*
-   * Text size, chosen per device from the user menu (`data-text-size` on
-   * <html>; the theme store sets it, index.html restores it before the first
-   * paint). Everything is in rem, so controls and touch targets grow with it.
+   * The scale follows the screen (docs/13 §4). The root font size runs from
+   * 14 px on a phone held upright to the designed 16 px from about 800 px
+   * wide (a tablet, a phone turned sideways), so a captain's phone gets a
+   * compact pad and a tablet the full one, and turning the device re-fits
+   * it. Everything is in rem, so controls, touch targets and gaps follow.
+   * The breakpoints do not: media queries read the browser's own 16 px.
+   *
+   * On top sits the text size chosen per device from the user menu
+   * (`data-text-size` on <html>; the theme store sets it, index.html
+   * restores it before the first paint).
    */
+  :root {
+    --text-scale: 1;
+    font-size: calc(clamp(0.875rem, 0.75rem + 0.5vw, 1rem) * var(--text-scale));
+  }
   :root[data-text-size='large'] {
-    font-size: 112.5%;
+    --text-scale: 1.125;
   }
   :root[data-text-size='xlarge'] {
-    font-size: 125%;
+    --text-scale: 1.25;
+  }
+  /* Guests read the menu at their phone's own size: it was designed for a phone. */
+  :root[data-guest] {
+    font-size: calc(1rem * var(--text-scale));
   }
 
   /* Indic scripts have tall matras; give them a little more room. */
@@ -288,5 +311,19 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+}
+
+/*
+ * iOS zooms the page in when a focused field's text is under 16 px, and on
+ * the compact phone scale a field is 14 px. Hold fields at 16 px there. The
+ * rule sits outside the layers so it beats the kit's own text utility, and
+ * only iOS matches the query: no other browser knows -webkit-touch-callout.
+ */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 16px);
   }
 }

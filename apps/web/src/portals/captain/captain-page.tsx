@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   STATE_TONE_CLASSES,
   StateChip,
+  TYPO,
 } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react';
@@ -113,7 +114,9 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
     else setSheetFor(table.id);
   }
 
-  if (area === null) return <p className="text-muted-foreground">{t('captain.noFloor')}</p>;
+  if (area === null) {
+    return <p className={cn(TYPO.bodyLarge, 'text-muted-foreground')}>{t('captain.noFloor')}</p>;
+  }
 
   const counts = new Map<string, number>();
   for (const x of tables) counts.set(x.status, (counts.get(x.status) ?? 0) + 1);
@@ -124,7 +127,7 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
   return (
     <div className="flex flex-col gap-3">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t('portals.captain.title')}</h1>
+        <h1 className={TYPO.displayMedium}>{t('portals.captain.title')}</h1>
         <div className="flex flex-wrap items-center gap-2">
           {canCreate && (
             <>
@@ -134,7 +137,7 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
                 onClick={() => quickOrder.mutate('TAKEAWAY')}
               >
                 <ShoppingBag aria-hidden="true" />
-                {t('captain.newTakeaway')}
+                <span className="max-sm:sr-only">{t('captain.newTakeaway')}</span>
               </Button>
               <Button
                 variant="outline"
@@ -142,7 +145,7 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
                 onClick={() => quickOrder.mutate('DELIVERY')}
               >
                 <Bike aria-hidden="true" />
-                {t('captain.newDelivery')}
+                <span className="max-sm:sr-only">{t('captain.newDelivery')}</span>
               </Button>
             </>
           )}
@@ -212,7 +215,12 @@ function Floor({ areas }: { areas: readonly FloorArea[] }) {
             </FloorCanvas>
           </div>
         ) : shown.length === 0 ? (
-          <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">
+          <p
+            className={cn(
+              TYPO.bodyLarge,
+              'rounded-xl border border-dashed p-6 text-center text-muted-foreground',
+            )}
+          >
             {t('captain.filter.empty')}
           </p>
         ) : (
@@ -369,16 +377,21 @@ function TableTile({
       >
         <span className="flex items-center gap-1.5">
           <Icon aria-hidden="true" className={cn('size-5 shrink-0', look.iconClassName)} />
-          <span className="text-xl font-bold text-foreground">{table.label}</span>
+          <span className={cn(TYPO.titleLarge, 'text-foreground')}>{table.label}</span>
         </span>
         {order === null ? (
           <>
-            <span className="text-sm font-medium">{status}</span>
-            <span className="text-sm text-muted-foreground">
+            <span className={TYPO.labelMedium}>{status}</span>
+            <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
               {t('floor.tables.seatsShort', { seats: table.seats })}
             </span>
             {booking !== null && (
-              <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-state-reserved bg-state-reserved-soft px-1.5 text-xs font-semibold text-state-reserved-fg">
+              <span
+                className={cn(
+                  TYPO.labelSmall,
+                  'inline-flex max-w-full items-center gap-1 rounded-md border border-state-reserved bg-state-reserved-soft px-1.5 text-state-reserved-fg',
+                )}
+              >
                 <CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />
                 <span className="truncate">
                   {t('reservations.tile', {
@@ -392,23 +405,28 @@ function TableTile({
           </>
         ) : (
           <>
-            <span className="flex flex-wrap gap-x-2 text-sm font-medium text-foreground">
+            <span className={cn(TYPO.labelMedium, 'flex flex-wrap gap-x-2 text-foreground')}>
               {order.covers !== null && (
                 <span>{t('captain.coversShort', { covers: order.covers })}</span>
               )}
               <span className="tabular-nums">{elapsed(order.openedAt, now)}</span>
             </span>
-            <span className="text-base font-semibold text-foreground tabular-nums">
+            <span className={cn(TYPO.labelLarge, 'text-foreground tabular-nums')}>
               {format.money(Money.ofPaise(order.subtotal))}
             </span>
             {order.readyCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-state-available bg-state-available-soft px-1.5 text-xs font-semibold text-state-available-fg">
+              <span
+                className={cn(
+                  TYPO.labelSmall,
+                  'inline-flex items-center gap-1 rounded-md border border-state-available bg-state-available-soft px-1.5 text-state-available-fg',
+                )}
+              >
                 <BellRing aria-hidden="true" className="size-3.5" />
                 {t('captain.readyCount', { count: order.readyCount })}
               </span>
             )}
             {!mine && order.captainName !== null && (
-              <span className="max-w-full truncate text-xs text-muted-foreground">
+              <span className={cn(TYPO.bodySmall, 'max-w-full truncate text-muted-foreground')}>
                 {order.captainName}
               </span>
             )}
@@ -501,9 +519,14 @@ function ReservationsButton() {
         aria-label={`${t('reservations.title')}: ${t('reservations.countToday', { count })}`}
       >
         <CalendarDays aria-hidden="true" />
-        {t('reservations.title')}
+        <span className="max-sm:sr-only">{t('reservations.title')}</span>
         {count > 0 && (
-          <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
+          <span
+            className={cn(
+              TYPO.labelSmall,
+              'rounded-full bg-primary px-1.5 text-primary-foreground tabular-nums',
+            )}
+          >
             {format.number(count)}
           </span>
         )}
@@ -528,7 +551,7 @@ function CounterOrders({ filter, me }: { filter: Filter; me: string | null }) {
   if (list.length === 0) return null;
   return (
     <section aria-labelledby="counter-orders" className="flex flex-col gap-2">
-      <h2 id="counter-orders" className="text-lg font-semibold">
+      <h2 id="counter-orders" className={TYPO.titleMedium}>
         {t('captain.counterOrders')}
       </h2>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -539,7 +562,7 @@ function CounterOrders({ filter, me }: { filter: Filter; me: string | null }) {
               className="h-full w-full flex-col items-start gap-1 p-3 text-start"
               onClick={() => void navigate(`/captain/orders/${o.id}`)}
             >
-              <span className="flex items-center gap-1.5 text-lg font-bold">
+              <span className={cn(TYPO.titleLarge, 'flex items-center gap-1.5')}>
                 {o.orderType === 'DELIVERY' ? (
                   <Bike aria-hidden="true" />
                 ) : (
@@ -549,17 +572,17 @@ function CounterOrders({ filter, me }: { filter: Filter; me: string | null }) {
                   ? t('order.number', { orderNo: o.orderNo })
                   : t('order.token', { token: o.tokenNo })}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
                 {t('captain.counterMeta', {
                   type: t(`orderTypes.${o.orderType}`),
                   elapsed: elapsed(o.openedAt, now),
                 })}
               </span>
-              <span className="font-semibold tabular-nums">
+              <span className={cn(TYPO.labelLarge, 'tabular-nums')}>
                 {format.money(Money.ofPaise(o.subtotal))}
               </span>
               {o.readyCount > 0 && (
-                <span className="text-xs font-semibold text-state-available-fg">
+                <span className={cn(TYPO.labelSmall, 'text-state-available-fg')}>
                   {t('captain.readyCount', { count: o.readyCount })}
                 </span>
               )}

@@ -1,6 +1,6 @@
 import type { MenuItem, MenuSnapshot } from '@restroos/contracts';
 import { Money } from '@restroos/domain';
-import { Button, Checkbox, cn, Dialog, Input, Stepper } from '@restroos/ui';
+import { Button, Checkbox, cn, Dialog, Input, Stepper, TYPO } from '@restroos/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FoodTypeMark } from '../../../features/menu/food-type';
@@ -118,7 +118,7 @@ export function ItemOptionsSheet({
       <div className="flex flex-col gap-5">
         {variants.length > 0 && (
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 font-semibold">{t('order.options.size')}</legend>
+            <legend className={cn(TYPO.titleSmall, 'mb-2')}>{t('order.options.size')}</legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {variants.map((v) => (
                 <label
@@ -135,10 +135,10 @@ export function ItemOptionsSheet({
                     checked={choice.variantId === v.id}
                     onChange={() => setChoice((c) => ({ ...c, variantId: v.id }))}
                   />
-                  <span className="flex-1" lang={lang}>
+                  <span className={cn(TYPO.bodyLarge, 'flex-1')} lang={lang}>
                     {localizedName(v.name, v.nameTranslations, lang)}
                   </span>
-                  <span className="font-semibold tabular-nums">{money(v.price)}</span>
+                  <span className={cn(TYPO.labelLarge, 'tabular-nums')}>{money(v.price)}</span>
                 </label>
               ))}
             </div>
@@ -152,9 +152,9 @@ export function ItemOptionsSheet({
           const groupName = localizedName(group.name, group.nameTranslations, lang);
           return (
             <fieldset key={group.id} className="flex flex-col gap-1">
-              <legend className="mb-1 font-semibold">
+              <legend className={cn(TYPO.titleSmall, 'mb-1')}>
                 <span lang={lang}>{groupName}</span>{' '}
-                <span className="text-sm font-normal text-muted-foreground">
+                <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
                   {t('order.options.limits', { min: group.minSelect, max: group.maxSelect })}
                 </span>
               </legend>
@@ -182,7 +182,7 @@ export function ItemOptionsSheet({
                 })}
               </div>
               {short && (
-                <p className="text-sm text-state-reserved-fg">
+                <p className={cn(TYPO.bodyMedium, 'text-state-reserved-fg')}>
                   {t('order.options.chooseAtLeast', { count: group.minSelect })}
                 </p>
               )}
@@ -211,7 +211,7 @@ export function NoteEditor({
   const { t } = useTranslation();
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1 font-semibold">{t('order.note.label')}</legend>
+      <legend className={cn(TYPO.titleSmall, 'mb-1')}>{t('order.note.label')}</legend>
       <div className="flex flex-wrap gap-2">
         {QUICK_NOTES.map((key) => {
           const text = t(`order.note.quick.${key}`);

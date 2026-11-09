@@ -20,10 +20,16 @@ review by native speakers at the pilot; note anything that reads oddly.
 
 ---
 
-## Captain (tablet)
+## Captain (tablet or phone)
 
 1. **Floor**: tables are coloured by state: free, occupied, bill printed,
    reserved. Tap a free table, enter the number of guests.
+   - On a phone everything is a size smaller, and the header buttons show
+     only their icons: bag = new takeaway, bike = new delivery, calendar =
+     bookings, speaker = sound. On the order: arrows = move, merge sign =
+     merge, ⊘ = cancel order. Turn the phone sideways and the menu and the
+     order sit side by side, as on a tablet, with the order's header buttons
+     as icons only (the guest count stays beside its icon).
 2. **Order pad**: tap dishes to add them; tap again for more. Long-press or
    tap ⋯ for **options**: variant (Half/Full), add-ons, a note for the
    kitchen ("less spicy") and quick notes.

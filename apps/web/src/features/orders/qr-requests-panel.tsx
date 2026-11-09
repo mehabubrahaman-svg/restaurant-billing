@@ -1,5 +1,16 @@
 import type { QrRequest } from '@restroos/contracts';
-import { Alert, BellRing, Button, Card, Dialog, Field, Input, QrCode } from '@restroos/ui';
+import {
+  Alert,
+  BellRing,
+  Button,
+  Card,
+  cn,
+  Dialog,
+  Field,
+  Input,
+  QrCode,
+  TYPO,
+} from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +39,7 @@ export function QrRequestsPanel() {
 
   return (
     <section aria-labelledby="qr-requests" className="flex flex-col gap-2">
-      <h2 id="qr-requests" className="flex items-center gap-2 font-semibold">
+      <h2 id="qr-requests" className={cn(TYPO.titleSmall, 'flex items-center gap-2')}>
         <BellRing aria-hidden="true" className="size-5 text-primary" />
         {t('qr.requests.title', { count: list.length })}
       </h2>
@@ -93,16 +104,16 @@ function RequestCard({
   return (
     <Card className="flex flex-col gap-2 p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="flex items-center gap-2 font-semibold">
+        <span className={cn(TYPO.titleSmall, 'flex items-center gap-2')}>
           <QrCode aria-hidden="true" className="size-4 text-muted-foreground" />
           {t(`qr.requests.kinds.${request.kind}`, { table })}
         </span>
-        <span className="text-sm text-muted-foreground tabular-nums">
+        <span className={cn(TYPO.bodyMedium, 'text-muted-foreground tabular-nums')}>
           {elapsed(request.createdAt, now)}
         </span>
       </div>
       {request.kind === 'ORDER' && (
-        <ul className="text-sm">
+        <ul className={TYPO.bodyMedium}>
           {request.items.map((item, i) => (
             <li key={i} className="break-words">
               {t('qr.requests.line', {
@@ -118,7 +129,7 @@ function RequestCard({
         </ul>
       )}
       {(request.covers !== null || request.guestName !== null || request.note !== null) && (
-        <p className="text-sm text-muted-foreground">
+        <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
           {[
             request.covers !== null && t('qr.requests.guests', { count: request.covers }),
             request.guestName,

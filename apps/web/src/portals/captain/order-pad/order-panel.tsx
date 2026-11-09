@@ -15,6 +15,7 @@ import {
   StateChip,
   Stepper,
   Trash,
+  TYPO,
   type KotState,
 } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -178,7 +179,7 @@ export function OrderPanel({
       aria-labelledby="order-panel-title"
       className="flex min-w-0 flex-col rounded-xl border bg-surface md:min-h-0"
     >
-      <h2 id="order-panel-title" className="border-b px-4 py-3 text-lg font-semibold">
+      <h2 id="order-panel-title" className={cn(TYPO.titleMedium, 'border-b px-4 py-3')}>
         {t('order.panel.title', { orderNo: order.orderNo })}
       </h2>
 
@@ -205,7 +206,7 @@ export function OrderPanel({
         {groups.map(({ kot, items }) => (
           <section key={kot.id} aria-label={t('order.kot.label', { kotNo: kot.kotNo })}>
             <header className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-muted-foreground">
+              <h3 className={cn(TYPO.labelMedium, 'text-muted-foreground')}>
                 {kot.stationName === null
                   ? t('order.kot.title', { kotNo: kot.kotNo })
                   : t('order.kot.titleStation', { kotNo: kot.kotNo, station: kot.stationName })}
@@ -245,13 +246,13 @@ export function OrderPanel({
         <section aria-labelledby="new-lines-title">
           <h3
             id="new-lines-title"
-            className="mb-1 flex items-center gap-2 text-sm font-semibold text-muted-foreground"
+            className={cn(TYPO.labelMedium, 'mb-1 flex items-center gap-2 text-muted-foreground')}
           >
             {t('order.pad.newTitle')}
             {saving && <Spinner label={t('common.saving')} className="size-4" />}
           </h3>
           {lines.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
+            <p className={cn(TYPO.bodyMedium, 'py-2 text-muted-foreground')}>
               {groups.length === 0 ? t('order.pad.empty') : t('order.pad.nothingNew')}
             </p>
           ) : (
@@ -286,9 +287,11 @@ export function OrderPanel({
       </div>
 
       <footer className="flex flex-col gap-3 border-t p-4">
-        <p className="flex items-baseline justify-between gap-2 text-lg">
+        <p className={cn(TYPO.bodyLarge, 'flex items-baseline justify-between gap-2')}>
           <span>{t('order.pad.subtotal')}</span>
-          <span className="font-bold tabular-nums">{format.money(Money.ofPaise(subtotal))}</span>
+          <span className={cn(TYPO.titleLarge, 'tabular-nums')}>
+            {format.money(Money.ofPaise(subtotal))}
+          </span>
         </p>
         {editable && canFire && (
           <Button
@@ -354,16 +357,16 @@ function LineText({
   const { t } = useTranslation();
   return (
     <span className={cn('flex min-w-0 flex-col', struck && 'text-muted-foreground line-through')}>
-      <span className="font-medium break-words">
+      <span className={cn(TYPO.titleSmall, 'break-words')}>
         {variantName === null ? name : t('order.line.withVariant', { name, variant: variantName })}
       </span>
       {addons.length > 0 && (
-        <span className="text-sm text-muted-foreground">
+        <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
           {t('order.line.addons', { addons: addons.join(', ') })}
         </span>
       )}
       {note !== null && note !== '' && (
-        <span className="flex items-center gap-1 text-sm text-state-reserved-fg">
+        <span className={cn(TYPO.bodyMedium, 'flex items-center gap-1 text-state-reserved-fg')}>
           <Flag aria-hidden="true" className="size-3.5 shrink-0" />
           <span className="break-words">{note}</span>
         </span>
@@ -387,13 +390,13 @@ function SentLine({
   return (
     <li className="flex items-start gap-2 py-2" data-status={item.status}>
       <FoodTypeMark type={item.foodType} size="sm" className="mt-1.5" />
-      <span className="w-8 shrink-0 pt-0.5 font-semibold tabular-nums">
+      <span className={cn(TYPO.labelLarge, 'w-8 shrink-0 pt-0.5 tabular-nums')}>
         {t('order.line.qty', { quantity: item.quantity })}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <LineText {...names} note={item.specialNote} struck={cancelled} />
         {cancelled ? (
-          <span className="text-xs text-state-danger-fg">
+          <span className={cn(TYPO.bodySmall, 'text-state-danger-fg')}>
             {item.cancelReason === null
               ? t('order.line.cancelled')
               : t('order.line.cancelledReason', { reason: item.cancelReason })}
@@ -404,7 +407,7 @@ function SentLine({
           </Badge>
         ) : null}
       </div>
-      <span className="shrink-0 pt-0.5 text-sm tabular-nums">
+      <span className={cn(TYPO.bodyMedium, 'shrink-0 pt-0.5 tabular-nums')}>
         {format.money(Money.ofPaise(item.lineTotal), { symbol: false })}
       </span>
       {onCancel !== null && (
@@ -491,7 +494,7 @@ function NewLineRow({
             </Badge>
           )}
         </div>
-        <span className="shrink-0 pt-0.5 text-sm tabular-nums">
+        <span className={cn(TYPO.bodyMedium, 'shrink-0 pt-0.5 tabular-nums')}>
           {format.money(Money.ofPaise(total), { symbol: false })}
         </span>
       </div>
@@ -520,7 +523,7 @@ function NewLineRow({
         )
       )}
       {!adjustable && line.kind !== 'failed' && (
-        <span className="ps-6 text-sm text-muted-foreground">
+        <span className={cn(TYPO.bodyMedium, 'ps-6 text-muted-foreground')}>
           {t('order.line.qtyLong', { quantity })}
         </span>
       )}

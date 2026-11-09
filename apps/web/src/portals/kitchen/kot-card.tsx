@@ -8,6 +8,7 @@ import {
   Flag,
   ShoppingBag,
   TriangleAlert,
+  TYPO,
   UtensilsCrossed,
 } from '@restroos/ui';
 import { memo } from 'react';
@@ -46,6 +47,8 @@ function bumpable(kot: Kot, item: KotItem): boolean {
  * One KOT on the board (wireframes §6): number, table or token, type and
  * age; captain and chef; the items (notes in capitals with a flag,
  * cancelled lines struck through); and one big button for the next step.
+ * The text sits on the shared scale (docs/13): a card title, row titles for
+ * the dishes, body for the rest. The button stays the kitchen's 56 px.
  */
 export const KotCard = memo(function KotCard({
   kot,
@@ -107,10 +110,15 @@ export const KotCard = memo(function KotCard({
     >
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col">
-          <h3 id={titleId} className="text-xl leading-tight font-bold">
+          <h3 id={titleId} className={TYPO.titleMedium}>
             {t('kds.kotTitle', { kotNo: kot.kotNo, where })}
           </h3>
-          <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+          <p
+            className={cn(
+              TYPO.bodyMedium,
+              'flex flex-wrap items-center gap-x-2 text-muted-foreground',
+            )}
+          >
             <TypeIcon aria-hidden="true" className="size-4" />
             <span>{t(`orderTypes.${kot.orderType}`)}</span>
             {kot.captainName !== null && <span>{kot.captainName}</span>}
@@ -118,7 +126,8 @@ export const KotCard = memo(function KotCard({
         </div>
         <span
           className={cn(
-            'flex shrink-0 items-center gap-1 text-lg font-semibold tabular-nums',
+            TYPO.labelLarge,
+            'flex shrink-0 items-center gap-1 tabular-nums',
             urgency === 'late' && 'text-state-danger-fg',
             urgency === 'warn' && 'text-state-reserved-fg',
           )}
@@ -133,7 +142,7 @@ export const KotCard = memo(function KotCard({
         </span>
       </header>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <div className={cn(TYPO.bodyMedium, 'flex flex-wrap items-center justify-between gap-2')}>
         <span className="flex items-center gap-1.5">
           <ChefHat aria-hidden="true" className="size-4 text-muted-foreground" />
           {kot.assignedChefName === null
@@ -158,14 +167,15 @@ export const KotCard = memo(function KotCard({
           const body = (
             <>
               <span className="flex items-start gap-2">
-                <span className="w-9 shrink-0 text-xl font-bold tabular-nums">
+                <span className={cn(TYPO.titleMedium, 'w-8 shrink-0 tabular-nums')}>
                   {format.number(item.quantity)}
                 </span>
-                <FoodTypeMark type={item.foodType} className="mt-1.5" />
+                <FoodTypeMark type={item.foodType} className="mt-1" />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span
                     className={cn(
-                      'text-lg leading-snug font-semibold break-words',
+                      TYPO.titleSmall,
+                      'break-words',
                       cancelled && 'text-muted-foreground line-through',
                     )}
                   >
@@ -177,18 +187,23 @@ export const KotCard = memo(function KotCard({
                         })}
                   </span>
                   {item.addons.map((a) => (
-                    <span key={a.name} className={cn('text-base', cancelled && 'line-through')}>
+                    <span key={a.name} className={cn(TYPO.bodyMedium, cancelled && 'line-through')}>
                       {t('kds.addon', { name: a.name, quantity: a.quantity })}
                     </span>
                   ))}
                   {item.specialNote !== null && item.specialNote !== '' && (
-                    <span className="flex items-center gap-1.5 text-base font-bold text-state-reserved-fg uppercase">
+                    <span
+                      className={cn(
+                        TYPO.labelMedium,
+                        'flex items-center gap-1.5 text-state-reserved-fg uppercase',
+                      )}
+                    >
                       <Flag aria-label={t('kds.note')} className="size-4 shrink-0" />
                       <span className="break-words">{item.specialNote.toLocaleUpperCase()}</span>
                     </span>
                   )}
                   {cancelled && (
-                    <span className="text-sm text-state-danger-fg">
+                    <span className={cn(TYPO.bodyMedium, 'text-state-danger-fg')}>
                       {item.cancelReason === null
                         ? t('order.line.cancelled')
                         : t('order.line.cancelledReason', { reason: item.cancelReason })}
@@ -198,7 +213,7 @@ export const KotCard = memo(function KotCard({
                 {ready && (
                   <Check
                     aria-label={t('order.line.ready')}
-                    className="mt-1 size-6 shrink-0 text-state-available-fg"
+                    className="mt-0.5 size-5 shrink-0 text-state-available-fg"
                   />
                 )}
               </span>

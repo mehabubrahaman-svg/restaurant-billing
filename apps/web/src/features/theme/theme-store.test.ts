@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyTextSize, applyTheme, effectiveTheme } from './theme-store';
+import { applyTextSize, applyTheme, effectiveTheme, markGuestPage } from './theme-store';
 
 describe('theme and text size', () => {
   it('kitchen screens default to dark, everything else follows the OS, and a choice wins', () => {
@@ -21,5 +21,13 @@ describe('theme and text size', () => {
     expect(root.dataset['textSize']).toBe('large');
     applyTextSize('default', root);
     expect(root.dataset['textSize']).toBeUndefined();
+  });
+
+  it('marks the guest menu while it is open, so it keeps the phone’s own text size', () => {
+    const root = document.createElement('html');
+    const leave = markGuestPage(root);
+    expect(root.dataset['guest']).toBe('');
+    leave();
+    expect(root.dataset['guest']).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import type { FloorArea } from '@restroos/contracts';
-import { cn } from '@restroos/ui';
+import { cn, TYPO } from '@restroos/ui';
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 
 /**
@@ -60,7 +60,8 @@ export function AreaTabs({
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(area.id)}
               className={cn(
-                'min-h-touch rounded-lg border px-4 text-base font-medium',
+                TYPO.labelLarge,
+                'min-h-touch rounded-lg border px-4',
                 selected
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-input bg-surface hover:bg-muted',
@@ -69,7 +70,7 @@ export function AreaTabs({
             >
               {area.name}
               {note !== null && (
-                <span className="ms-1 text-sm font-normal opacity-80">({note})</span>
+                <span className={cn(TYPO.bodyMedium, 'ms-1 opacity-80')}>({note})</span>
               )}
             </button>
           );

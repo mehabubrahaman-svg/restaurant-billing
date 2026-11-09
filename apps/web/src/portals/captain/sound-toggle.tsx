@@ -21,7 +21,7 @@ export function SoundToggle({ className, size }: { className?: string; size?: 't
       }}
     >
       {muted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
-      <span>{muted ? t('sound.off') : t('sound.on')}</span>
+      <span className="max-sm:sr-only">{muted ? t('sound.off') : t('sound.on')}</span>
     </Button>
   );
 }

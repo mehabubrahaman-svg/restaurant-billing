@@ -8,6 +8,7 @@ import {
   Dialog,
   Merge,
   StateChip,
+  TYPO,
   UtensilsCrossed,
 } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -99,7 +100,9 @@ export function TableSheet({
     >
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">{t('captain.status')}</span>
+          <span className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
+            {t('captain.status')}
+          </span>
           <StateChip state={state} label={t(`state.table.${state}`)} />
         </div>
 
@@ -146,13 +149,17 @@ export function TableSheet({
         )}
 
         <section className="flex flex-col gap-2 border-t pt-4" aria-labelledby="table-sheet-status">
-          <h3 id="table-sheet-status" className="text-sm font-semibold">
+          <h3 id="table-sheet-status" className={TYPO.labelMedium}>
             {t('captain.changeStatus')}
           </h3>
           {!canChange ? (
-            <p className="text-sm text-muted-foreground">{t('captain.noStatusPermission')}</p>
+            <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
+              {t('captain.noStatusPermission')}
+            </p>
           ) : options.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('captain.orderDriven')}</p>
+            <p className={cn(TYPO.bodyMedium, 'text-muted-foreground')}>
+              {t('captain.orderDriven')}
+            </p>
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2">
               {options.map((status) => {
@@ -266,7 +273,7 @@ export function TransferDialog({
           </Alert>
         )}
         {candidates.length === 0 ? (
-          <p className="text-muted-foreground">
+          <p className={cn(TYPO.bodyLarge, 'text-muted-foreground')}>
             {mode === 'MOVE' ? t('captain.transfer.noFree') : t('captain.transfer.noOpen')}
           </p>
         ) : (
@@ -283,7 +290,8 @@ export function TransferDialog({
                 aria-checked={target === x.id}
                 onClick={() => setTarget(x.id)}
                 className={cn(
-                  'min-h-touch rounded-lg border px-2 text-lg font-semibold',
+                  TYPO.titleMedium,
+                  'min-h-touch rounded-lg border px-2',
                   target === x.id
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-input bg-surface hover:bg-muted',

@@ -1,4 +1,4 @@
-import { cn, type LucideIcon } from '@restroos/ui';
+import { cn, TYPO, type LucideIcon } from '@restroos/ui';
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router';
 
@@ -26,7 +26,8 @@ export function TabLinks({ label, tabs }: { label: string; tabs: readonly TabLin
                 end={tab.end ?? false}
                 className={({ isActive }) =>
                   cn(
-                    '-mb-px flex min-h-touch items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap',
+                    TYPO.labelMedium,
+                    '-mb-px flex min-h-touch items-center gap-2 border-b-2 px-3 whitespace-nowrap',
                     isActive
                       ? 'border-primary text-foreground'
                       : 'border-transparent text-muted-foreground hover:text-foreground',

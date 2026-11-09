@@ -5,9 +5,11 @@ import {
   ArrowRightLeft,
   Ban,
   Button,
+  cn,
   Merge,
   Phone,
   Spinner,
+  TYPO,
   Users,
 } from '@restroos/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -190,8 +192,8 @@ function PadHeader({ order, editable }: { order: Order; editable: boolean }) {
         </Link>
       </Button>
       <div className="flex min-w-[min(14rem,60vw)] flex-1 flex-col">
-        <h1 className="text-xl font-bold md:text-2xl">{title}</h1>
-        <p className="flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+        <h1 className={TYPO.displayMedium}>{title}</h1>
+        <p className={cn(TYPO.bodyMedium, 'flex flex-wrap gap-x-3 text-muted-foreground')}>
           <span>{t(`orderTypes.${order.orderType}`)}</span>
           <span className="tabular-nums">{elapsed(order.openedAt, now)}</span>
           {order.captainName !== null && <span>{order.captainName}</span>}
@@ -208,35 +210,53 @@ function PadHeader({ order, editable }: { order: Order; editable: boolean }) {
             }}
           >
             <Users aria-hidden="true" />
-            {order.covers === null
-              ? t('order.covers.unset')
-              : t('order.covers.count', { covers: order.covers })}
+            {order.covers === null ? (
+              <span className="short:sr-only">{t('order.covers.unset')}</span>
+            ) : (
+              <>
+                <span className="short:sr-only">
+                  {t('order.covers.count', { covers: order.covers })}
+                </span>
+                <span aria-hidden="true" className="hidden tabular-nums short:inline">
+                  {format.number(order.covers)}
+                </span>
+              </>
+            )}
           </Button>
         )}
         {(editable || order.guest !== null) && (
           <Button variant="outline" disabled={!editable} onClick={() => setDialog('guest')}>
             <Phone aria-hidden="true" />
-            {order.guest === null
-              ? t('order.guest.add')
-              : t('order.guest.shown', { last4: order.guest.phoneLast4 })}
+            {order.guest === null ? (
+              <span className="short:sr-only">{t('order.guest.add')}</span>
+            ) : (
+              <>
+                <span className="short:sr-only">
+                  {t('order.guest.shown', { last4: order.guest.phoneLast4 })}
+                </span>
+                <span aria-hidden="true" className="hidden tabular-nums short:inline">
+                  {order.guest.phoneLast4}
+                </span>
+              </>
+            )}
           </Button>
         )}
         {editable && canTransfer && table !== null && (
           <>
             <Button variant="outline" onClick={() => setDialog('move')}>
               <ArrowRightLeft aria-hidden="true" />
-              {t('captain.transfer.move')}
+              <span className="max-sm:sr-only short:sr-only">{t('captain.transfer.move')}</span>
             </Button>
             <Button variant="outline" onClick={() => setDialog('merge')}>
               <Merge aria-hidden="true" />
-              {t('captain.transfer.merge')}
+              <span className="max-sm:sr-only short:sr-only">{t('captain.transfer.merge')}</span>
             </Button>
           </>
         )}
         {editable && (
           <Button variant="outline" onClick={() => setDialog('cancel')}>
             <Ban aria-hidden="true" />
-            {t('order.cancel.orderAction')}
+            <span className="max-sm:sr-only short:sr-only">{t('order.cancel.orderAction')}</span>
           </Button>
         )}
       </div>

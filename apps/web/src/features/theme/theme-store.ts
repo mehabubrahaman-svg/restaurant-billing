@@ -61,3 +61,15 @@ export function applyTextSize(size: TextSize, root: HTMLElement = document.docum
   if (size === 'default') delete root.dataset['textSize'];
   else root.dataset['textSize'] = size;
 }
+
+/**
+ * The staff screens scale with the screen's width (docs/13 §4); the guest
+ * menu does not, because it was designed for a phone at the phone's own
+ * size. Marks the page as the guest's while it is open; returns the undo.
+ */
+export function markGuestPage(root: HTMLElement = document.documentElement): () => void {
+  root.dataset['guest'] = '';
+  return () => {
+    delete root.dataset['guest'];
+  };
+}

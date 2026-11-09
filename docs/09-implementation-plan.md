@@ -112,7 +112,7 @@ Each work package (WP) is a reviewable PR of ≤ ~800 lines with tests. WPs are 
 >   - the menu follows the phone's width and orientation: one column held upright, two side by side in landscape and on tablets, three on wide screens; on a short screen only the search bar stays pinned;
 >   - a dish in the order shows − n + and Remove right under it, with what it comes to;
 >   - one type scale (`TYPO`, Material 3 names) in the UI kit, the guest menu, the staff shell and sign-in; the face is Inter with Noto Devanagari and Bengali; staff pick a text size per device; the iOS and Android apps carry the same scale and font.
-> - **Tests with the type scale:** web 422, server 156, domain 152, contracts 148, infrastructure 32, UI 35, application 8, relay 2, desktop 10, spike 55. End-to-end: 9.
+> - **Tests with the type scale:** web 423, server 156, domain 152, contracts 148, infrastructure 32, UI 35, application 8, relay 2, desktop 10, spike 55. End-to-end: 9. (2026-11-08, later the same day: the root scale follows the screen's width and the captain and kitchen portals moved onto the tokens; one web test added.)
 
 ## Definition of Done (every WP)
 

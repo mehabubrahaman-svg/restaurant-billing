@@ -1,8 +1,10 @@
 # 13 — Design system: type, font and text size
 
-**Status:** v1, 2026-11-08. The scale, the font and the text-size setting are in
-place; the UI kit, the guest QR menu, the staff shell and the sign-in screens
-use the tokens. The other screens move over as they are touched (§6).
+**Status:** v1.1, 2026-11-08. The scale, the font and the text-size setting are
+in place, and the scale follows the screen's width (§4). The UI kit, the guest
+QR menu, the staff shell, the sign-in screens, the captain portal (floor, order
+pad, reservations) and the kitchen display use the tokens. The other screens
+move over as they are touched (§6).
 
 **Applies to:** the web app (every portal, including the guest QR menu), the
 iOS app and the Android app. All three carry one scale with the same token
@@ -109,20 +111,60 @@ marks (`:lang(hi), :lang(bn)` in `styles.css`).
 - Inter is published under the SIL Open Font License; the licence text sits
   next to each copy (`LICENSE-Inter.txt`).
 
-## 4. Text size per device
+## 4. Size: the screen first, then the device setting
 
-Staff pick **Default**, **Large** or **Extra large** from the user menu (next
-to the theme). It is a per-device preference, like the theme:
+The tokens name roles, not pixels; how big a role is on a given screen comes
+from the root font size, which `styles.css` sets in two steps.
+
+### The scale follows the screen's width
+
+A captain carries a phone as often as a tablet, and the same screen cannot
+be the right size on both. Instead of a second set of tokens for phones, the
+root font size runs with the viewport:
+
+```css
+:root {
+  font-size: calc(clamp(0.875rem, 0.75rem + 0.5vw, 1rem) * var(--text-scale));
+}
+```
+
+| Width (CSS px)                           | Root | Body text | Touch target | 56 px button |
+| ---------------------------------------- | ---- | --------- | ------------ | ------------ |
+| ≤ 400 (a phone held upright)             | 14   | 14        | 42           | 49           |
+| 600 (a small tablet upright)             | 15   | 15        | 45           | 52.5         |
+| ≥ 800 (a tablet, a phone turned sideways) | 16   | 16        | 48           | 56           |
+
+Everything in the app is in rem (text, padding, gaps, the `touch` and `kds`
+spacing tokens, the order pad's column widths), so the whole layout follows,
+not just the text: a phone gets a compact pad and a tablet the one designed
+in docs/06, and turning the device re-fits it. Breakpoints do not move: media
+queries read the browser's own 16 px, by specification, so `sm:` is still
+640 px on every scale. Two consequences to know about:
+
+- The minimum hit target is 48 px at the designed scale and **42 px on a
+  phone**, still above the 24 px accessibility minimum and close to iOS's 44.
+- iOS zooms the page in when a focused field's text is under 16 px; an
+  unlayered rule in `styles.css` holds `input`, `select` and `textarea` at
+  16 px there (and only there: it is keyed on `-webkit-touch-callout`).
+
+**The guest menu opts out.** It was designed for a phone at the phone's own
+size, and a guest never sees the staff settings. `QrMenuPage` sets
+`data-guest` on `<html>` while it is open (`markGuestPage` in the theme
+store; `index.html` seeds it from the `/qr/` path before the first paint),
+and the stylesheet pins that root to 1 rem times the text-size step.
+
+### Text size per device
+
+On top of the fluid scale, staff pick **Default**, **Large** or **Extra
+large** from the user menu (next to the theme). It is a per-device
+preference, like the theme:
 
 - stored in `localStorage` under `restroos.text-size`
   (`STORAGE_KEYS.textSize`), read by `index.html` before the first paint and
   by the theme store;
-- applied as `data-text-size` on `<html>`; `styles.css` sets the root font
-  size to 112.5 % (large) or 125 % (extra large). Everything is in rem, so
-  controls and touch targets grow with the text.
-
-Guests never see the switcher; their phone's own text-size setting applies to
-the QR menu because the page uses rem throughout.
+- applied as `data-text-size` on `<html>`; `styles.css` sets `--text-scale`
+  to 1.125 (large) or 1.25 (extra large), which multiplies the fluid size, so
+  a phone on **Large** reads at 15.75 px and a tablet at 18.
 
 ## 5. Usage
 
@@ -166,21 +208,43 @@ menu, status page, the boot screen) and the sign-in screens (branch picker,
 PIN login, PIN pad). The iOS connect and "can't reach" screens; the Android
 connect and "can't reach" panels.
 
-Left as they are, because their classes already match the scale's sizes and
-the visual result is the same: the feature screens under `apps/web/src/features/`
-and the portals other than `qr-menu`. Move a screen over when you touch it,
-one directory per commit, in this order:
+Done in v1.1 (the owner found the captain's phone and the kitchen's tablet
+too big): the captain portal (`portals/captain`: floor, table tiles, counter
+orders, the order pad's menu and order panels, the options sheet, the covers,
+cancel and note dialogs, reservations), its floor parts (`features/floor`:
+area tabs, table sheet, transfer dialog), the guest-request panel and the
+guest-phone dialog (`features/orders`), the tab strip (`components/tab-links`)
+and the kitchen display (`portals/kitchen`). The KDS cards came down one step
+on the way: the card title is `titleMedium` (was 20 px bold), a dish is
+`titleSmall` (was 18), its add-ons `bodyMedium` (was 16), the quantity
+`titleMedium` (was 20), the age `labelLarge` (was 18). The one big button
+stays 56 px (`size="kds"`): the kitchen hits it while cooking. Under 640 px
+the captain floor's header buttons (takeaway, delivery, bookings, sound) and
+the order pad's move, merge and cancel show only their icons, with the label
+kept for screen readers (`max-sm:sr-only`), so a phone's header stays one
+row. On a screen under 500 px tall (a phone turned sideways; the `short:`
+variant in `styles.css`) every button in the order pad's header goes
+icon-only, the guest count and the guest's last four digits staying beside
+their icons, so the menu and the order keep the height.
 
-1. High-traffic rows and cards: the captain floor and order pad, the KDS
-   cards, the POS counter and bill, the admin menu list.
+Left as they are, because their classes already match the scale's sizes and
+the visual result is the same: the other feature screens under
+`apps/web/src/features/` and the portals other than `qr-menu`, `captain` and
+`kitchen`. Move a screen over when you touch it, one directory per commit, in
+this order:
+
+1. High-traffic rows and cards: the POS counter and bill, the admin menu
+   list.
 2. Page headers and tab strips in the admin, reports, accounts and inventory
    portals.
 3. Dialogs and forms (every `Field`, every dialog body).
 4. Everything else, by directory.
 
-`nav-links.tsx` keeps its own responsive pair (`text-xs` in the rail,
-`lg:text-base` in the sidebar): a token covers one size, and the rail's labels
-are a layout choice, not a text role.
+Two places keep their own responsive pair, because a token covers one size
+and these sizes are a layout choice, not a text role: `nav-links.tsx`
+(`text-xs` in the rail, `lg:text-base` in the sidebar) and the floor plan's
+`PlanTile` in `captain-page.tsx`, whose label grows with the tile
+(`@min-[4.5rem]:text-base`).
 
 ### Migration recipe (one component)
 
@@ -242,3 +306,14 @@ compose: `cn(TYPO.bodyMedium, 'text-muted-foreground')`.
 **The printed slips?** Printing (`packages/infrastructure/src/printing/`) has
 its own sizes for 58 and 80 mm paper and draws with Noto; it does not use the
 screen tokens.
+
+**Why scale the root instead of giving phones their own tokens?** A phone
+needs every role a step smaller, and the controls and gaps with it, which is
+one number (the root font size), not fourteen. Tokens stay about roles;
+`clamp()` is about the screen. A phone is not a different design, it is the
+same design, closer to the eye.
+
+**Why does the guest menu not shrink too?** It was designed for a phone and
+approved at 16 px, guests read it in a dim room, and a phone's own text-size
+setting already applies to it. Only the staff screens have a tablet design
+that needs to fit a phone.
