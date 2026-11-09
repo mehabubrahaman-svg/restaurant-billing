@@ -38,9 +38,9 @@ installer* workflow.
 The installers are built by GitHub Actions, on Windows and Linux:
 
 1. On GitHub, open the repository → **Actions** → **Desktop installers** →
-   **Run workflow** (pick the branch), or push a tag such as `hub-v3.0.0`.
+   **Run workflow** (pick the branch), or push a tag such as `hub-v3.0.1`.
 2. When the run finishes (about 10–15 minutes), open it and download the
-   artifact: **restroos-hub-Windows** (`RestroOS Hub Setup 3.0.0.exe`) or
+   artifact: **restroos-hub-Windows** (`RestroOS Hub Setup 3.0.1.exe`) or
    **restroos-hub-Linux** (`.AppImage` and `.deb`).
 
 The Linux job starts the AppImage and checks that the Hub answers before
@@ -48,12 +48,12 @@ it publishes the files.
 
 ### 2. Install
 
-**Windows 10/11**: run `RestroOS Hub Setup 3.0.0.exe`. The installer isn't
+**Windows 10/11**: run `RestroOS Hub Setup 3.0.1.exe`. The installer isn't
 code-signed yet, so Windows SmartScreen says *Windows protected your PC*:
 choose **More info → Run anyway**. Choose the folder and finish; RestroOS
 starts.
 
-**Updating** (for example 0.2.0 to 3.0.0): close RestroOS Hub (tray icon → **Quit RestroOS
+**Updating** (for example 3.0.0 to 3.0.1): close RestroOS Hub (tray icon → **Quit RestroOS
 Hub…**), then run the new installer over the old one. The data in
 `%APPDATA%\RestroOS Hub\hub-data` stays. On its first start the new Hub
 takes an encrypted backup (`PRE_MIGRATION`, listed under Admin → Backups)
@@ -63,18 +63,18 @@ when they next load the page.
 **Ubuntu / Debian**:
 
 ```bash
-sudo apt install ./restroos-hub_3.0.0_amd64.deb
+sudo apt install ./restroos-hub_3.0.1_amd64.deb
 ```
 
 Then start **RestroOS Hub** from the applications menu. Or, with the
 AppImage (no install):
 
 ```bash
-chmod +x RestroOS-Hub-3.0.0.AppImage
+chmod +x RestroOS-Hub-3.0.1.AppImage
 ```
 
 ```bash
-./RestroOS-Hub-3.0.0.AppImage
+./RestroOS-Hub-3.0.1.AppImage
 ```
 
 (On Ubuntu 22.04+ the AppImage needs `libfuse2`: `sudo apt install libfuse2`.)
